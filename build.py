@@ -63,9 +63,19 @@ MEMPOOL_CSS = """
                             left:calc(-.16*bs); background:var(--block-side); transform:skewY(50deg); origin:top }
    Both clusters are 125px with a 30px gap in mempool; --block-size drives everything. */
 :root {
-  --block-size: clamp(96px, 9vw, 125px);
+  --block-size: 125px;                     /* mempool's --block-size default */
   --block-gap: calc(0.24 * var(--block-size));
 }
+
+/* Keep a row inside the viewport: available width / (2 clusters x per-cube cost).
+   A cluster of N cubes costs bs * (N + 0.24*(N-1)) = bs * (1.24N - 0.24).
+   k = 2 * (1.24N - 0.24) + a small safety margin. 125px is the ceiling, so the
+   cubes are mempool-exact whenever the window is wide enough. */
+.v1 { --row-k: 9.8; }
+.v2 { --row-k: 12.4; }
+.v1, .v2 { --block-gap: calc(0.24 * var(--block-size)); }
+.v1, .v2 { --block-size: clamp(92px, calc((100vw - 132px) / var(--row-k)), 125px); }
+.v3 { --block-size: 125px; }               /* deliberate full-bleed strip */
 
 .lookbook { background: var(--mp-bg); min-height: 100vh; padding: 0 0 90px 0; }
 .lb-head { padding: 26px 26px 8px 26px; font-family: var(--mono); }
@@ -88,7 +98,7 @@ MEMPOOL_CSS = """
   padding: 34px 26px 30px 46px;   /* room for the 24px-tall top face + 20px side face */
   overflow: hidden;
 }
-.col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.col { display: flex; flex-direction: column; gap: 10px; min-width: 0; flex: 0 0 auto; }
 .cluster { display: flex; align-items: flex-start; gap: var(--block-gap); }
 
 .cap {
@@ -221,8 +231,8 @@ MEMPOOL_CSS = """
 }
 .v3 .split .now { display: block; }
 
-/* v3 reads as a full-bleed scrolling strip: edges fade out */
-.v3 .blockrow { padding-left: 0; padding-right: 0; }
+/* v3 reads as a full-bleed scrolling strip: it runs off both edges and fades */
+.v3 .blockrow { padding-left: 0; padding-right: 0; justify-content: center; }
 .v3 .col.pending { mask-image: linear-gradient(90deg, transparent 0, #000 9%); -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 9%); }
 .v3 .col.merged  { mask-image: linear-gradient(270deg, transparent 0, #000 9%); -webkit-mask-image: linear-gradient(270deg, transparent 0, #000 9%); }
 
