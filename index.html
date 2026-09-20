@@ -209,7 +209,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
 /* === MAIN CONTENT — isometric cube grid === */
 .main-content {
   min-height: calc(100vh - 58px);
-  padding: 20px 14px;
+  padding: 14px 14px 0 14px;
   display: flex;
   gap: 24px;
 }
@@ -219,10 +219,10 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
   flex: 1;
   display: flex;
   align-items: flex-end;
-  gap: 0;
+  gap: 14px;
   min-width: 0;
   position: relative;
-  padding-top: 30px; /* room for top face */
+  padding-top: 35px;
 }
 
 /* Isometric cube — mempool.space block style */
@@ -232,10 +232,8 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
   height: 140px;
   flex-shrink: 0;
   cursor: pointer;
-  margin-left: -20px;
   transition: transform 0.2s;
 }
-.cube:first-child { margin-left: 0; }
 .cube:hover { transform: translateY(-4px); }
 
 /* Front face */
@@ -441,6 +439,9 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
 </main>
 
 <script>
+// Auto-refresh every 60 seconds
+setTimeout(function(){ location.reload(); }, 60000);
+
 function toggleDropdown() {
   document.getElementById('branchDropdown').classList.toggle('open');
 }
