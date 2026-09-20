@@ -316,21 +316,58 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
   text-align: center;
 }
 
-/* Divider line — spans cube area only */
+/* Divider line — positioned higher */
 .zone-divider {
   width: 2px;
   height: calc(125px + 35px + 24px);
   background: linear-gradient(180deg, transparent, var(--nous-amber) 12%, var(--nous-amber) 88%, transparent);
   opacity: 0.55;
   flex-shrink: 0;
-  margin-top: 20px;
+  margin-top: 0;
 }
 
-/* Right zone — placeholder */
+/* Right zone — 4 merge details */
 .zone-right {
-  flex: 1;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   min-width: 0;
+  padding-top: 35px;
 }
+.detail-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--nous-purple);
+  border-radius: 6px;
+  font-family: var(--mono);
+  min-width: 260px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  height: calc((125px + 14px) / 2 - 7px);
+  justify-content: center;
+}
+.detail-box .d-pr {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--nous-purple);
+}
+.detail-box .d-title {
+  font-size: 10px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.detail-box .d-diff {
+  font-size: 10px;
+  color: var(--muted);
+}
+.detail-box .d-diff .add { color: #22c55e; }
+.detail-box .d-diff .del { color: #ef4444; }
 </style>
 </head>
 <body>
@@ -437,7 +474,26 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
   <div class="zone-divider"></div>
 
   <div class="zone-right">
-    <!-- Right zone — placeholder -->
+    <div class="detail-box">
+      <div class="d-pr">#116992</div>
+      <div class="d-title">fix(tui): streaming gateway socket no longer force-closed…</div>
+      <div class="d-diff"><span class="add">+36</span>&nbsp;<span class="del">-6</span> · 4 files</div>
+    </div>
+    <div class="detail-box">
+      <div class="d-pr">#116852</div>
+      <div class="d-title">fix(tests): local-env Popen fixture ends kernel streams…</div>
+      <div class="d-diff"><span class="add">+32</span>&nbsp;<span class="del">-22</span> · 2 files</div>
+    </div>
+    <div class="detail-box">
+      <div class="d-pr">#116847</div>
+      <div class="d-title">fix(models): downloaded local models pass Desktop Use bu…</div>
+      <div class="d-diff"><span class="add">+177</span>&nbsp;<span class="del">-5</span> · 4 files</div>
+    </div>
+    <div class="detail-box">
+      <div class="d-pr">#113168</div>
+      <div class="d-title">Add openmail to the plugin catalog</div>
+      <div class="d-diff"><span class="add">+27</span>&nbsp;<span class="del">-0</span> · 2 files</div>
+    </div>
   </div>
 </main>
 
