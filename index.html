@@ -206,73 +206,129 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
 .search-submit:hover { background: #7c4ddb; border-color: #7c4ddb; }
 .search-submit .ti { font-size: 16px; color: #fff; }
 
-/* === MAIN CONTENT — two-zone layout === */
+/* === MAIN CONTENT — isometric cube grid === */
 .main-content {
-  display: flex;
-  align-items: stretch;
   min-height: calc(100vh - 58px);
-  padding: 14px;
-  gap: 0;
+  padding: 20px 14px;
+  display: flex;
+  gap: 24px;
 }
-/* Left zone — 4 merge boxes */
+
+/* Left zone — cube row */
 .zone-left {
   flex: 1;
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
+  align-items: flex-end;
+  gap: 0;
   min-width: 0;
+  position: relative;
+  padding-top: 30px; /* room for top face */
 }
+
+/* Isometric cube — mempool.space block style */
+.cube {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  flex-shrink: 0;
+  cursor: pointer;
+  margin-left: -20px;
+  transition: transform 0.2s;
+}
+.cube:first-child { margin-left: 0; }
+.cube:hover { transform: translateY(-4px); }
+
+/* Front face */
+.cube-face {
+  width: 100%;
+  height: 100%;
+  background: #1a5c2e;
+  border: 1px solid #2a7a3e;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 12px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  z-index: 2;
+  position: relative;
+}
+
+/* Left face (side) */
+.cube::before {
+  content: '';
+  width: calc(0.16 * 140px);
+  height: 140px;
+  position: absolute;
+  top: calc(-0.096 * 140px);
+  left: calc(-0.16 * 140px);
+  background-color: #145126;
+  border-left: 1px solid #2a7a3e;
+  border-bottom: 1px solid #2a7a3e;
+  z-index: -1;
+  transform: skewY(50deg);
+  transform-origin: top;
+}
+
+/* Top face */
+.cube::after {
+  content: '';
+  width: 140px;
+  height: calc(0.192 * 140px);
+  position: absolute;
+  top: calc(-0.192 * 140px);
+  left: calc(-0.16 * 140px);
+  background-color: #228b3a;
+  border-top: 1px solid #2a7a3e;
+  border-right: 1px solid #2a7a3e;
+  transform: skew(40deg);
+  transform-origin: top;
+}
+
+/* Cube content text */
+.cube-pr {
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 700;
+  color: #a8f0ba;
+  margin-bottom: 6px;
+  text-align: center;
+}
+.cube-diff {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: #d4f5de;
+  margin-bottom: 4px;
+  text-align: center;
+}
+.cube-diff .add { color: #6fff8f; }
+.cube-diff .del { color: #ff8888; }
+.cube-prs {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #8bc49a;
+  margin-bottom: 2px;
+  text-align: center;
+}
+.cube-time {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #8bc49a;
+  text-align: center;
+}
+
+/* Divider line — mempool NOW column style */
 .zone-divider {
   width: 2px;
-  min-height: 100%;
+  align-self: stretch;
   background: linear-gradient(180deg, transparent, var(--nous-amber) 12%, var(--nous-amber) 88%, transparent);
   opacity: 0.55;
-  margin: 0 14px;
   flex-shrink: 0;
 }
+
+/* Right zone — placeholder */
 .zone-right {
   flex: 1;
   min-width: 0;
-}
-
-/* Merge block — mempool-style boxes */
-.merge-block {
-  flex: 0 0 auto;
-  width: 100%;
-  border: 1px solid var(--border);
-  border-left: 2px solid #007d3d;
-  border-radius: 6px;
-  background: #131716;
-  padding: 10px 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-  transition: border-color 0.15s;
-}
-.merge-block:hover { border-color: var(--nous-amber); box-shadow: 0 2px 16px rgba(245,158,11,0.12); }
-.merge-block .mb-pr {
-  font-family: var(--mono);
-  font-size: 14px;
-  font-weight: 700;
-  color: #22c55e;
-  margin-bottom: 6px;
-}
-.merge-block .mb-diff {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--muted);
-  margin-bottom: 4px;
-}
-.merge-block .mb-diff .add { color: #22c55e; }
-.merge-block .mb-diff .del { color: #ef4444; }
-.merge-block .mb-prs {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--muted);
-  margin-bottom: 2px;
-}
-.merge-block .mb-time {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--muted);
 }
 </style>
 </head>
@@ -340,39 +396,47 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
 <main class="main-content">
   <div class="zone-left" id="zoneLeft">
     <!-- 4th most recent (oldest) far left -->
-    <div class="merge-block">
-      <div class="mb-pr">#116997</div>
-      <div class="mb-diff"><span class="add">+91</span>&nbsp;<span class="del">-5</span></div>
-      <div class="mb-prs">1 PR · 3 files</div>
-      <div class="mb-time">∼37 min ago</div>
+    <div class="cube">
+      <div class="cube-face">
+        <div class="cube-pr">#116997</div>
+        <div class="cube-diff"><span class="add">+91</span>&nbsp;<span class="del">-5</span></div>
+        <div class="cube-prs">1 PR · 3 files</div>
+        <div class="cube-time">~37 min</div>
+      </div>
     </div>
     <!-- 3rd most recent -->
-    <div class="merge-block">
-      <div class="mb-pr">#116999</div>
-      <div class="mb-diff"><span class="add">+137</span>&nbsp;<span class="del">-4</span></div>
-      <div class="mb-prs">2 commits · 4 files</div>
-      <div class="mb-time">∼32 min ago</div>
+    <div class="cube">
+      <div class="cube-face">
+        <div class="cube-pr">#116999</div>
+        <div class="cube-diff"><span class="add">+137</span>&nbsp;<span class="del">-4</span></div>
+        <div class="cube-prs">2 commits · 4 files</div>
+        <div class="cube-time">~32 min</div>
+      </div>
     </div>
     <!-- 2nd most recent -->
-    <div class="merge-block">
-      <div class="mb-pr">#117000</div>
-      <div class="mb-diff"><span class="add">+81</span>&nbsp;<span class="del">-7</span></div>
-      <div class="mb-prs">1 PR · 3 files</div>
-      <div class="mb-time">∼31 min ago</div>
+    <div class="cube">
+      <div class="cube-face">
+        <div class="cube-pr">#117000</div>
+        <div class="cube-diff"><span class="add">+81</span>&nbsp;<span class="del">-7</span></div>
+        <div class="cube-prs">1 PR · 3 files</div>
+        <div class="cube-time">~31 min</div>
+      </div>
     </div>
     <!-- 1st most recent (newest) next to divider -->
-    <div class="merge-block">
-      <div class="mb-pr">#116933</div>
-      <div class="mb-diff"><span class="add">+131</span>&nbsp;<span class="del">-40</span></div>
-      <div class="mb-prs">1 PR · 3 files</div>
-      <div class="mb-time">∼28 min ago</div>
+    <div class="cube">
+      <div class="cube-face">
+        <div class="cube-pr">#116933</div>
+        <div class="cube-diff"><span class="add">+131</span>&nbsp;<span class="del">-40</span></div>
+        <div class="cube-prs">1 PR · 3 files</div>
+        <div class="cube-time">~28 min</div>
+      </div>
     </div>
   </div>
 
   <div class="zone-divider"></div>
 
   <div class="zone-right">
-    <!-- Right zone — empty for now -->
+    <!-- Right zone — placeholder -->
   </div>
 </main>
 
