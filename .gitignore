@@ -1,3 +1,4 @@
 .vercel
 .server.err
 .server.log
+state.json

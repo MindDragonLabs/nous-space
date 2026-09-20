@@ -208,168 +208,171 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
 .search-submit:hover { background: #7c4ddb; border-color: #7c4ddb; }
 .search-submit .ti { font-size: 16px; color: #fff; }
 
-/* === MAIN CONTENT — isometric cube grid === */
+/* === MAIN CONTENT — mempool-style block row ===
+   Geometry, skew angles and text sizes are copied from mempool.space source
+   (frontend/src/app/components/blockchain-blocks + mempool-blocks).
+   Left cluster (green, vertical gradient) = open PRs awaiting merge.
+   Right cluster (NOUS-blue vertical gradient) = already merged to main.
+   The name under each merged block follows mempool's .badge.miner-name box. */
 .main-content {
   min-height: calc(100vh - 58px);
-  padding: 80px 14px 0 14px;
-  display: flex;
-  gap: 24px;
-  align-items: flex-start;
+  padding: 0 14px;
 }
 
-/* Left zone — cube row, horizontal, top-justified */
-.zone-left {
-  flex: 0 0 auto;
+.blockrow {
   display: flex;
-  flex-direction: row;
   align-items: flex-start;
-  gap: 14px;
-  min-width: 0;
-  position: relative;
-  padding-top: 35px;
+  justify-content: space-between;
+  gap: 26px;
+  padding: 88px 10px 40px 34px;
+  /* available width / (2 clusters x per-cube cost); 125px is the mempool ceiling */
+  --block-size: clamp(92px, calc((100vw - 152px) / 12.4), 125px);
+  --block-gap: calc(0.24 * var(--block-size));
 }
 
-/* Isometric cube — mempool.space block style */
+.col { display: flex; flex-direction: column; gap: 12px; flex: 0 0 auto; }
+
+.cap {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.cap.pending { color: #4ade80; }
+.cap.merged  { color: var(--nous-electric); }
+
+.cluster { display: flex; align-items: flex-start; gap: var(--block-gap); }
+.wrap { display: flex; flex-direction: column; align-items: stretch; }
+
+/* ---- cube: mempool projected-block geometry, 3D faces ---- */
 .cube {
   position: relative;
-  width: 125px;
-  height: 125px;
+  width: var(--block-size);
+  height: var(--block-size);
   flex-shrink: 0;
-  cursor: pointer;
-  transition: transform 0.2s;
+  display: block;
+  text-decoration: none;
+  transition: transform 0.18s ease;
 }
 .cube:hover { transform: translateY(-4px); }
+.cube:focus-visible { outline: 2px solid var(--nous-electric); outline-offset: 3px; }
 
-/* Front face */
-.cube-face {
-  width: 100%;
-  height: 100%;
-  background: #1a5c2e;
-  border: 1px solid #2a7a3e;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 10px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
-  z-index: 2;
-  position: relative;
-}
-
-/* Left face (side) — brown */
-.cube::before {
+.cube::before {                        /* side face — skewY(50deg) */
   content: '';
-  width: calc(0.16 * 125px);
-  height: 125px;
+  width: calc(0.16 * var(--block-size));
+  height: var(--block-size);
   position: absolute;
-  top: calc(-0.096 * 125px);
-  left: calc(-0.16 * 125px);
-  background-color: #3d2b1a;
-  border-left: 1px solid #5a4a3a;
-  border-bottom: 1px solid #5a4a3a;
+  top: calc(-0.096 * var(--block-size));
+  left: calc(-0.16 * var(--block-size));
+  background-color: var(--face-side);
   z-index: -1;
   transform: skewY(50deg);
   transform-origin: top;
 }
-
-/* Top face — lighter brown */
-.cube::after {
+.cube::after {                         /* top face — skew(40deg) */
   content: '';
-  width: 125px;
-  height: calc(0.192 * 125px);
+  width: var(--block-size);
+  height: calc(0.192 * var(--block-size));
   position: absolute;
-  top: calc(-0.192 * 125px);
-  left: calc(-0.16 * 125px);
-  background-color: #5c4228;
-  border-top: 1px solid #5a4a3a;
-  border-right: 1px solid #5a4a3a;
+  top: calc(-0.192 * var(--block-size));
+  left: calc(-0.16 * var(--block-size));
+  background-color: var(--face-top);
   transform: skew(40deg);
   transform-origin: top;
 }
 
-/* Cube content text */
-.cube-pr {
-  font-family: var(--mono);
-  font-size: 14px;
-  font-weight: 700;
-  color: #a8f0ba;
-  margin-bottom: 4px;
-  text-align: center;
+.cube.p-green { --face-side: #0a2415; --face-top: #0f3a22; }
+.cube.p-blue  { --face-side: #061e2c; --face-top: #0a3349; }
+
+/* front faces: one clean vertical gradient each, no bands */
+.cube.p-green .face {
+  background: linear-gradient(180deg, #04371c 0%, #0b6b34 52%, #16a355 100%);
 }
-.cube-diff {
-  font-family: var(--mono);
-  font-size: 12px;
-  color: #d4f5de;
-  margin-bottom: 3px;
-  text-align: center;
-}
-.cube-diff .add { color: #6fff8f; }
-.cube-diff .del { color: #ff8888; }
-.cube-prs {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: #8bc49a;
-  margin-bottom: 2px;
-  text-align: center;
-}
-.cube-time {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: #8bc49a;
-  text-align: center;
+.cube.p-blue .face {
+  background: linear-gradient(180deg, #01374f 0%, var(--nous-blue) 52%, var(--nous-electric) 100%);
 }
 
-/* Divider line — positioned higher */
-.zone-divider {
-  width: 2px;
-  height: calc(125px + 35px + 24px);
-  background: linear-gradient(180deg, transparent, var(--nous-amber) 12%, var(--nous-amber) 88%, transparent);
-  opacity: 0.55;
-  flex-shrink: 0;
-  margin-top: 0;
-}
-
-/* Right zone — 4 merge details */
-.zone-right {
-  flex: 0 0 auto;
+.face {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  min-width: 0;
-  padding-top: 35px;
-}
-.detail-box {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 10px 12px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-left: 2px solid var(--nous-purple);
-  border-radius: 6px;
-  font-family: var(--mono);
-  min-width: 260px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-  height: calc((125px + 14px) / 2 - 7px);
   justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: calc(0.062 * var(--block-size));
+  font-family: var(--mono);
+  overflow: hidden;
 }
-.detail-box .d-pr {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--nous-purple);
+.face .n { font-size: calc(0.128 * var(--block-size)); font-weight: 700; color: #fff; line-height: 1.1; }
+.face .d { font-size: calc(0.096 * var(--block-size)); margin-top: calc(0.02 * var(--block-size)); }
+.face .d .add, .face .d .del { font-weight: 600; }
+.cube.p-green .face .d .add { color: #d8ffe4; }
+.cube.p-green .face .d .del { color: #ffc6bf; }
+.cube.p-blue .face .d .add { color: var(--green); }
+.cube.p-blue .face .d .del { color: #ff5c3d; }
+
+/* two-line plain-language description of what the PR is */
+.face .t {
+  font-size: calc(0.084 * var(--block-size));
+  line-height: 1.32;
+  color: rgba(255, 255, 255, 0.96);
+  margin-top: calc(0.032 * var(--block-size));
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  padding: 0 2px;
 }
-.detail-box .d-title {
-  font-size: 10px;
-  color: var(--muted);
+.face .w { font-size: calc(0.104 * var(--block-size)); margin-top: calc(0.032 * var(--block-size)); color: rgba(255, 255, 255, 0.94); }
+.cube.p-green .face .w { color: #d8ffe4; }
+.cube.p-blue .face .w { color: #d8f4ff; }
+
+/* ---- name under a merged block: mempool's .badge.miner-name box ---- */
+.miner { margin-top: calc(0.17 * var(--block-size)); max-width: var(--block-size); }
+.miner a {
+  display: block;
+  padding: 5px 7px;
+  border-radius: 4px;
+  background: #171c2a;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  color: #fff;
+  font-family: var(--mono);
+  font-size: calc(0.1 * var(--block-size));
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-align: center;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  text-decoration: none;
 }
-.detail-box .d-diff {
-  font-size: 10px;
-  color: var(--muted);
+.miner a.mine { color: var(--nous-electric); border-color: rgba(0, 174, 239, 0.5); }
+
+/* ---- divider: dashed line + up arrow (mempool #arrow-up) ---- */
+.split {
+  flex: 0 0 auto;
+  align-self: center;
+  width: 2px;
+  height: calc(1.6 * var(--block-size));
+  background-image: repeating-linear-gradient(180deg,
+      rgba(255, 255, 255, 0.42) 0 6px, rgba(0, 0, 0, 0) 6px 12px);
+  position: relative;
+  margin-top: calc(-0.25 * var(--block-size));
 }
-.detail-box .d-diff .add { color: #22c55e; }
-.detail-box .d-diff .del { color: #ef4444; }
+.split::after {
+  content: '';
+  position: absolute;
+  left: -5px;
+  bottom: calc(-0.16 * var(--block-size));
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 9px solid #fff;
+}
 </style>
 </head>
 <body>
@@ -434,65 +437,118 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
 </nav>
 
 <main class="main-content">
-  <div class="zone-left" id="zoneLeft">
-    <div class="cube">
-      <div class="cube-face">
-        <div class="cube-pr">#117599</div>
-        <div class="cube-diff"><span class="add">+96</span>&nbsp;<span class="del">-28</span></div>
-        <div class="cube-prs">2 commits · 3 files</div>
-        <div class="cube-time">~24 min</div>
+<!-- BLOCKROW:START -->
+  <div class="blockrow">
+    <div class="col pending">
+      <div class="cap pending">awaiting merge · teknium1</div>
+      <div class="cluster">
+      <a class="cube p-green" href="https://github.com/NousResearch/hermes-agent/pull/117653" target="_blank" rel="noopener" title="#117653 fix(desktop): externally-terminated renderer shows a recovery page instead of a blank window (#116472, salvage #117140)">
+        <div class="face">
+          <div class="n">#117653</div>
+          <div class="d"><span class="add">+103</span> <span class="del">-2</span></div>
+          <div class="t">fix(desktop): externally-terminated renderer shows a recovery page instead of a blank window</div>
+          <div class="w">idle ~1 h</div>
+        </div>
+      </a>
+      <a class="cube p-green" href="https://github.com/NousResearch/hermes-agent/pull/117646" target="_blank" rel="noopener" title="#117646 fix(models): DeepSeek picker drops retired ids and labels V4.1 Flash (#117516, salvage #117525)">
+        <div class="face">
+          <div class="n">#117646</div>
+          <div class="d"><span class="add">+20</span> <span class="del">-2</span></div>
+          <div class="t">fix(models): DeepSeek picker drops retired ids and labels V4.1 Flash</div>
+          <div class="w">idle ~1 h</div>
+        </div>
+      </a>
+      <a class="cube p-green" href="https://github.com/NousResearch/hermes-agent/pull/117648" target="_blank" rel="noopener" title="#117648 fix(desktop): model pill names the xAI OAuth provider instead of its route id (#117415, salvage #117474)">
+        <div class="face">
+          <div class="n">#117648</div>
+          <div class="d"><span class="add">+44</span> <span class="del">-15</span></div>
+          <div class="t">fix(desktop): model pill names the xAI OAuth provider instead of its route id</div>
+          <div class="w">idle ~1 h</div>
+        </div>
+      </a>
+      <a class="cube p-green" href="https://github.com/NousResearch/hermes-agent/pull/117650" target="_blank" rel="noopener" title="#117650 fix(desktop): cron editor keeps custom:&lt;name&gt; provider pins intact (#116621, salvage #116646)">
+        <div class="face">
+          <div class="n">#117650</div>
+          <div class="d"><span class="add">+65</span> <span class="del">-21</span></div>
+          <div class="t">fix(desktop): cron editor keeps custom:&lt;name&gt; provider pins intact</div>
+          <div class="w">idle ~1 h</div>
+        </div>
+      </a>
+      <a class="cube p-green" href="https://github.com/NousResearch/hermes-agent/pull/117651" target="_blank" rel="noopener" title="#117651 fix(desktop): removing or re-pointing a connection forgets its cached roster and identity (#117227, salvage #117232)">
+        <div class="face">
+          <div class="n">#117651</div>
+          <div class="d"><span class="add">+132</span> <span class="del">-3</span></div>
+          <div class="t">fix(desktop): removing or re-pointing a connection forgets its cached roster and identity</div>
+          <div class="w">idle ~1 h</div>
+        </div>
+      </a>
       </div>
     </div>
-    <div class="cube">
-      <div class="cube-face">
-        <div class="cube-pr">#117617</div>
-        <div class="cube-diff"><span class="add">+93</span>&nbsp;<span class="del">-2</span></div>
-        <div class="cube-prs">2 commits · 3 files</div>
-        <div class="cube-time">~23 min</div>
+
+    <div class="split"></div>
+
+    <div class="col merged">
+      <div class="cap merged">merged to main · latest 5</div>
+      <div class="cluster">
+      <div class="wrap">
+      <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117611" target="_blank" rel="noopener" title="#117611 fix(cli): a provider quota 429 during credential resolution reads as quota, not auth failure, and Kanban workers exit TEMPFAIL (#117482, salvage #117490)">
+        <div class="face">
+          <div class="n">#117611</div>
+          <div class="d"><span class="add">+162</span> <span class="del">-18</span></div>
+          <div class="t">fix(cli): a provider quota 429 during credential resolution reads as quota, not auth failure, a…</div>
+          <div class="w">merged ~2 min</div>
+        </div>
+      </a>
+        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
       </div>
-    </div>
-    <div class="cube">
-      <div class="cube-face">
-        <div class="cube-pr">#117605</div>
-        <div class="cube-diff"><span class="add">+92</span>&nbsp;<span class="del">-3</span></div>
-        <div class="cube-prs">2 commits · 3 files</div>
-        <div class="cube-time">~22 min</div>
+      <div class="wrap">
+      <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117577" target="_blank" rel="noopener" title="#117577 fix(skills): Python open()/read_text() of credential files lands critical in plugin admission (#116950, salvage #117028)">
+        <div class="face">
+          <div class="n">#117577</div>
+          <div class="d"><span class="add">+79</span> <span class="del">-1</span></div>
+          <div class="t">fix(skills): Python open()/read_text() of credential files lands critical in plugin admission</div>
+          <div class="w">merged ~4 min</div>
+        </div>
+      </a>
+        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
       </div>
-    </div>
-    <div class="cube">
-      <div class="cube-face">
-        <div class="cube-pr">#117633</div>
-        <div class="cube-diff"><span class="add">+106</span>&nbsp;<span class="del">-5</span></div>
-        <div class="cube-prs">5 commits · 5 files</div>
-        <div class="cube-time">~21 min</div>
+      <div class="wrap">
+      <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117607" target="_blank" rel="noopener" title="#117607 fix(agent): promoted-reasoning stall guard catches Thai plan tails instead of leaking them to the user (#116495, salvage #116502)">
+        <div class="face">
+          <div class="n">#117607</div>
+          <div class="d"><span class="add">+39</span> <span class="del">-3</span></div>
+          <div class="t">fix(agent): promoted-reasoning stall guard catches Thai plan tails instead of leaking them to t…</div>
+          <div class="w">merged ~5 min</div>
+        </div>
+      </a>
+        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
+      </div>
+      <div class="wrap">
+      <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117618" target="_blank" rel="noopener" title="#117618 fix(desktop): Desktop updater stops copying state.db when updates.pre_update_backup is off (#116731, salvage #116755)">
+        <div class="face">
+          <div class="n">#117618</div>
+          <div class="d"><span class="add">+124</span> <span class="del">-3</span></div>
+          <div class="t">fix(desktop): Desktop updater stops copying state.db when updates.pre_update_backup is off</div>
+          <div class="w">merged ~6 min</div>
+        </div>
+      </a>
+        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
+      </div>
+      <div class="wrap">
+      <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117672" target="_blank" rel="noopener" title="#117672 chore(catalog): bump jev-approvals to v0.3.0">
+        <div class="face">
+          <div class="n">#117672</div>
+          <div class="d"><span class="add">+5</span> <span class="del">-4</span></div>
+          <div class="t">chore(catalog): bump jev-approvals to v0.3.0</div>
+          <div class="w">merged ~16 min</div>
+        </div>
+      </a>
+        <div class="miner"><a class="" href="https://github.com/anpicasso" target="_blank" rel="noopener" title="author: anpicasso">anpicasso</a></div>
+      </div>
       </div>
     </div>
   </div>
-
-  <div class="zone-divider"></div>
-
-  <div class="zone-right">
-    <div class="detail-box">
-      <div class="d-pr">#117607</div>
-      <div class="d-title">fix(agent): promoted-reasoning stall guard catches Thai plan tails in…</div>
-      <div class="d-diff"><span class="add">+39</span>&nbsp;<span class="del">-3</span> · 2 files</div>
-    </div>
-    <div class="detail-box">
-      <div class="d-pr">#117618</div>
-      <div class="d-title">fix(desktop): Desktop updater stops copying state.db when updates.pre…</div>
-      <div class="d-diff"><span class="add">+124</span>&nbsp;<span class="del">-3</span> · 3 files</div>
-    </div>
-    <div class="detail-box">
-      <div class="d-pr">#117672</div>
-      <div class="d-title">chore(catalog): bump jev-approvals to v0.3.0</div>
-      <div class="d-diff"><span class="add">+5</span>&nbsp;<span class="del">-4</span> · 1 file</div>
-    </div>
-    <div class="detail-box">
-      <div class="d-pr">#117614</div>
-      <div class="d-title">fix(skills): hub skills stop reporting update_available forever on Wi…</div>
-      <div class="d-diff"><span class="add">+74</span>&nbsp;<span class="del">-1</span> · 2 files</div>
-    </div>
-  </div>
+  <!-- BLOCKROW:END -->
 </main>
 
 <script>
