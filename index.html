@@ -205,6 +205,75 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
 }
 .search-submit:hover { background: #7c4ddb; border-color: #7c4ddb; }
 .search-submit .ti { font-size: 16px; color: #fff; }
+
+/* === MAIN CONTENT — two-zone layout === */
+.main-content {
+  display: flex;
+  align-items: stretch;
+  min-height: calc(100vh - 58px);
+  padding: 14px;
+  gap: 0;
+}
+/* Left zone — 4 merge boxes */
+.zone-left {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+.zone-divider {
+  width: 2px;
+  min-height: 100%;
+  background: linear-gradient(180deg, transparent, var(--nous-amber) 12%, var(--nous-amber) 88%, transparent);
+  opacity: 0.55;
+  margin: 0 14px;
+  flex-shrink: 0;
+}
+.zone-right {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Merge block — mempool-style boxes */
+.merge-block {
+  flex: 0 0 auto;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-left: 2px solid #007d3d;
+  border-radius: 6px;
+  background: #131716;
+  padding: 10px 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  transition: border-color 0.15s;
+}
+.merge-block:hover { border-color: var(--nous-amber); box-shadow: 0 2px 16px rgba(245,158,11,0.12); }
+.merge-block .mb-pr {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: #22c55e;
+  margin-bottom: 6px;
+}
+.merge-block .mb-diff {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.merge-block .mb-diff .add { color: #22c55e; }
+.merge-block .mb-diff .del { color: #ef4444; }
+.merge-block .mb-prs {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+.merge-block .mb-time {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+}
 </style>
 </head>
 <body>
@@ -267,6 +336,45 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
     </button>
   </div>
 </nav>
+
+<main class="main-content">
+  <div class="zone-left" id="zoneLeft">
+    <!-- 4th most recent (oldest) far left -->
+    <div class="merge-block">
+      <div class="mb-pr">#116997</div>
+      <div class="mb-diff"><span class="add">+91</span>&nbsp;<span class="del">-5</span></div>
+      <div class="mb-prs">1 PR · 3 files</div>
+      <div class="mb-time">∼37 min ago</div>
+    </div>
+    <!-- 3rd most recent -->
+    <div class="merge-block">
+      <div class="mb-pr">#116999</div>
+      <div class="mb-diff"><span class="add">+137</span>&nbsp;<span class="del">-4</span></div>
+      <div class="mb-prs">2 commits · 4 files</div>
+      <div class="mb-time">∼32 min ago</div>
+    </div>
+    <!-- 2nd most recent -->
+    <div class="merge-block">
+      <div class="mb-pr">#117000</div>
+      <div class="mb-diff"><span class="add">+81</span>&nbsp;<span class="del">-7</span></div>
+      <div class="mb-prs">1 PR · 3 files</div>
+      <div class="mb-time">∼31 min ago</div>
+    </div>
+    <!-- 1st most recent (newest) next to divider -->
+    <div class="merge-block">
+      <div class="mb-pr">#116933</div>
+      <div class="mb-diff"><span class="add">+131</span>&nbsp;<span class="del">-40</span></div>
+      <div class="mb-prs">1 PR · 3 files</div>
+      <div class="mb-time">∼28 min ago</div>
+    </div>
+  </div>
+
+  <div class="zone-divider"></div>
+
+  <div class="zone-right">
+    <!-- Right zone — empty for now -->
+  </div>
+</main>
 
 <script>
 function toggleDropdown() {
