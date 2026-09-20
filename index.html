@@ -208,6 +208,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
 .search-submit:hover { background: #7c4ddb; border-color: #7c4ddb; }
 .search-submit .ti { font-size: 16px; color: #fff; }
 
+/* ROWCSS:START */
 /* === MAIN CONTENT — mempool-style block row ===
    Geometry, skew angles and text sizes are copied from mempool.space source
    (frontend/src/app/components/blockchain-blocks + mempool-blocks).
@@ -314,17 +315,25 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
 .cube.p-blue .face .d .add { color: var(--green); }
 .cube.p-blue .face .d .del { color: #ff5c3d; }
 
+/* scope tag on its own small line, so the two description lines carry words */
+.face .g {
+  font-size: calc(0.078 * var(--block-size));
+  color: rgba(255, 255, 255, 0.72);
+  letter-spacing: 0.02em;
+  margin-top: calc(0.032 * var(--block-size));
+}
+
 /* two-line plain-language description of what the PR is */
 .face .t {
-  font-size: calc(0.084 * var(--block-size));
-  line-height: 1.32;
-  color: rgba(255, 255, 255, 0.96);
-  margin-top: calc(0.032 * var(--block-size));
+  font-size: calc(0.08 * var(--block-size));
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.97);
+  margin-top: calc(0.012 * var(--block-size));
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  padding: 0 2px;
+  padding: 0 1px;
 }
 .face .w { font-size: calc(0.104 * var(--block-size)); margin-top: calc(0.032 * var(--block-size)); color: rgba(255, 255, 255, 0.94); }
 .cube.p-green .face .w { color: #d8ffe4; }
@@ -373,6 +382,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
   border-right: 6px solid transparent;
   border-bottom: 9px solid #fff;
 }
+/* ROWCSS:END */
 </style>
 </head>
 <body>
@@ -446,15 +456,8 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
         <div class="face">
           <div class="n">#117653</div>
           <div class="d"><span class="add">+103</span> <span class="del">-2</span></div>
-          <div class="t">fix(desktop): externally-terminated renderer shows a recovery page instead of a blank window</div>
-          <div class="w">idle ~1 h</div>
-        </div>
-      </a>
-      <a class="cube p-green" href="https://github.com/NousResearch/hermes-agent/pull/117646" target="_blank" rel="noopener" title="#117646 fix(models): DeepSeek picker drops retired ids and labels V4.1 Flash (#117516, salvage #117525)">
-        <div class="face">
-          <div class="n">#117646</div>
-          <div class="d"><span class="add">+20</span> <span class="del">-2</span></div>
-          <div class="t">fix(models): DeepSeek picker drops retired ids and labels V4.1 Flash</div>
+          <div class="g">fix(desktop)</div>
+          <div class="t">externally-terminated renderer shows a recovery page instead of a blank window</div>
           <div class="w">idle ~1 h</div>
         </div>
       </a>
@@ -462,7 +465,8 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
         <div class="face">
           <div class="n">#117648</div>
           <div class="d"><span class="add">+44</span> <span class="del">-15</span></div>
-          <div class="t">fix(desktop): model pill names the xAI OAuth provider instead of its route id</div>
+          <div class="g">fix(desktop)</div>
+          <div class="t">model pill names the xAI OAuth provider instead of its route id</div>
           <div class="w">idle ~1 h</div>
         </div>
       </a>
@@ -470,7 +474,8 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
         <div class="face">
           <div class="n">#117650</div>
           <div class="d"><span class="add">+65</span> <span class="del">-21</span></div>
-          <div class="t">fix(desktop): cron editor keeps custom:&lt;name&gt; provider pins intact</div>
+          <div class="g">fix(desktop)</div>
+          <div class="t">cron editor keeps custom:&lt;name&gt; provider pins intact</div>
           <div class="w">idle ~1 h</div>
         </div>
       </a>
@@ -478,7 +483,17 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
         <div class="face">
           <div class="n">#117651</div>
           <div class="d"><span class="add">+132</span> <span class="del">-3</span></div>
-          <div class="t">fix(desktop): removing or re-pointing a connection forgets its cached roster and identity</div>
+          <div class="g">fix(desktop)</div>
+          <div class="t">removing or re-pointing a connection forgets its cached roster and identity</div>
+          <div class="w">idle ~1 h</div>
+        </div>
+      </a>
+      <a class="cube p-green" href="https://github.com/NousResearch/hermes-agent/pull/117646" target="_blank" rel="noopener" title="#117646 fix(models): DeepSeek picker drops retired ids and labels V4.1 Flash (#117516, salvage #117525)">
+        <div class="face">
+          <div class="n">#117646</div>
+          <div class="d"><span class="add">+20</span> <span class="del">-2</span></div>
+          <div class="g">fix(models)</div>
+          <div class="t">DeepSeek picker drops retired ids and labels V4.1 Flash</div>
           <div class="w">idle ~1 h</div>
         </div>
       </a>
@@ -495,8 +510,9 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
         <div class="face">
           <div class="n">#117611</div>
           <div class="d"><span class="add">+162</span> <span class="del">-18</span></div>
-          <div class="t">fix(cli): a provider quota 429 during credential resolution reads as quota, not auth failure, a…</div>
-          <div class="w">merged ~2 min</div>
+          <div class="g">fix(cli)</div>
+          <div class="t">a provider quota 429 during credential resolution reads as quota, not auth failure, and Kanban…</div>
+          <div class="w">merged ~4 min</div>
         </div>
       </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -506,8 +522,9 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
         <div class="face">
           <div class="n">#117577</div>
           <div class="d"><span class="add">+79</span> <span class="del">-1</span></div>
-          <div class="t">fix(skills): Python open()/read_text() of credential files lands critical in plugin admission</div>
-          <div class="w">merged ~4 min</div>
+          <div class="g">fix(skills)</div>
+          <div class="t">Python open()/read_text() of credential files lands critical in plugin admission</div>
+          <div class="w">merged ~6 min</div>
         </div>
       </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -517,8 +534,9 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
         <div class="face">
           <div class="n">#117607</div>
           <div class="d"><span class="add">+39</span> <span class="del">-3</span></div>
-          <div class="t">fix(agent): promoted-reasoning stall guard catches Thai plan tails instead of leaking them to t…</div>
-          <div class="w">merged ~5 min</div>
+          <div class="g">fix(agent)</div>
+          <div class="t">promoted-reasoning stall guard catches Thai plan tails instead of leaking them to the user</div>
+          <div class="w">merged ~6 min</div>
         </div>
       </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -528,8 +546,9 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
         <div class="face">
           <div class="n">#117618</div>
           <div class="d"><span class="add">+124</span> <span class="del">-3</span></div>
-          <div class="t">fix(desktop): Desktop updater stops copying state.db when updates.pre_update_backup is off</div>
-          <div class="w">merged ~6 min</div>
+          <div class="g">fix(desktop)</div>
+          <div class="t">Desktop updater stops copying state.db when updates.pre_update_backup is off</div>
+          <div class="w">merged ~7 min</div>
         </div>
       </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -539,8 +558,9 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
         <div class="face">
           <div class="n">#117672</div>
           <div class="d"><span class="add">+5</span> <span class="del">-4</span></div>
-          <div class="t">chore(catalog): bump jev-approvals to v0.3.0</div>
-          <div class="w">merged ~16 min</div>
+          <div class="g">chore(catalog)</div>
+          <div class="t">bump jev-approvals to v0.3.0</div>
+          <div class="w">merged ~17 min</div>
         </div>
       </a>
         <div class="miner"><a class="" href="https://github.com/anpicasso" target="_blank" rel="noopener" title="author: anpicasso">anpicasso</a></div>

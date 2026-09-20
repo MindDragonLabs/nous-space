@@ -24,6 +24,8 @@ INDEX = ROOT / "index.html"
 
 START = "<!-- BLOCKROW:START -->"
 END = "<!-- BLOCKROW:END -->"
+CSS_START = "/* ROWCSS:START */"
+CSS_END = "/* ROWCSS:END */"
 N_PER_SIDE = 5
 TITLE_MAX = 96
 
@@ -41,6 +43,22 @@ def display_title(title: str) -> str:
         text = stripped
 
 
+TAG_RE = re.compile(r"^([a-z]+(?:\([^)]+\))?!?):\s*(.+)$", re.S)
+
+
+def split_title(title: str) -> tuple[str, str]:
+    """('fix(desktop)', 'removing or re-pointing a connection ...').
+
+    The scope tag gets its own tiny line so the two description lines carry real
+    words instead of spending a third of the width on 'fix(desktop):'.
+    """
+    text = display_title(title)
+    m = TAG_RE.match(text)
+    if not m:
+        return "", text
+    return m.group(1), m.group(2)
+
+
 def clip(text: str, limit: int = TITLE_MAX) -> str:
     text = " ".join((text or "").split())
     return text if len(text) <= limit else text[: limit - 1].rstrip() + "\u2026"
@@ -53,13 +71,15 @@ def esc(text: str) -> str:
 def cube(item: dict, kind: str) -> str:
     """kind: p-green (awaiting merge) | p-blue (merged to main)"""
     n = item["number"]
+    tag, desc = split_title(item["title"])
+    tag_html = f'\n          <div class="g">{esc(tag)}</div>' if tag else ""
     tail = (f'idle {esc(item["ago"])}' if kind == "p-green"
             else f'merged {esc(item["ago"])}')
     return f"""      <a class="cube {kind}" href="{item['url']}" target="_blank" rel="noopener" title="#{n} {esc(item['title'])}">
         <div class="face">
           <div class="n">#{n}</div>
-          <div class="d"><span class="add">+{item['additions']}</span> <span class="del">-{item['deletions']}</span></div>
-          <div class="t">{esc(clip(display_title(item['title'])))}</div>
+          <div class="d"><span class="add">+{item['additions']}</span> <span class="del">-{item['deletions']}</span></div>{tag_html}
+          <div class="t">{esc(clip(desc))}</div>
           <div class="w">{tail}</div>
         </div>
       </a>"""
@@ -103,8 +123,15 @@ def render_row(state: dict) -> str:
 def main() -> int:
     state = json.loads(STATE.read_text(encoding="utf-8"))
     page = INDEX.read_text(encoding="utf-8")
-    if START not in page or END not in page:
-        raise SystemExit(f"ERROR: {START} / {END} markers missing from index.html")
+    for marker in (START, END, CSS_START, CSS_END):
+        if marker not in page:
+            raise SystemExit(f"ERROR: marker {marker} missing from index.html")
+
+    # row.css is the single source of truth for the row layout: re-inline it on
+    # every build so editing the CSS alone is enough to publish a change.
+    ci = page.index(CSS_START) + len(CSS_START)
+    cj = page.index(CSS_END)
+    page = page[:ci] + "\n" + (ROOT / "row.css").read_text(encoding="utf-8") + page[cj:]
 
     i = page.index(START) + len(START)
     j = page.index(END)

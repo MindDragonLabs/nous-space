@@ -104,17 +104,25 @@
 .cube.p-blue .face .d .add { color: var(--green); }
 .cube.p-blue .face .d .del { color: #ff5c3d; }
 
+/* scope tag on its own small line, so the two description lines carry words */
+.face .g {
+  font-size: calc(0.078 * var(--block-size));
+  color: rgba(255, 255, 255, 0.72);
+  letter-spacing: 0.02em;
+  margin-top: calc(0.032 * var(--block-size));
+}
+
 /* two-line plain-language description of what the PR is */
 .face .t {
-  font-size: calc(0.084 * var(--block-size));
-  line-height: 1.32;
-  color: rgba(255, 255, 255, 0.96);
-  margin-top: calc(0.032 * var(--block-size));
+  font-size: calc(0.08 * var(--block-size));
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.97);
+  margin-top: calc(0.012 * var(--block-size));
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  padding: 0 2px;
+  padding: 0 1px;
 }
 .face .w { font-size: calc(0.104 * var(--block-size)); margin-top: calc(0.032 * var(--block-size)); color: rgba(255, 255, 255, 0.94); }
 .cube.p-green .face .w { color: #d8ffe4; }
