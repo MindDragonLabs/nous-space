@@ -209,9 +209,10 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
 /* === MAIN CONTENT — isometric cube grid === */
 .main-content {
   min-height: calc(100vh - 58px);
-  padding: 14px 14px 0 14px;
+  padding: 80px 14px 0 14px;
   display: flex;
   gap: 24px;
+  align-items: flex-start;
 }
 
 /* Left zone — cube row, horizontal, top-justified */
@@ -315,13 +316,14 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
   text-align: center;
 }
 
-/* Divider line — mempool NOW column style */
+/* Divider line — spans cube area only */
 .zone-divider {
   width: 2px;
-  align-self: stretch;
+  height: calc(125px + 35px + 24px);
   background: linear-gradient(180deg, transparent, var(--nous-amber) 12%, var(--nous-amber) 88%, transparent);
   opacity: 0.55;
   flex-shrink: 0;
+  margin-top: 20px;
 }
 
 /* Right zone — placeholder */
