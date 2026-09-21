@@ -194,8 +194,8 @@
 }
 
 .dash-card {
-  flex: 1 1 460px;
-  max-width: 560px;
+  flex: 1 1 400px;
+  max-width: 520px;
   background: #171c2a;
   border: 1px solid rgba(255,255,255,.11);
   border-radius: 8px;

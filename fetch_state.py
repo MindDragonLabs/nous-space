@@ -258,6 +258,32 @@ def release_stats() -> dict:
     return {"releases": recent, "cadence_days": cadence, "latest": latest}
 
 
+def merge_rate() -> dict:
+    """Merged PR counts in recent windows for PRs/day velocity."""
+    now = dt.datetime.now(dt.UTC)
+    windows = [
+        ("7d", now - dt.timedelta(days=7)),
+        ("30d", now - dt.timedelta(days=30)),
+        ("90d", now - dt.timedelta(days=90)),
+    ]
+    rates = {}
+    for label, cutoff in windows:
+        ds = cutoff.strftime("%Y-%m-%d")
+        r = subprocess.run(
+            ["gh", "api",
+             f"search/issues?q=repo:{REPO}+is:pr+is:merged+base:{SOURCE_BRANCH}+merged:>={ds}"
+             "&per_page=1"],
+            capture_output=True, text=True)
+        if r.returncode == 0:
+            data = json.loads(r.stdout)
+            total = data.get("total_count", 0)
+            days = int(label[:-1])
+            rates[label] = {"count": total, "per_day": round(total / days, 1)}
+        else:
+            rates[label] = {"count": 0, "per_day": 0}
+    return rates
+
+
 def merge_velocity() -> dict:
     """Per-area merge velocity from last ~40 merges (hours)."""
     import re
@@ -319,6 +345,7 @@ def main() -> int:
         "backlog": backlog_stats(),
         "releases": release_stats(),
         "merge_velocity": merge_velocity(),
+        "merge_rate": merge_rate(),
     }
     OUT.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
     print(f"wrote {OUT.name}: {len(pending)} pending / {len(merged)} merged "

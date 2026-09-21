@@ -167,6 +167,38 @@ def backlog_panel(state: dict) -> str:
     </div>"""
 
 
+def merge_rate_panel(state: dict) -> str:
+    mr = state.get("merge_rate", {})
+    rows = ""
+    for period in ["7d", "30d", "90d"]:
+        if period in mr:
+            r = mr[period]
+            rows += f"""        <div class="stat-row">
+          <span class="stat-label">{period}</span>
+          <span class="stat-val">{r['per_day']} PR/day</span>
+          <span class="stat-dim">{r['count']} merged</span>
+        </div>"""
+
+    # merge speed by area (moved here from releases panel)
+    mv = state.get("merge_velocity", {})
+    velo_rows = ""
+    for area, v in list(mv.items())[:6]:
+        velo_rows += f"""          <div class="velo-row">
+            <span class="velo-area">{esc(area)}</span>
+            <span class="velo-h">{v['avg_hours']}h</span>
+            <span class="velo-n">({v['count']})</span>
+          </div>"""
+
+    return f"""    <div class="dash-card third">
+      <h3>PR Velocity</h3>
+{rows}
+      <div class="section-label">merge speed by area</div>
+      <div class="velo-list">
+{velo_rows}
+      </div>
+    </div>"""
+
+
 def releases_panel(state: dict) -> str:
     rl = state.get("releases", {})
     rels = rl.get("releases", [])
@@ -202,16 +234,6 @@ def releases_panel(state: dict) -> str:
         vshort = m.group(1) if m else ver
         dots += f'<span class="rel-dot" title="{esc(vshort)} ({esc(r["tag"])})"></span>'
 
-    # merge velocity
-    mv = state.get("merge_velocity", {})
-    velo_rows = ""
-    for area, v in list(mv.items())[:6]:
-        velo_rows += f"""          <div class="velo-row">
-            <span class="velo-area">{esc(area)}</span>
-            <span class="velo-h">{v['avg_hours']}h</span>
-            <span class="velo-n">({v['count']})</span>
-          </div>"""
-
     return f"""    <div class="dash-card right">
       <h3>Release Velocity</h3>
       {latest_html}
@@ -220,10 +242,6 @@ def releases_panel(state: dict) -> str:
       <div class="rel-dots">
         {dots}
       </div>
-      <div class="section-label">merge speed by area</div>
-      <div class="velo-list">
-{velo_rows}
-      </div>
     </div>"""
 
 
@@ -231,6 +249,7 @@ def render_panels(state: dict) -> str:
     return f"""  <div class="dash-row">
 {backlog_panel(state)}
 {releases_panel(state)}
+{merge_rate_panel(state)}
   </div>"""
 
 
