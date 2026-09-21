@@ -29,7 +29,7 @@ PANELS_END = "<!-- PANELS:END -->"
 CSS_START = "/* ROWCSS:START */"
 CSS_END = "/* ROWCSS:END */"
 N_PER_SIDE = 5
-N_MERGED_SHOW = 15  # enough blocks to make the scrollable strip work
+N_MERGED_SHOW = 30  # enough blocks to overflow any viewport width
 TITLE_MAX = 96
 
 # trailing "(#12345, salvage #67890)" cross-references drop for display

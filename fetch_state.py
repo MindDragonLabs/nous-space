@@ -26,7 +26,7 @@ REPO = "NousResearch/hermes-agent"
 SOURCE_BRANCH = "main"
 MAINTAINER = "teknium1"
 N_PENDING = 6
-N_MERGED = 20  # 15 for the strip + margin for the 5 closest to the divider
+N_MERGED = 35  # enough to overflow any screen and make the strip scrollable
 OPEN_LIMIT = 30
 
 ROOT = pathlib.Path(__file__).resolve().parent
