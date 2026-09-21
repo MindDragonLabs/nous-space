@@ -1,31 +1,61 @@
-/* === MAIN CONTENT — mempool-style block row ===
+/* === MAIN CONTENT — mempool-style block row + below-row panels ===
    Geometry, skew angles and text sizes are copied from mempool.space source
    (frontend/src/app/components/blockchain-blocks + mempool-blocks).
-   Left cluster (green, vertical gradient) = open PRs awaiting merge.
-   Right cluster (NOUS-blue vertical gradient) = already merged to main.
-   The name under each merged block follows mempool's .badge.miner-name box. */
+
+   The strip is ONE continuous scrollable row: green pending cubes, dashed
+   divider, blue merged cubes.  Drag left to see PR history.  The panels
+   below show backlog stats (left) and release velocity (right).
+*/
 .main-content {
   min-height: calc(100vh - 58px);
   padding: 0 14px;
 }
 
-.blockrow {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 26px;
+/* ── scrollable strip ──────────────────────────────────────────────────── */
+.stripscroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.15) transparent;
   padding: 88px 10px 40px 34px;
-  /* available width / (2 clusters x per-cube cost); 125px is the mempool ceiling */
-  --block-size: clamp(92px, calc((100vw - 152px) / 12.4), 125px);
+  --block-size: 125px;
   --block-gap: calc(0.24 * var(--block-size));
 }
+.stripscroll::-webkit-scrollbar { height: 4px; }
+.stripscroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 2px; }
 
-.col { display: flex; flex-direction: column; gap: 0; flex: 0 0 auto; }
+.strip {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--block-gap);
+  /* enough width for all blocks: (N_pending + N_merged) * (block + gap) + divider */
+  width: max-content;
+}
 
-.cluster { display: flex; align-items: flex-start; gap: var(--block-gap); }
-.wrap { display: flex; flex-direction: column; align-items: stretch; }
+/* ── PR number pill above the cube ─────────────────────────────────────── */
+.wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
 
-/* ---- cube: mempool projected-block geometry, 3D faces ---- */
+.p-num {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 2px 7px 3px;
+  border-radius: 3px 3px 0 0;
+  margin-bottom: -1px;
+  white-space: nowrap;
+}
+.p-num-green { background: #0a2415; color: #4ade80; border: 1px solid rgba(74,222,128,.3); border-bottom: none; }
+.p-num-blue  { background: #061e2c; color: var(--nous-electric); border: 1px solid rgba(0,174,239,.3); border-bottom: none; }
+
+/* ── cube: mempool projected-block geometry, 3D faces ──────────────────── */
 .cube {
   position: relative;
   width: var(--block-size);
@@ -38,7 +68,7 @@
 .cube:hover { transform: translateY(-4px); }
 .cube:focus-visible { outline: 2px solid var(--nous-electric); outline-offset: 3px; }
 
-.cube::before {                        /* side face — skewY(50deg) */
+.cube::before {
   content: '';
   width: calc(0.16 * var(--block-size));
   height: var(--block-size);
@@ -50,7 +80,7 @@
   transform: skewY(50deg);
   transform-origin: top;
 }
-.cube::after {                         /* top face — skew(40deg) */
+.cube::after {
   content: '';
   width: var(--block-size);
   height: calc(0.192 * var(--block-size));
@@ -65,7 +95,6 @@
 .cube.p-green { --face-side: #0a2415; --face-top: #0f3a22; }
 .cube.p-blue  { --face-side: #061e2c; --face-top: #0a3349; }
 
-/* front faces: one clean vertical gradient each, no bands */
 .cube.p-green .face {
   background: linear-gradient(180deg, #04371c 0%, #0b6b34 52%, #16a355 100%);
 }
@@ -87,78 +116,147 @@
   font-family: var(--mono);
   overflow: hidden;
 }
-.face .n { font-size: calc(0.128 * var(--block-size)); font-weight: 700; color: #fff; line-height: 1.1; }
-.face .d { font-size: calc(0.096 * var(--block-size)); margin-top: calc(0.02 * var(--block-size)); }
+.face .d { font-size: calc(0.096 * var(--block-size)); margin-top: calc(0.012 * var(--block-size)); }
 .face .d .add, .face .d .del { font-weight: 600; }
 .cube.p-green .face .d .add { color: #d8ffe4; }
 .cube.p-green .face .d .del { color: #ffc6bf; }
 .cube.p-blue .face .d .add { color: var(--green); }
 .cube.p-blue .face .d .del { color: #ff5c3d; }
 
-/* scope tag on its own small line, so the two description lines carry words */
 .face .g {
   font-size: calc(0.078 * var(--block-size));
   color: rgba(255, 255, 255, 0.72);
   letter-spacing: 0.02em;
-  margin-top: calc(0.032 * var(--block-size));
+  margin-top: calc(0.024 * var(--block-size));
 }
-
-/* two-line plain-language description of what the PR is */
 .face .t {
   font-size: calc(0.08 * var(--block-size));
   line-height: 1.3;
   color: rgba(255, 255, 255, 0.97);
-  margin-top: calc(0.012 * var(--block-size));
+  margin-top: calc(0.008 * var(--block-size));
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   padding: 0 1px;
 }
-.face .w { font-size: calc(0.104 * var(--block-size)); margin-top: calc(0.032 * var(--block-size)); color: rgba(255, 255, 255, 0.94); }
+.face .w {
+  font-size: calc(0.104 * var(--block-size));
+  margin-top: calc(0.024 * var(--block-size));
+  color: rgba(255, 255, 255, 0.94);
+}
 .cube.p-green .face .w { color: #d8ffe4; }
-.cube.p-blue .face .w { color: #d8f4ff; }
+.cube.p-blue  .face .w { color: #d8f4ff; }
 
-/* ---- name under a merged block: mempool's .badge.miner-name box ---- */
+/* ── miner name box ────────────────────────────────────────────────────── */
 .miner { margin-top: calc(0.152 * var(--block-size)); max-width: var(--block-size); }
 .miner a {
-  display: block;
-  padding: 5px 7px;
-  border-radius: 4px;
-  background: #171c2a;
-  border: 1px solid rgba(255, 255, 255, 0.11);
-  color: #fff;
-  font-family: var(--mono);
-  font-size: calc(0.1 * var(--block-size));
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: block; padding: 5px 7px; border-radius: 4px;
+  background: #171c2a; border: 1px solid rgba(255, 255, 255, 0.11);
+  color: #fff; font-family: var(--mono); font-size: calc(0.1 * var(--block-size));
+  font-weight: 600; letter-spacing: 0.02em; text-align: center;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   text-decoration: none;
 }
 .miner a.mine { color: var(--nous-electric); border-color: rgba(0, 174, 239, 0.5); }
 
-/* ---- divider: dashed line + up arrow (mempool #arrow-up) ---- */
+/* ── divider ───────────────────────────────────────────────────────────── */
 .split {
   flex: 0 0 auto;
   align-self: center;
   width: 2px;
   height: calc(1.6 * var(--block-size));
   background-image: repeating-linear-gradient(180deg,
-      rgba(255, 255, 255, 0.42) 0 6px, rgba(0, 0, 0, 0) 6px 12px);
+      rgba(255,255,255,.42) 0 6px, rgba(0,0,0,0) 6px 12px);
   position: relative;
-  margin-top: calc(-0.25 * var(--block-size));
+  margin-top: calc(0.2 * var(--block-size));
 }
 .split::after {
-  content: '';
-  position: absolute;
-  left: -5px;
+  content: ''; position: absolute; left: -5px;
   bottom: calc(-0.16 * var(--block-size));
-  width: 0;
-  height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
+  width: 0; height: 0;
+  border-left: 6px solid transparent; border-right: 6px solid transparent;
   border-bottom: 9px solid #fff;
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   BELOW-ROW DASHBOARD
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.dash-row {
+  display: flex;
+  gap: 26px;
+  justify-content: center;
+  padding: 24px 10px 60px 34px;
+  flex-wrap: wrap;
+}
+
+.dash-card {
+  flex: 1 1 460px;
+  max-width: 560px;
+  background: #171c2a;
+  border: 1px solid rgba(255,255,255,.11);
+  border-radius: 8px;
+  padding: 20px 22px 22px;
+  font-family: var(--mono);
+}
+
+.dash-card h3 {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin: 0 0 14px;
+  color: rgba(255,255,255,.72);
+}
+.dash-card.left  h3 { color: #4ade80; }
+.dash-card.right h3 { color: var(--nous-electric); }
+
+.big-num { font-size: 42px; font-weight: 700; color: #fff; line-height: 1; }
+.big-sub { font-size: 11px; color: rgba(255,255,255,.52); margin: 2px 0 14px; }
+
+.section-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.42);
+  margin: 16px 0 8px;
+}
+
+.stat-row { display: flex; align-items: baseline; gap: 8px; margin: 4px 0; }
+.stat-label { font-size: 11px; color: rgba(255,255,255,.52); }
+.stat-val { font-size: 13px; font-weight: 700; color: #fff; text-decoration: none; }
+.stat-val:hover { color: var(--nous-electric); }
+.stat-dim { font-size: 10px; color: rgba(255,255,255,.36); }
+
+/* age histogram bars */
+.bar-chart { margin: 4px 0; }
+.bar-row { display: flex; align-items: center; gap: 8px; margin: 3px 0; }
+.bar-label { font-size: 10px; color: rgba(255,255,255,.52); width: 44px; text-align: right; flex-shrink: 0; }
+.bar-fill { height: 8px; border-radius: 3px; background: var(--nous-blue); min-width: 2px; transition: width .4s ease; }
+.bar-count { font-size: 10px; color: rgba(255,255,255,.72); width: 40px; }
+
+/* area pill cloud */
+.area-cloud { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.area-pill {
+  display: inline-block; padding: 3px 9px; border-radius: 4px;
+  background: rgba(0,174,239,.12); border: 1px solid rgba(0,174,239,.22);
+  color: var(--nous-electric); font-size: 10px; font-weight: 600;
+  letter-spacing: 0.02em; white-space: nowrap;
+}
+
+/* release timeline dots */
+.rel-dots { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0; }
+.rel-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--nous-electric); opacity: .6;
+}
+.rel-dot:nth-child(1) { width: 14px; height: 14px; opacity: 1; }
+
+/* merge velocity rows */
+.velo-list { margin: 4px 0; }
+.velo-row { display: flex; align-items: baseline; gap: 10px; margin: 3px 0; }
+.velo-area { font-size: 10px; color: rgba(255,255,255,.72); width: 130px; font-weight: 600; }
+.velo-h    { font-size: 12px; color: var(--nous-electric); font-weight: 700; width: 36px; text-align: right; }
+.velo-n    { font-size: 10px; color: rgba(255,255,255,.36); }
