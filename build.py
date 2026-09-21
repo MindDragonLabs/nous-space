@@ -175,9 +175,16 @@ def releases_panel(state: dict) -> str:
 
     latest_html = ""
     if latest:
+        ver = latest.get("version", "") or latest.get("tag", "")
+        # Extract version like "Hermes Agent v0.21.3 (v2026.9.14)" → show "v0.21.3"
+        import re as _re
+        m = _re.search(r'(v\d+\.\d+\.\d+)', ver)
+        display = m.group(1) if m else ver
+        date_tag = latest.get("tag", "")
         latest_html = f"""        <div class="stat-row">
           <span class="stat-label">latest</span>
-          <span class="stat-val">{esc(latest['tagName'])}</span>
+          <span class="stat-val">{esc(display)}</span>
+          <span class="stat-dim">{esc(date_tag)}</span>
         </div>"""
 
     cadence_html = f"""        <div class="stat-row">
@@ -189,7 +196,11 @@ def releases_panel(state: dict) -> str:
     # release timeline dots
     dots = ""
     for r in rels[:12]:
-        dots += f'<span class="rel-dot" title="{esc(r["tag"])} ({esc(r["date"])})"></span>'
+        ver = r.get("version", "") or r.get("tag", "")
+        import re as _re
+        m = _re.search(r'(v\d+\.\d+\.\d+)', ver)
+        vshort = m.group(1) if m else ver
+        dots += f'<span class="rel-dot" title="{esc(vshort)} ({esc(r["tag"])})"></span>'
 
     # merge velocity
     mv = state.get("merge_velocity", {})

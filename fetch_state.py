@@ -235,7 +235,7 @@ def release_stats() -> dict:
     """Recent releases and cadence."""
     r = subprocess.run(
         ["gh", "release", "list", "-R", REPO, "--limit", "40",
-         "--json", "tagName,publishedAt"],
+         "--json", "tagName,name,publishedAt"],
         capture_output=True, text=True)
     if r.returncode != 0:
         return {"releases": [], "cadence_days": None, "error": r.stderr.strip()[:200]}
@@ -246,11 +246,16 @@ def release_stats() -> dict:
         pub = parse(rel["publishedAt"])
         days_ago = (now - pub).days
         if days_ago <= 90:
-            recent.append({"tag": rel["tagName"], "date": rel["publishedAt"][:10],
+            # name field: "Hermes Agent v0.21.3 (v2026.9.14)"
+            # extract version like "v0.21.3"
+            name = rel.get("name") or ""
+            recent.append({"tag": rel["tagName"],
+                           "version": name,
+                           "date": rel["publishedAt"][:10],
                            "days_ago": days_ago})
     cadence = round(90 / len(recent), 1) if recent else None
-    return {"releases": recent, "cadence_days": cadence,
-            "latest": rels[0] if rels else None}
+    latest = recent[0] if recent else None
+    return {"releases": recent, "cadence_days": cadence, "latest": latest}
 
 
 def merge_velocity() -> dict:
