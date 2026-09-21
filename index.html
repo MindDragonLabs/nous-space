@@ -209,34 +209,64 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
 .search-submit .ti { font-size: 16px; color: #fff; }
 
 /* ROWCSS:START */
-/* === MAIN CONTENT — mempool-style block row ===
+/* === MAIN CONTENT — mempool-style block row + below-row panels ===
    Geometry, skew angles and text sizes are copied from mempool.space source
    (frontend/src/app/components/blockchain-blocks + mempool-blocks).
-   Left cluster (green, vertical gradient) = open PRs awaiting merge.
-   Right cluster (NOUS-blue vertical gradient) = already merged to main.
-   The name under each merged block follows mempool's .badge.miner-name box. */
+
+   The strip is ONE continuous scrollable row: green pending cubes, dashed
+   divider, blue merged cubes.  Drag left to see PR history.  The panels
+   below show backlog stats (left) and release velocity (right).
+*/
 .main-content {
   min-height: calc(100vh - 58px);
   padding: 0 14px;
 }
 
-.blockrow {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 26px;
+/* ── scrollable strip ──────────────────────────────────────────────────── */
+.stripscroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.15) transparent;
   padding: 88px 10px 40px 34px;
-  /* available width / (2 clusters x per-cube cost); 125px is the mempool ceiling */
-  --block-size: clamp(92px, calc((100vw - 152px) / 12.4), 125px);
+  --block-size: 125px;
   --block-gap: calc(0.24 * var(--block-size));
 }
+.stripscroll::-webkit-scrollbar { height: 4px; }
+.stripscroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 2px; }
 
-.col { display: flex; flex-direction: column; gap: 0; flex: 0 0 auto; }
+.strip {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--block-gap);
+  /* enough width for all blocks: (N_pending + N_merged) * (block + gap) + divider */
+  width: max-content;
+}
 
-.cluster { display: flex; align-items: flex-start; gap: var(--block-gap); }
-.wrap { display: flex; flex-direction: column; align-items: stretch; }
+/* ── PR number pill above the cube ─────────────────────────────────────── */
+.wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
 
-/* ---- cube: mempool projected-block geometry, 3D faces ---- */
+.p-num {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 2px 7px 3px;
+  border-radius: 3px 3px 0 0;
+  margin-bottom: -1px;
+  white-space: nowrap;
+}
+.p-num-green { background: #0a2415; color: #4ade80; border: 1px solid rgba(74,222,128,.3); border-bottom: none; }
+.p-num-blue  { background: #061e2c; color: var(--nous-electric); border: 1px solid rgba(0,174,239,.3); border-bottom: none; }
+
+/* ── cube: mempool projected-block geometry, 3D faces ──────────────────── */
 .cube {
   position: relative;
   width: var(--block-size);
@@ -249,7 +279,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
 .cube:hover { transform: translateY(-4px); }
 .cube:focus-visible { outline: 2px solid var(--nous-electric); outline-offset: 3px; }
 
-.cube::before {                        /* side face — skewY(50deg) */
+.cube::before {
   content: '';
   width: calc(0.16 * var(--block-size));
   height: var(--block-size);
@@ -261,7 +291,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
   transform: skewY(50deg);
   transform-origin: top;
 }
-.cube::after {                         /* top face — skew(40deg) */
+.cube::after {
   content: '';
   width: var(--block-size);
   height: calc(0.192 * var(--block-size));
@@ -276,7 +306,6 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
 .cube.p-green { --face-side: #0a2415; --face-top: #0f3a22; }
 .cube.p-blue  { --face-side: #061e2c; --face-top: #0a3349; }
 
-/* front faces: one clean vertical gradient each, no bands */
 .cube.p-green .face {
   background: linear-gradient(180deg, #04371c 0%, #0b6b34 52%, #16a355 100%);
 }
@@ -298,82 +327,150 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
   font-family: var(--mono);
   overflow: hidden;
 }
-.face .n { font-size: calc(0.128 * var(--block-size)); font-weight: 700; color: #fff; line-height: 1.1; }
-.face .d { font-size: calc(0.096 * var(--block-size)); margin-top: calc(0.02 * var(--block-size)); }
+.face .d { font-size: calc(0.096 * var(--block-size)); margin-top: calc(0.012 * var(--block-size)); }
 .face .d .add, .face .d .del { font-weight: 600; }
 .cube.p-green .face .d .add { color: #d8ffe4; }
 .cube.p-green .face .d .del { color: #ffc6bf; }
 .cube.p-blue .face .d .add { color: var(--green); }
 .cube.p-blue .face .d .del { color: #ff5c3d; }
 
-/* scope tag on its own small line, so the two description lines carry words */
 .face .g {
   font-size: calc(0.078 * var(--block-size));
   color: rgba(255, 255, 255, 0.72);
   letter-spacing: 0.02em;
-  margin-top: calc(0.032 * var(--block-size));
+  margin-top: calc(0.024 * var(--block-size));
 }
-
-/* two-line plain-language description of what the PR is */
 .face .t {
   font-size: calc(0.08 * var(--block-size));
   line-height: 1.3;
   color: rgba(255, 255, 255, 0.97);
-  margin-top: calc(0.012 * var(--block-size));
+  margin-top: calc(0.008 * var(--block-size));
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   padding: 0 1px;
 }
-.face .w { font-size: calc(0.104 * var(--block-size)); margin-top: calc(0.032 * var(--block-size)); color: rgba(255, 255, 255, 0.94); }
+.face .w {
+  font-size: calc(0.104 * var(--block-size));
+  margin-top: calc(0.024 * var(--block-size));
+  color: rgba(255, 255, 255, 0.94);
+}
 .cube.p-green .face .w { color: #d8ffe4; }
-.cube.p-blue .face .w { color: #d8f4ff; }
+.cube.p-blue  .face .w { color: #d8f4ff; }
 
-/* ---- name under a merged block: mempool's .badge.miner-name box ---- */
+/* ── miner name box ────────────────────────────────────────────────────── */
 .miner { margin-top: calc(0.152 * var(--block-size)); max-width: var(--block-size); }
 .miner a {
-  display: block;
-  padding: 5px 7px;
-  border-radius: 4px;
-  background: #171c2a;
-  border: 1px solid rgba(255, 255, 255, 0.11);
-  color: #fff;
-  font-family: var(--mono);
-  font-size: calc(0.1 * var(--block-size));
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: block; padding: 5px 7px; border-radius: 4px;
+  background: #171c2a; border: 1px solid rgba(255, 255, 255, 0.11);
+  color: #fff; font-family: var(--mono); font-size: calc(0.1 * var(--block-size));
+  font-weight: 600; letter-spacing: 0.02em; text-align: center;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   text-decoration: none;
 }
 .miner a.mine { color: var(--nous-electric); border-color: rgba(0, 174, 239, 0.5); }
 
-/* ---- divider: dashed line + up arrow (mempool #arrow-up) ---- */
+/* ── divider ───────────────────────────────────────────────────────────── */
 .split {
   flex: 0 0 auto;
   align-self: center;
   width: 2px;
   height: calc(1.6 * var(--block-size));
   background-image: repeating-linear-gradient(180deg,
-      rgba(255, 255, 255, 0.42) 0 6px, rgba(0, 0, 0, 0) 6px 12px);
+      rgba(255,255,255,.42) 0 6px, rgba(0,0,0,0) 6px 12px);
   position: relative;
-  margin-top: calc(-0.25 * var(--block-size));
+  margin-top: calc(0.2 * var(--block-size));
 }
 .split::after {
-  content: '';
-  position: absolute;
-  left: -5px;
+  content: ''; position: absolute; left: -5px;
   bottom: calc(-0.16 * var(--block-size));
-  width: 0;
-  height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
+  width: 0; height: 0;
+  border-left: 6px solid transparent; border-right: 6px solid transparent;
   border-bottom: 9px solid #fff;
 }
-/* ROWCSS:END */
+
+/* ═════════════════════════════════════════════════════════════════════════
+   BELOW-ROW DASHBOARD
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.dash-row {
+  display: flex;
+  gap: 26px;
+  justify-content: center;
+  padding: 24px 10px 60px 34px;
+  flex-wrap: wrap;
+}
+
+.dash-card {
+  flex: 1 1 460px;
+  max-width: 560px;
+  background: #171c2a;
+  border: 1px solid rgba(255,255,255,.11);
+  border-radius: 8px;
+  padding: 20px 22px 22px;
+  font-family: var(--mono);
+}
+
+.dash-card h3 {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin: 0 0 14px;
+  color: rgba(255,255,255,.72);
+}
+.dash-card.left  h3 { color: #4ade80; }
+.dash-card.right h3 { color: var(--nous-electric); }
+
+.big-num { font-size: 42px; font-weight: 700; color: #fff; line-height: 1; }
+.big-sub { font-size: 11px; color: rgba(255,255,255,.52); margin: 2px 0 14px; }
+
+.section-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.42);
+  margin: 16px 0 8px;
+}
+
+.stat-row { display: flex; align-items: baseline; gap: 8px; margin: 4px 0; }
+.stat-label { font-size: 11px; color: rgba(255,255,255,.52); }
+.stat-val { font-size: 13px; font-weight: 700; color: #fff; text-decoration: none; }
+.stat-val:hover { color: var(--nous-electric); }
+.stat-dim { font-size: 10px; color: rgba(255,255,255,.36); }
+
+/* age histogram bars */
+.bar-chart { margin: 4px 0; }
+.bar-row { display: flex; align-items: center; gap: 8px; margin: 3px 0; }
+.bar-label { font-size: 10px; color: rgba(255,255,255,.52); width: 44px; text-align: right; flex-shrink: 0; }
+.bar-fill { height: 8px; border-radius: 3px; background: var(--nous-blue); min-width: 2px; transition: width .4s ease; }
+.bar-count { font-size: 10px; color: rgba(255,255,255,.72); width: 40px; }
+
+/* area pill cloud */
+.area-cloud { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.area-pill {
+  display: inline-block; padding: 3px 9px; border-radius: 4px;
+  background: rgba(0,174,239,.12); border: 1px solid rgba(0,174,239,.22);
+  color: var(--nous-electric); font-size: 10px; font-weight: 600;
+  letter-spacing: 0.02em; white-space: nowrap;
+}
+
+/* release timeline dots */
+.rel-dots { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0; }
+.rel-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--nous-electric); opacity: .6;
+}
+.rel-dot:nth-child(1) { width: 14px; height: 14px; opacity: 1; }
+
+/* merge velocity rows */
+.velo-list { margin: 4px 0; }
+.velo-row { display: flex; align-items: baseline; gap: 10px; margin: 3px 0; }
+.velo-area { font-size: 10px; color: rgba(255,255,255,.72); width: 130px; font-weight: 600; }
+.velo-h    { font-size: 12px; color: var(--nous-electric); font-weight: 700; width: 36px; text-align: right; }
+.velo-n    { font-size: 10px; color: rgba(255,255,255,.36); }/* ROWCSS:END */
 </style>
 </head>
 <body>
@@ -439,125 +536,194 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
 
 <main class="main-content">
 <!-- BLOCKROW:START -->
-  <div class="blockrow">
-    <div class="col pending">
-      <div class="cluster">
-      <a class="cube p-green" href="https://github.com/NousResearch/hermes-agent/pull/117735" target="_blank" rel="noopener" title="#117735 fix(gateway): long-message splits no longer tear emoji sequences and accented letters apart (port openclaw#151959)">
-        <div class="face">
-          <div class="n">#117735</div>
-          <div class="d"><span class="add">+80</span> <span class="del">-2</span></div>
+  <div class="stripscroll">
+    <div class="strip">
+            <div class="wrap">
+        <span class="p-num p-num-green">#117735</span>
+        <a class="cube p-green" href="https://github.com/NousResearch/hermes-agent/pull/117735" target="_blank" rel="noopener" title="#117735 fix(gateway): long-message splits no longer tear emoji sequences and accented letters apart (port openclaw#151959)">
+          <div class="face">
+            <div class="d"><span class="add">+80</span> <span class="del">-2</span></div>
           <div class="g">fix(gateway)</div>
-          <div class="t">long-message splits no longer tear emoji sequences and accented letters apart</div>
-          <div class="w">idle ~1 h</div>
-        </div>
-      </a>
-      <a class="cube p-green" href="https://github.com/NousResearch/hermes-agent/pull/117732" target="_blank" rel="noopener" title="#117732 fix: LLM JSON replies with trailing prose or nested objects parse in delegate_task, goal judge and Kanban specify (salvage #116462)">
-        <div class="face">
-          <div class="n">#117732</div>
-          <div class="d"><span class="add">+125</span> <span class="del">-29</span></div>
+            <div class="t">long-message splits no longer tear emoji sequences and accented letters apart</div>
+            <div class="w">idle ~1 h</div>
+          </div>
+        </a>
+      </div>
+      <div class="wrap">
+        <span class="p-num p-num-green">#117732</span>
+        <a class="cube p-green" href="https://github.com/NousResearch/hermes-agent/pull/117732" target="_blank" rel="noopener" title="#117732 fix: LLM JSON replies with trailing prose or nested objects parse in delegate_task, goal judge and Kanban specify (salvage #116462)">
+          <div class="face">
+            <div class="d"><span class="add">+125</span> <span class="del">-29</span></div>
           <div class="g">fix</div>
-          <div class="t">LLM JSON replies with trailing prose or nested objects parse in delegate_task, goal judge and K…</div>
-          <div class="w">idle ~1 h</div>
-        </div>
-      </a>
-      <a class="cube p-green" href="https://github.com/NousResearch/hermes-agent/pull/117729" target="_blank" rel="noopener" title="#117729 fix(bedrock): tool-result images reach the model as Converse image blocks (#55134, salvage #55135)">
-        <div class="face">
-          <div class="n">#117729</div>
-          <div class="d"><span class="add">+79</span> <span class="del">-2</span></div>
+            <div class="t">LLM JSON replies with trailing prose or nested objects parse in delegate_task, goal judge and K…</div>
+            <div class="w">idle ~2 h</div>
+          </div>
+        </a>
+      </div>
+      <div class="wrap">
+        <span class="p-num p-num-green">#117729</span>
+        <a class="cube p-green" href="https://github.com/NousResearch/hermes-agent/pull/117729" target="_blank" rel="noopener" title="#117729 fix(bedrock): tool-result images reach the model as Converse image blocks (#55134, salvage #55135)">
+          <div class="face">
+            <div class="d"><span class="add">+79</span> <span class="del">-2</span></div>
           <div class="g">fix(bedrock)</div>
-          <div class="t">tool-result images reach the model as Converse image blocks</div>
-          <div class="w">idle ~2 h</div>
-        </div>
-      </a>
-      <a class="cube p-green" href="https://github.com/NousResearch/hermes-agent/pull/117716" target="_blank" rel="noopener" title="#117716 fix(config): saved .env value no longer shadowed by stale duplicate lines (#8270, salvage #20100)">
-        <div class="face">
-          <div class="n">#117716</div>
-          <div class="d"><span class="add">+39</span> <span class="del">-3</span></div>
+            <div class="t">tool-result images reach the model as Converse image blocks</div>
+            <div class="w">idle ~2 h</div>
+          </div>
+        </a>
+      </div>
+      <div class="wrap">
+        <span class="p-num p-num-green">#117716</span>
+        <a class="cube p-green" href="https://github.com/NousResearch/hermes-agent/pull/117716" target="_blank" rel="noopener" title="#117716 fix(config): saved .env value no longer shadowed by stale duplicate lines (#8270, salvage #20100)">
+          <div class="face">
+            <div class="d"><span class="add">+39</span> <span class="del">-3</span></div>
           <div class="g">fix(config)</div>
-          <div class="t">saved .env value no longer shadowed by stale duplicate lines</div>
-          <div class="w">idle ~2 h</div>
-        </div>
-      </a>
-      <a class="cube p-green" href="https://github.com/NousResearch/hermes-agent/pull/117598" target="_blank" rel="noopener" title="#117598 fix(terminal): embedded agent hosts can opt into per-worker cgroup scopes; timeout schema says it does not bound background commands (#116936, salvage #117020)">
-        <div class="face">
-          <div class="n">#117598</div>
-          <div class="d"><span class="add">+371</span> <span class="del">-17</span></div>
+            <div class="t">saved .env value no longer shadowed by stale duplicate lines</div>
+            <div class="w">idle ~2 h</div>
+          </div>
+        </a>
+      </div>
+      <div class="wrap">
+        <span class="p-num p-num-green">#117598</span>
+        <a class="cube p-green" href="https://github.com/NousResearch/hermes-agent/pull/117598" target="_blank" rel="noopener" title="#117598 fix(terminal): embedded agent hosts can opt into per-worker cgroup scopes; timeout schema says it does not bound background commands (#116936, salvage #117020)">
+          <div class="face">
+            <div class="d"><span class="add">+371</span> <span class="del">-17</span></div>
           <div class="g">fix(terminal)</div>
-          <div class="t">embedded agent hosts can opt into per-worker cgroup scopes; timeout schema says it does not bou…</div>
-          <div class="w">idle ~4 h</div>
-        </div>
-      </a>
+            <div class="t">embedded agent hosts can opt into per-worker cgroup scopes; timeout schema says it does not bou…</div>
+            <div class="w">idle ~4 h</div>
+          </div>
+        </a>
       </div>
-    </div>
-
-    <div class="split"></div>
-
-    <div class="col merged">
-      <div class="cluster">
-      <div class="wrap">
-      <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117651" target="_blank" rel="noopener" title="#117651 fix(desktop): removing or re-pointing a connection forgets its cached roster and identity (#117227, salvage #117232)">
-        <div class="face">
-          <div class="n">#117651</div>
-          <div class="d"><span class="add">+132</span> <span class="del">-3</span></div>
-          <div class="g">fix(desktop)</div>
-          <div class="t">removing or re-pointing a connection forgets its cached roster and identity</div>
-          <div class="w">merged ~4 min</div>
-        </div>
-      </a>
+      <div class="split"></div>
+            <div class="wrap">
+        <span class="p-num p-num-blue">#117652</span>
+        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117652" target="_blank" rel="noopener" title="#117652 fix(desktop): SSH connections learn their backend install id so duplicate addresses collapse (#117226, salvage #117228)">
+          <div class="face">
+            <div class="d"><span class="add">+92</span> <span class="del">-2</span></div>
+            <div class="g">fix(desktop)</div>
+            <div class="t">SSH connections learn their backend install id so duplicate addresses collapse</div>
+            <div class="w">merged ~1 min</div>
+          </div>
+        </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
       </div>
       <div class="wrap">
-      <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117649" target="_blank" rel="noopener" title="#117649 fix(kanban): completing a task with no result or summary is refused with an audit event (#117483, salvage #117511)">
-        <div class="face">
-          <div class="n">#117649</div>
-          <div class="d"><span class="add">+172</span> <span class="del">-25</span></div>
-          <div class="g">fix(kanban)</div>
-          <div class="t">completing a task with no result or summary is refused with an audit event</div>
-          <div class="w">merged ~5 min</div>
-        </div>
-      </a>
+        <span class="p-num p-num-blue">#117651</span>
+        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117651" target="_blank" rel="noopener" title="#117651 fix(desktop): removing or re-pointing a connection forgets its cached roster and identity (#117227, salvage #117232)">
+          <div class="face">
+            <div class="d"><span class="add">+132</span> <span class="del">-3</span></div>
+            <div class="g">fix(desktop)</div>
+            <div class="t">removing or re-pointing a connection forgets its cached roster and identity</div>
+            <div class="w">merged ~10 min</div>
+          </div>
+        </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
       </div>
       <div class="wrap">
-      <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117680" target="_blank" rel="noopener" title="#117680 fix(lsp): one stalled request no longer silences a workspace for good — retry window, cold-root warm-up budget, per-root exclusion (#116446)">
-        <div class="face">
-          <div class="n">#117680</div>
-          <div class="d"><span class="add">+343</span> <span class="del">-34</span></div>
-          <div class="g">fix(lsp)</div>
-          <div class="t">one stalled request no longer silences a workspace for good — retry window, cold-root warm-up b…</div>
-          <div class="w">merged ~14 min</div>
-        </div>
-      </a>
+        <span class="p-num p-num-blue">#117649</span>
+        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117649" target="_blank" rel="noopener" title="#117649 fix(kanban): completing a task with no result or summary is refused with an audit event (#117483, salvage #117511)">
+          <div class="face">
+            <div class="d"><span class="add">+172</span> <span class="del">-25</span></div>
+            <div class="g">fix(kanban)</div>
+            <div class="t">completing a task with no result or summary is refused with an audit event</div>
+            <div class="w">merged ~11 min</div>
+          </div>
+        </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
       </div>
       <div class="wrap">
-      <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117668" target="_blank" rel="noopener" title="#117668 fix(desktop): chat composer stays mounted through transient session loaders; no addRange on a detached editor (#117375, #117285)">
-        <div class="face">
-          <div class="n">#117668</div>
-          <div class="d"><span class="add">+126</span> <span class="del">-5</span></div>
-          <div class="g">fix(desktop)</div>
-          <div class="t">chat composer stays mounted through transient session loaders; no addRange on a detached editor</div>
-          <div class="w">merged ~15 min</div>
-        </div>
-      </a>
+        <span class="p-num p-num-blue">#117680</span>
+        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117680" target="_blank" rel="noopener" title="#117680 fix(lsp): one stalled request no longer silences a workspace for good — retry window, cold-root warm-up budget, per-root exclusion (#116446)">
+          <div class="face">
+            <div class="d"><span class="add">+343</span> <span class="del">-34</span></div>
+            <div class="g">fix(lsp)</div>
+            <div class="t">one stalled request no longer silences a workspace for good — retry window, cold-root warm-up b…</div>
+            <div class="w">merged ~20 min</div>
+          </div>
+        </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
       </div>
       <div class="wrap">
-      <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117665" target="_blank" rel="noopener" title="#117665 fix(compression): an auto-resolved summary model that fails falls back to the main model and is named in the warning (#116472, salvage #116592)">
-        <div class="face">
-          <div class="n">#117665</div>
-          <div class="d"><span class="add">+88</span> <span class="del">-7</span></div>
-          <div class="g">fix(compression)</div>
-          <div class="t">an auto-resolved summary model that fails falls back to the main model and is named in the warn…</div>
-          <div class="w">merged ~15 min</div>
-        </div>
-      </a>
+        <span class="p-num p-num-blue">#117668</span>
+        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117668" target="_blank" rel="noopener" title="#117668 fix(desktop): chat composer stays mounted through transient session loaders; no addRange on a detached editor (#117375, #117285)">
+          <div class="face">
+            <div class="d"><span class="add">+126</span> <span class="del">-5</span></div>
+            <div class="g">fix(desktop)</div>
+            <div class="t">chat composer stays mounted through transient session loaders; no addRange on a detached editor</div>
+            <div class="w">merged ~21 min</div>
+          </div>
+        </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
-      </div>
       </div>
     </div>
   </div>
   <!-- BLOCKROW:END -->
+  <!-- PANELS:START -->
+  <div class="dash-row">
+    <div class="dash-card left">
+      <h3>PR Backlog</h3>
+      <div class="big-num">29,242</div>
+      <div class="big-sub">open pull requests</div>
+              <div class="stat-row">
+          <span class="stat-label">newest</span>
+          <a class="stat-val" href="https://github.com/NousResearch/hermes-agent/pull/117789" target="_blank" rel="noopener">#117789</a>
+          <span class="stat-dim">0.1h ago</span>
+        </div>
+              <div class="stat-row">
+          <span class="stat-label">oldest</span>
+          <a class="stat-val" href="https://github.com/NousResearch/hermes-agent/pull/114532" target="_blank" rel="noopener">#114532</a>
+          <span class="stat-dim">3d ago</span>
+        </div>
+      <div class="section-label">by area</div>
+      <div class="area-cloud">
+        <span class="area-pill">fix(desktop) 71</span><span class="area-pill">fix(gateway) 54</span><span class="area-pill">feat(desktop) 52</span><span class="area-pill">fix(kanban) 43</span><span class="area-pill">other 39</span><span class="area-pill">fix(agent) 27</span><span class="area-pill">fix(cli) 23</span><span class="area-pill">fix(update) 22</span>
+      </div>
+    </div>
+    <div class="dash-card right">
+      <h3>Release Velocity</h3>
+              <div class="stat-row">
+          <span class="stat-label">latest</span>
+          <span class="stat-val">v2026.9.14</span>
+        </div>
+              <div class="stat-row">
+          <span class="stat-label">cadence</span>
+          <span class="stat-val">~5.6d</span>
+          <span class="stat-dim">3 releases in 2 weeks</span>
+        </div>
+      <div class="section-label">release timeline</div>
+      <div class="rel-dots">
+        <span class="rel-dot" title="v2026.9.14 (2026-09-14)"></span><span class="rel-dot" title="v2026.9.11 (2026-09-11)"></span><span class="rel-dot" title="v2026.9.7 (2026-09-07)"></span><span class="rel-dot" title="v2026.8.31 (2026-08-31)"></span><span class="rel-dot" title="v2026.8.27 (2026-08-27)"></span><span class="rel-dot" title="v2026.8.19 (2026-08-21)"></span><span class="rel-dot" title="v2026.8.18 (2026-08-18)"></span><span class="rel-dot" title="v2026.8.16.2 (2026-08-17)"></span><span class="rel-dot" title="v2026.8.16 (2026-08-16)"></span><span class="rel-dot" title="v2026.8.13 (2026-08-13)"></span><span class="rel-dot" title="v2026.8.3 (2026-08-03)"></span><span class="rel-dot" title="v2026.7.30 (2026-07-30)"></span>
+      </div>
+      <div class="section-label">merge speed by area</div>
+      <div class="velo-list">
+          <div class="velo-row">
+            <span class="velo-area">fix(desktop)</span>
+            <span class="velo-h">3.1h</span>
+            <span class="velo-n">(9)</span>
+          </div>          <div class="velo-row">
+            <span class="velo-area">fix(cli)</span>
+            <span class="velo-h">2.9h</span>
+            <span class="velo-n">(3)</span>
+          </div>          <div class="velo-row">
+            <span class="velo-area">fix(gateway)</span>
+            <span class="velo-h">1.8h</span>
+            <span class="velo-n">(3)</span>
+          </div>          <div class="velo-row">
+            <span class="velo-area">other</span>
+            <span class="velo-h">0.6h</span>
+            <span class="velo-n">(2)</span>
+          </div>          <div class="velo-row">
+            <span class="velo-area">chore(catalog)</span>
+            <span class="velo-h">1.2h</span>
+            <span class="velo-n">(2)</span>
+          </div>          <div class="velo-row">
+            <span class="velo-area">feat(plugin-catalog)</span>
+            <span class="velo-h">3.3h</span>
+            <span class="velo-n">(2)</span>
+          </div>
+      </div>
+    </div>
+  </div>
+  <!-- PANELS:END -->
 </main>
 
 <script>
