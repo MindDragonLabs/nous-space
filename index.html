@@ -242,8 +242,6 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
 .main-content {
   min-height: calc(100vh - 58px);
   padding: 0 14px;
-  max-width: 100%;
-  overflow: hidden;
 }
 
 /* ── scrollable strip ──────────────────────────────────────────────────── */
@@ -251,14 +249,15 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,.15) transparent;
+  scrollbar-width: none;          /* hide scrollbar — drag to scroll */
   padding: 88px 10px 40px 34px;
   --block-size: 125px;
   --block-gap: calc(0.24 * var(--block-size));
+  cursor: grab;
+  user-select: none;
 }
-.stripscroll::-webkit-scrollbar { height: 4px; }
-.stripscroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 2px; }
+.stripscroll::-webkit-scrollbar { display: none; }     /* Chrome/Safari */
+.stripscroll:active { cursor: grabbing; }
 
 .strip {
   display: flex;
@@ -429,14 +428,13 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
 }
 
 .dash-card {
-  flex: 1 1 340px;
+  flex: 1 1 400px;
   max-width: 520px;
   background: #171c2a;
   border: 1px solid rgba(255,255,255,.11);
   border-radius: 8px;
-  padding: 20px 22px 22px 22px;
+  padding: 20px 22px 22px;
   font-family: var(--mono);
-  min-width: 0;
 }
 
 .dash-card h3 {
@@ -484,13 +482,40 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
   letter-spacing: 0.02em; white-space: nowrap;
 }
 
-/* release timeline dots */
-.rel-dots { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0; }
-.rel-dot {
-  width: 10px; height: 10px; border-radius: 50%;
-  background: var(--nous-electric); opacity: .6;
+/* ── line chart (backlog panel) ───────────────────────────────── */
+.line-chart {
+  display: block;
+  margin: 4px 0 0;
+  width: 100%;
+  max-width: 320px;
 }
-.rel-dot:nth-child(1) { width: 14px; height: 14px; opacity: 1; }
+.chart-label {
+  font-size: 7px;
+  fill: rgba(255,255,255,.42);
+  text-anchor: middle;
+}
+
+/* ── 30-day release calendar ───────────────────────────────────── */
+.rel-calendar {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 3px;
+  margin: 6px 0;
+}
+.rel-cal {
+  aspect-ratio: 1;
+  border-radius: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 8px;
+  color: rgba(255,255,255,.42);
+}
+.rel-lv0 { background: rgba(255,255,255,.06); color: rgba(255,255,255,.32); }
+.rel-lv1 { background: rgba(0,174,239,.30); color: rgba(255,255,255,.85); }
+.rel-lv2 { background: rgba(0,174,239,.55); color: rgba(255,255,255,.92); }
+.rel-lv3 { background: rgba(0,174,239,.85); color: #fff; }
 
 /* merge velocity rows */
 .velo-list { margin: 4px 0; }
@@ -499,97 +524,407 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
 .velo-h    { font-size: 12px; color: var(--nous-electric); font-weight: 700; width: 36px; text-align: right; }
 .velo-n    { font-size: 10px; color: rgba(255,255,255,.36); }
 
-/* ──────────────────────────────────────────────────
-   RESPONSIVE — Tablet (≤1024px)
-   ────────────────────────────────────────────────── */
-@media (max-width: 1024px) {
-  body { font-size: 12px; }
-  .topnav { gap: 10px; padding: 0 10px; }
-  .topnav-brand { font-size: 16px; }
-  .topnav-link { font-size: 11px; padding: 6px 10px; }
-  .cube-container { gap: 4px; }
-  .cube-scene { width: 105px; height: 105px; }
-  .cube-face { width: 105px; height: 105px; }
-  .cube-rt { width: 20px; height: 105px; transform: rotateY(90deg) translateZ(85px); }
-  .cube-lt { width: 20px; height: 105px; transform: rotateY(-90deg) translateZ(20px); }
-  .cube-ft { width: 105px; height: 20px; transform: rotateX(90deg) translateZ(85px); }
-  .cube-face-front { width: 105px; height: 105px; transform: translateZ(10px); }
-  .cube-face-front .block-num { font-size: 16px; }
-  .cube-face-front .block-author { font-size: 9px; }
-  .cube-face-front .block-size { font-size: 12px; }
-  .cube-face-right { width: 20px; height: 105px; transform: rotateY(90deg) translateZ(95px); }
-  .cube-face-left { width: 20px; height: 105px; transform: rotateY(-90deg) translateZ(10px); }
-  .cube-face-top { width: 105px; height: 20px; transform: rotateX(90deg) translateZ(10px); }
-  .cube-face-top .block-lines { display: none; }
-  .dash-row { gap: 12px; padding: 12px 10px; }
-  .dash-card { padding: 14px; flex: 1 1 260px; }
+/* ── newsletter (last-hour merges as article blocks) ─────────────── */
+.newsletter {
+  border-top: 1px solid rgba(255,255,255,.08);
+  padding: 16px 20px 12px;
+  margin: 0;
+  background: #0b0e16;
+}
+.nw-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--nous-amber);
+  margin: 0 0 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.nw-title .hgi { font-size: 18px; }
+.nw-strip {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+}
+.nw-strip::-webkit-scrollbar { height: 4px; }
+.nw-strip::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 2px; }
+.nw-card {
+  flex: 0 0 310px;
+  background: #0d1220;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 6px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.nw-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.nw-link {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--nous-electric);
+  text-decoration: none;
+}
+.nw-link:hover { color: var(--nous-amber); }
+.nw-tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: rgba(255,255,255,.5);
+  font-weight: 600;
+}
+.nw-time {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: rgba(255,255,255,.36);
+}
+.nw-body {
+  flex: 1;
+}
+.nw-summary {
+  font-size: 12px;
+  line-height: 1.55;
+  color: rgba(255,255,255,.72);
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.nw-gallery {
+  margin-top: 10px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.nw-img {
+  width: 100%;
+  border-radius: 4px;
+  display: block;
+}
+.nw-footer {
+  border-top: 1px solid rgba(255,255,255,.06);
+  padding-top: 8px;
+}
+.nw-author {
+  font-size: 10px;
+  color: rgba(255,255,255,.42);
+}
+.nw-author a {
+  color: rgba(255,255,255,.6);
+  text-decoration: none;
+  font-weight: 600;
+}
+.nw-author a:hover { color: var(--nous-amber); }
+
+/* ── news ticker ─────────────────────────────────────────────────── */
+.ticker-wrap {
+  overflow: hidden;
+  background: #0d1220;
+  border-top: 1px solid rgba(255,255,255,.08);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  padding: 10px 0;
+  margin: 0;
+}
+.ticker {
+  display: flex;
+  gap: 0;
+  animation: ticker-scroll 120s linear infinite;
+  width: max-content;
+}
+.ticker-item {
+  flex-shrink: 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: rgba(255,255,255,.72);
+  white-space: nowrap;
+  padding: 0 32px;
+  border-right: 1px solid rgba(255,255,255,.12);
+}
+.ticker-item .t-tag {
+  font-weight: 700;
+  color: var(--nous-electric);
+}
+.ticker-item .t-time {
+  color: rgba(255,255,255,.36);
+  margin-right: 6px;
+}
+.ticker-wrap:hover .ticker { animation-play-state: paused; }
+
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
 
-/* ──────────────────────────────────────────────────
-   RESPONSIVE — Mobile (≤767px)
-   ────────────────────────────────────────────────── */
-@media (max-width: 767px) {
-  body { font-size: 11px; }
-  .topnav { height: 44px; gap: 6px; padding: 0 8px; overflow-x: auto; }
-  .topnav-brand { font-size: 14px; }
-  .topnav-link { font-size: 10px; padding: 4px 7px; }
-  .search-bar { display: none; }
-  .main-content { padding: 0 6px; }
-  .stripscroll { padding: 24px 6px 20px 6px; }
-  .cube-container { gap: 4px; padding: 2px; }
-  .cube-scene { width: 84px; height: 84px; }
-  .cube-face { width: 84px; height: 84px; }
-  .cube-rt { width: 15px; height: 84px; transform: rotateY(90deg) translateZ(69px); }
-  .cube-lt { width: 15px; height: 84px; transform: rotateY(-90deg) translateZ(15px); }
-  .cube-ft { width: 84px; height: 15px; transform: rotateX(90deg) translateZ(69px); }
-  .cube-face-front { width: 84px; height: 84px; transform: translateZ(8px); }
-  .cube-face-front .block-num { font-size: 14px; }
-  .cube-face-front .block-author { font-size: 8px; }
-  .cube-face-front .block-size { font-size: 10px; }
-  .cube-face-front .block-lines { font-size: 8px; }
-  .cube-face-right { width: 15px; height: 84px; transform: rotateY(90deg) translateZ(77px); }
-  .cube-face-left { width: 15px; height: 84px; transform: rotateY(-90deg) translateZ(8px); }
-  .cube-face-top { width: 84px; height: 15px; transform: rotateX(90deg) translateZ(8px); }
-  .cube-face-top .block-lines { display: none; }
-  .block-miner { display: none; }
-  .dash-row { flex-direction: column; gap: 12px; padding: 16px 6px 40px 6px; }
-  .dash-card { flex: 1 1 auto; max-width: none; padding: 16px 14px; }
-  .cube-scroll { overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
-  .cube-scroll::-webkit-scrollbar { height: 4px; }
-  .big-num { font-size: 32px; }
-  .branch-btn .branch-name { display: none; }
+/* ── issues list ─────────────────────────────────────────────────── */
+.iss-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.iss-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+  font-size: 12px;
+}
+.iss-row:hover { background: rgba(255,255,255,.02); }
+.iss-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--nous-electric);
+  text-decoration: none;
+  min-width: 55px;
+  flex-shrink: 0;
+}
+.iss-num:hover { color: var(--nous-amber); }
+.iss-title {
+  flex: 1;
+  color: rgba(255,255,255,.72);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.iss-label {
+  display: inline-block;
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.48);
+  margin-right: 4px;
+  font-weight: 500;
+}
+.iss-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  min-width: 160px;
+  justify-content: flex-end;
+}
+.iss-author { color: rgba(255,255,255,.42); }
+.iss-time { color: rgba(255,255,255,.28); }
+.iss-comments { color: rgba(255,255,255,.36); margin-left: 4px; }
+.full-width { grid-column: 1 / -1; }
+/* ── PRs strip ───────────────────────────────────────────────────── */
+.prs-strip {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+}
+.prs-strip::-webkit-scrollbar { height: 4px; }
+.prs-strip::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 2px; }
+.prs-card {
+  flex: 0 0 250px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 6px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.prs-card:hover { border-color: rgba(255,255,255,.12); }
+.prs-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.prs-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--nous-electric);
+  text-decoration: none;
+}
+.prs-num:hover { color: var(--nous-amber); }
+.prs-status {
+  font-size: 9px;
+  padding: 1px 7px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.prs-draft { background: rgba(255,255,255,.06); color: rgba(255,255,255,.36); }
+.prs-open { background: rgba(0,174,239,.15); color: var(--nous-electric); }
+.prs-approved { background: rgba(40,167,69,.15); color: #28a745; }
+.prs-changes { background: rgba(245,166,35,.15); color: var(--nous-amber); }
+.prs-time { margin-left: auto; font-size: 10px; color: rgba(255,255,255,.32); }
+.prs-title {
+  font-size: 12px;
+  color: rgba(255,255,255,.72);
+  line-height: 1.4;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.prs-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid rgba(255,255,255,.04);
+  padding-top: 8px;
+  font-size: 10px;
+}
+.prs-author { color: rgba(255,255,255,.42); }
+.prs-diff { display: flex; gap: 6px; }
+.prs-diff .add { color: #28a745; font-weight: 600; }
+.prs-diff .del { color: #dc3545; font-weight: 600; }
+
+/* ── contributors strip ──────────────────────────────────────────── */
+.contrib-strip {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+}
+.contrib-strip::-webkit-scrollbar { height: 4px; }
+.contrib-strip::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 2px; }
+.contrib-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 16px;
+  background: rgba(255,255,255,.02);
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 8px;
+  text-decoration: none;
+  min-width: 80px;
+  transition: border-color .15s;
+}
+.contrib-card:hover { border-color: rgba(255,255,255,.15); }
+.contrib-avatar {
+  border-radius: 50%;
+  background: rgba(255,255,255,.06);
+}
+.contrib-name {
+  font-size: 11px;
+  color: rgba(255,255,255,.72);
+  font-weight: 500;
+  font-family: var(--mono);
+}
+.contrib-count {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--nous-amber);
+  font-weight: 600;
 }
 
-/* ──────────────────────────────────────────────────
-   RESPONSIVE — Small phone (≤379px)
-   ────────────────────────────────────────────────── */
-@media (max-width: 379px) {
-  .cube-scene { width: 72px; height: 72px; }
-  .cube-face { width: 72px; height: 72px; }
-  .cube-rt { width: 13px; height: 72px; transform: rotateY(90deg) translateZ(59px); }
-  .cube-lt { width: 13px; height: 72px; transform: rotateY(-90deg) translateZ(13px); }
-  .cube-ft { width: 72px; height: 13px; transform: rotateX(90deg) translateZ(59px); }
-  .cube-face-front { width: 72px; height: 72px; transform: translateZ(7px); }
-  .cube-face-front .block-num { font-size: 12px; }
-  .cube-face-front .block-size { font-size: 9px; }
-  .cube-face-right { width: 13px; height: 72px; transform: rotateY(90deg) translateZ(66px); }
-  .cube-face-left { width: 13px; height: 72px; transform: rotateY(-90deg) translateZ(7px); }
-  .cube-face-top { width: 72px; height: 13px; transform: rotateX(90deg) translateZ(7px); }
-  .dash-card { padding: 12px 10px; }
-  .big-num { font-size: 28px; }
+/* ── search bar ──────────────────────────────────────────────────── */
+.search-bar {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  margin: 12px auto 8px;
 }
-
-/* ──────────────────────────────────────────────────
-   RESPONSIVE — Landscape mobile (short height)
-   ────────────────────────────────────────────────── */
-@media (max-height: 500px) and (max-width: 1024px) {
-  .topnav { height: 38px; }
-  .stripscroll { padding: 12px 6px 16px 6px; }
-  .cube-scene { width: 64px; height: 64px; }
-  .cube-face-front { width: 64px; height: 64px; }
-  .dash-row { padding: 8px 6px 20px 6px; gap: 8px; }
-  .dash-card { padding: 10px 12px; }
-}/* ROWCSS:END */
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  color: rgba(255,255,255,.32);
+  pointer-events: none;
+}
+.search-input {
+  width: 100%;
+  padding: 9px 14px 9px 38px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 8px;
+  color: rgba(255,255,255,.85);
+  font-size: 12px;
+  font-family: var(--mono);
+  outline: none;
+  transition: border-color .15s;
+}
+.search-input:focus { border-color: var(--nous-electric); }
+.search-input::placeholder { color: rgba(255,255,255,.28); }
+.search-results {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #111827;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 8px;
+  max-height: 440px;
+  overflow-y: auto;
+  z-index: 100;
+  box-shadow: 0 12px 32px rgba(0,0,0,.6);
+}
+.search-results.active { display: block; }
+.search-results::-webkit-scrollbar { width: 4px; }
+.search-results::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 2px; }
+.search-loading, .search-empty, .search-error {
+  padding: 16px;
+  font-size: 11px;
+  color: rgba(255,255,255,.42);
+  text-align: center;
+  font-family: var(--mono);
+}
+.search-error { color: #f85149; }
+.sr-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+  transition: background .1s;
+}
+.sr-item:hover { background: rgba(255,255,255,.04); }
+.sr-type { font-size: 11px; color: rgba(255,255,255,.5); flex-shrink: 0; font-family: var(--mono); }
+.sr-number {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--nous-electric);
+  min-width: 55px;
+  flex-shrink: 0;
+}
+.sr-title {
+  flex: 1;
+  font-size: 12px;
+  color: rgba(255,255,255,.72);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sr-state {
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  text-transform: capitalize;
+  flex-shrink: 0;
+  font-family: var(--mono);
+}
+.sr-open { background: rgba(40,167,69,.15); color: #28a745; }
+.sr-closed { background: rgba(220,53,69,.15); color: #dc3545; }
+.sr-author { font-size: 10px; color: rgba(255,255,255,.42); flex-shrink: 0; font-family: var(--mono); }
+.sr-date { font-size: 10px; color: rgba(255,255,255,.28); flex-shrink: 0; font-family: var(--mono); }
+.card-count { font-weight: 400; font-size: 10px; color: rgba(255,255,255,.36); margin-left: 8px; }
+/* ROWCSS:END */
 </style>
 </head>
 <body>
@@ -655,7 +990,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
 
 <main class="main-content">
 <!-- BLOCKROW:START -->
-  <div class="stripscroll">
+  <div class="stripscroll" id="blockstrip">
     <div class="strip">
             <div class="wrap">
         <span class="p-num p-num-green">#115682</span>
@@ -663,7 +998,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
           <div class="face">
             <div class="d"><span class="add">+100</span> <span class="del">-2</span></div>
             <div class="t">Closed-schema tools reject undeclared arguments instead of silently dropping them</div>
-            <div class="w">idle ~47 h</div>
+            <div class="w">idle ~2 d</div>
           </div>
         </a>
       </div>
@@ -693,7 +1028,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
           <div class="face">
             <div class="d"><span class="add">+25</span> <span class="del">-1</span></div>
             <div class="t">write_file on a directory reports the directory, not a stale-read refusal (Inspired by Claude C…</div>
-            <div class="w">idle ~2 d</div>
+            <div class="w">idle ~3 d</div>
           </div>
         </a>
       </div>
@@ -703,19 +1038,235 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
           <div class="face">
             <div class="d"><span class="add">+76</span> <span class="del">-3</span></div>
             <div class="t">MCP tools/list_changed storms no longer trigger one refresh per notification (Inspired by Claud…</div>
-            <div class="w">idle ~2 d</div>
+            <div class="w">idle ~3 d</div>
           </div>
         </a>
       </div>
       <div class="split"></div>
             <div class="wrap">
+        <span class="p-num p-num-blue">#118082</span>
+        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/118082" target="_blank" rel="noopener" title="#118082 doctor, cron status and claw report the ONE host gateway serving N profiles instead of &#x27;not running&#x27;">
+          <div class="face">
+            <div class="d"><span class="add">+557</span> <span class="del">-67</span></div>
+            <div class="g"></div>
+            <div class="t">doctor, cron status and claw report the ONE host gateway serving N profiles instead of &#x27;not run…</div>
+            <div class="w">merged ~40 min</div>
+          </div>
+        </a>
+        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
+      </div>
+      <div class="wrap">
+        <span class="p-num p-num-blue">#118097</span>
+        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/118097" target="_blank" rel="noopener" title="#118097 gateway: lifecycle verbs mean &quot;the one host multiplexer&quot; (attach-or-rescan-or-refuse)">
+          <div class="face">
+            <div class="d"><span class="add">+1280</span> <span class="del">-61</span></div>
+            <div class="g">gateway</div>
+            <div class="t">lifecycle verbs mean &quot;the one host multiplexer&quot; (attach-or-rescan-or-refuse)</div>
+            <div class="w">merged ~44 min</div>
+          </div>
+        </a>
+        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
+      </div>
+      <div class="wrap">
+        <span class="p-num p-num-blue">#118021</span>
+        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/118021" target="_blank" rel="noopener" title="#118021 Multiplexed hosts no longer write a served profile&#x27;s transcripts, teardown and worker env into the launch profile">
+          <div class="face">
+            <div class="d"><span class="add">+929</span> <span class="del">-105</span></div>
+            <div class="g"></div>
+            <div class="t">Multiplexed hosts no longer write a served profile&#x27;s transcripts, teardown and worker env into…</div>
+            <div class="w">merged ~3 h</div>
+          </div>
+        </a>
+        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
+      </div>
+      <div class="wrap">
+        <span class="p-num p-num-blue">#118006</span>
+        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/118006" target="_blank" rel="noopener" title="#118006 Secondary profiles&#x27; state.db is pruned, vacuumed and archived by its own config again">
+          <div class="face">
+            <div class="d"><span class="add">+686</span> <span class="del">-70</span></div>
+            <div class="g"></div>
+            <div class="t">Secondary profiles&#x27; state.db is pruned, vacuumed and archived by its own config again</div>
+            <div class="w">merged ~3 h</div>
+          </div>
+        </a>
+        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
+      </div>
+      <div class="wrap">
+        <span class="p-num p-num-blue">#118027</span>
+        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/118027" target="_blank" rel="noopener" title="#118027 fix(cron): one host ticker owns every profile&#x27;s cron, per profile">
+          <div class="face">
+            <div class="d"><span class="add">+1125</span> <span class="del">-279</span></div>
+            <div class="g">fix(cron)</div>
+            <div class="t">one host ticker owns every profile&#x27;s cron, per profile</div>
+            <div class="w">merged ~3 h</div>
+          </div>
+        </a>
+        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
+      </div>
+      <div class="wrap">
+        <span class="p-num p-num-blue">#117999</span>
+        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117999" target="_blank" rel="noopener" title="#117999 One backend per host: host singleton lock + rendezvous record, second serve attaches">
+          <div class="face">
+            <div class="d"><span class="add">+1162</span> <span class="del">-16</span></div>
+            <div class="g"></div>
+            <div class="t">One backend per host: host singleton lock + rendezvous record, second serve attaches</div>
+            <div class="w">merged ~3 h</div>
+          </div>
+        </a>
+        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
+      </div>
+      <div class="wrap">
+        <span class="p-num p-num-blue">#117962</span>
+        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117962" target="_blank" rel="noopener" title="#117962 fix(gateway): RoomLink catalog names the served profile and reads its execution policy from that profile (#116900)">
+          <div class="face">
+            <div class="d"><span class="add">+110</span> <span class="del">-20</span></div>
+            <div class="g">fix(gateway)</div>
+            <div class="t">RoomLink catalog names the served profile and reads its execution policy from that profile</div>
+            <div class="w">merged ~4 h</div>
+          </div>
+        </a>
+        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
+      </div>
+      <div class="wrap">
+        <span class="p-num p-num-blue">#117956</span>
+        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117956" target="_blank" rel="noopener" title="#117956 fix(mcp): MCP servers connect at most mcp.discovery_concurrency (4) at a time at boot instead of all at once (#117373, salvage #117674)">
+          <div class="face">
+            <div class="d"><span class="add">+166</span> <span class="del">-6</span></div>
+            <div class="g">fix(mcp)</div>
+            <div class="t">MCP servers connect at most mcp.discovery_concurrency (4) at a time at boot instead of all at o…</div>
+            <div class="w">merged ~4 h</div>
+          </div>
+        </a>
+        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
+      </div>
+      <div class="wrap">
+        <span class="p-num p-num-blue">#117967</span>
+        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117967" target="_blank" rel="noopener" title="#117967 refactor(gateway): hermes_cli/gateway.py 6,511 -&gt; 4,855 lines; launchd backend and setup wizard become siblings (#116913)">
+          <div class="face">
+            <div class="d"><span class="add">+1889</span> <span class="del">-1744</span></div>
+            <div class="g">refactor(gateway)</div>
+            <div class="t">hermes_cli/gateway.py 6,511 -&gt; 4,855 lines; launchd backend and setup wizard become siblings</div>
+            <div class="w">merged ~4 h</div>
+          </div>
+        </a>
+        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
+      </div>
+      <div class="wrap">
+        <span class="p-num p-num-blue">#117942</span>
+        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117942" target="_blank" rel="noopener" title="#117942 fix(delegate): subagents keep the named custom provider identity — native vision fast path and correct credential pool (salvage #117839, #89021)">
+          <div class="face">
+            <div class="d"><span class="add">+150</span> <span class="del">-4</span></div>
+            <div class="g">fix(delegate)</div>
+            <div class="t">subagents keep the named custom provider identity — native vision fast path and correct credent…</div>
+            <div class="w">merged ~4 h</div>
+          </div>
+        </a>
+        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
+      </div>
+      <div class="wrap">
+        <span class="p-num p-num-blue">#117995</span>
+        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117995" target="_blank" rel="noopener" title="#117995 Plugin pages show the README from the pinned commit by default">
+          <div class="face">
+            <div class="d"><span class="add">+29</span> <span class="del">-21</span></div>
+            <div class="g"></div>
+            <div class="t">Plugin pages show the README from the pinned commit by default</div>
+            <div class="w">merged ~5 h</div>
+          </div>
+        </a>
+        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
+      </div>
+      <div class="wrap">
+        <span class="p-num p-num-blue">#117963</span>
+        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117963" target="_blank" rel="noopener" title="#117963 fix(desktop): timeline rail follows new turns and the jump-button count settles after a rail jump (#117298)">
+          <div class="face">
+            <div class="d"><span class="add">+216</span> <span class="del">-15</span></div>
+            <div class="g">fix(desktop)</div>
+            <div class="t">timeline rail follows new turns and the jump-button count settles after a rail jump</div>
+            <div class="w">merged ~5 h</div>
+          </div>
+        </a>
+        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
+      </div>
+      <div class="wrap">
+        <span class="p-num p-num-blue">#117964</span>
+        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117964" target="_blank" rel="noopener" title="#117964 fix(desktop): group-chat member failure row names the error&#x27;s first line (#117366)">
+          <div class="face">
+            <div class="d"><span class="add">+52</span> <span class="del">-9</span></div>
+            <div class="g">fix(desktop)</div>
+            <div class="t">group-chat member failure row names the error&#x27;s first line</div>
+            <div class="w">merged ~5 h</div>
+          </div>
+        </a>
+        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
+      </div>
+      <div class="wrap">
+        <span class="p-num p-num-blue">#117950</span>
+        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117950" target="_blank" rel="noopener" title="#117950 fix(agent): remote backend probe no longer sends sandbox user, $HOME and cwd to the model (#117262)">
+          <div class="face">
+            <div class="d"><span class="add">+38</span> <span class="del">-11</span></div>
+            <div class="g">fix(agent)</div>
+            <div class="t">remote backend probe no longer sends sandbox user, $HOME and cwd to the model</div>
+            <div class="w">merged ~5 h</div>
+          </div>
+        </a>
+        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
+      </div>
+      <div class="wrap">
+        <span class="p-num p-num-blue">#117957</span>
+        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117957" target="_blank" rel="noopener" title="#117957 fix(compression): protected tail capped at 20% of the context window so small-window models can compact">
+          <div class="face">
+            <div class="d"><span class="add">+69</span> <span class="del">-9</span></div>
+            <div class="g">fix(compression)</div>
+            <div class="t">protected tail capped at 20% of the context window so small-window models can compact</div>
+            <div class="w">merged ~5 h</div>
+          </div>
+        </a>
+        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
+      </div>
+      <div class="wrap">
+        <span class="p-num p-num-blue">#117983</span>
+        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117983" target="_blank" rel="noopener" title="#117983 Desktop attaches to the running host backend instead of spawning a second one">
+          <div class="face">
+            <div class="d"><span class="add">+645</span> <span class="del">-9</span></div>
+            <div class="g"></div>
+            <div class="t">Desktop attaches to the running host backend instead of spawning a second one</div>
+            <div class="w">merged ~5 h</div>
+          </div>
+        </a>
+        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
+      </div>
+      <div class="wrap">
+        <span class="p-num p-num-blue">#117969</span>
+        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117969" target="_blank" rel="noopener" title="#117969 Plugin catalog cards open the plugin page on click and never collapse">
+          <div class="face">
+            <div class="d"><span class="add">+19</span> <span class="del">-31</span></div>
+            <div class="g"></div>
+            <div class="t">Plugin catalog cards open the plugin page on click and never collapse</div>
+            <div class="w">merged ~5 h</div>
+          </div>
+        </a>
+        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
+      </div>
+      <div class="wrap">
+        <span class="p-num p-num-blue">#117855</span>
+        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117855" target="_blank" rel="noopener" title="#117855 Desktop Plugins hub can uninstall installed plugins (plugins.manage remove)">
+          <div class="face">
+            <div class="d"><span class="add">+620</span> <span class="del">-29</span></div>
+            <div class="g"></div>
+            <div class="t">Desktop Plugins hub can uninstall installed plugins (plugins.manage remove)</div>
+            <div class="w">merged ~6 h</div>
+          </div>
+        </a>
+        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
+      </div>
+      <div class="wrap">
         <span class="p-num p-num-blue">#117681</span>
         <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117681" target="_blank" rel="noopener" title="#117681 fix(desktop): parked panes release their transcript, renderer heap ceiling reaches packaged launches, avatar cache bounded (#77311, salvage #102064)">
           <div class="face">
             <div class="d"><span class="add">+545</span> <span class="del">-23</span></div>
             <div class="g">fix(desktop)</div>
             <div class="t">parked panes release their transcript, renderer heap ceiling reaches packaged launches, avatar…</div>
-            <div class="w">merged ~1 h</div>
+            <div class="w">merged ~9 h</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -727,7 +1278,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+1803</span> <span class="del">-179</span></div>
             <div class="g"></div>
             <div class="t">Plugin catalog: a page for every plugin and every author, with submitter-controlled screenshots…</div>
-            <div class="w">merged ~2 h</div>
+            <div class="w">merged ~9 h</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -739,31 +1290,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+2699</span> <span class="del">-2313</span></div>
             <div class="g">refactor(cli)</div>
             <div class="t">cli.py module-level helper clusters move into topical siblings; cli.py lands under 2,000 lines</div>
-            <div class="w">merged ~2 h</div>
-          </div>
-        </a>
-        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
-      </div>
-      <div class="wrap">
-        <span class="p-num p-num-blue">#117656</span>
-        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117656" target="_blank" rel="noopener" title="#117656 fix(local-runtime): resident model cap derives from VRAM with models_max as the ceiling (#116078, salvage #116350)">
-          <div class="face">
-            <div class="d"><span class="add">+188</span> <span class="del">-1</span></div>
-            <div class="g">fix(local-runtime)</div>
-            <div class="t">resident model cap derives from VRAM with models_max as the ceiling</div>
-            <div class="w">merged ~2 h</div>
-          </div>
-        </a>
-        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
-      </div>
-      <div class="wrap">
-        <span class="p-num p-num-blue">#117646</span>
-        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117646" target="_blank" rel="noopener" title="#117646 fix(models): DeepSeek picker drops retired ids and labels V4.1 Flash (#117516, salvage #117525)">
-          <div class="face">
-            <div class="d"><span class="add">+19</span> <span class="del">-2</span></div>
-            <div class="g">fix(models)</div>
-            <div class="t">DeepSeek picker drops retired ids and labels V4.1 Flash</div>
-            <div class="w">merged ~2 h</div>
+            <div class="w">merged ~9 h</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -775,19 +1302,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+5</span> <span class="del">-3</span></div>
             <div class="g">test</div>
             <div class="t">held-store gate no longer forbids --db on unrelated sessions subcommands (main red)</div>
-            <div class="w">merged ~2 h</div>
-          </div>
-        </a>
-        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
-      </div>
-      <div class="wrap">
-        <span class="p-num p-num-blue">#117648</span>
-        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117648" target="_blank" rel="noopener" title="#117648 fix(desktop): model pill names the xAI OAuth provider instead of its route id (#117415, salvage #117474)">
-          <div class="face">
-            <div class="d"><span class="add">+43</span> <span class="del">-15</span></div>
-            <div class="g">fix(desktop)</div>
-            <div class="t">model pill names the xAI OAuth provider instead of its route id</div>
-            <div class="w">merged ~2 h</div>
+            <div class="w">merged ~9 h</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -799,7 +1314,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+228</span> <span class="del">-4</span></div>
             <div class="g"></div>
             <div class="t">Plugin catalog shows when each entry was added/updated and can sort by Newest / Recently updated</div>
-            <div class="w">merged ~2 h</div>
+            <div class="w">merged ~9 h</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -811,7 +1326,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+61</span> <span class="del">-2</span></div>
             <div class="g">fix(desktop)</div>
             <div class="t">idle renderer stops ticking once a decode placeholder resolves</div>
-            <div class="w">merged ~2 h</div>
+            <div class="w">merged ~10 h</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -823,7 +1338,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+346</span> <span class="del">-6</span></div>
             <div class="g">fix(desktop)</div>
             <div class="t">a background chat&#x27;s stored-id rotation no longer pulls the route, selection or focused tile bac…</div>
-            <div class="w">merged ~2 h</div>
+            <div class="w">merged ~10 h</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -835,7 +1350,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+161</span> <span class="del">-8</span></div>
             <div class="g">fix(gateway)</div>
             <div class="t">queued follow-up no longer delivers the first response twice</div>
-            <div class="w">merged ~2 h</div>
+            <div class="w">merged ~10 h</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -847,7 +1362,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+168</span> <span class="del">-22</span></div>
             <div class="g"></div>
             <div class="t">Fleet-restart warning no longer sticks forever on a serve backend, and macOS reports a gateway…</div>
-            <div class="w">merged ~2 h</div>
+            <div class="w">merged ~10 h</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -859,7 +1374,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+334</span> <span class="del">-8</span></div>
             <div class="g"></div>
             <div class="t">state.db residuals: serve stands down under a live gateway, recovery survives the first resume,…</div>
-            <div class="w">merged ~2 h</div>
+            <div class="w">merged ~10 h</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -871,7 +1386,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+426</span> <span class="del">-19</span></div>
             <div class="g">fix(sessions)</div>
             <div class="t">storage maintenance refuses while a writer holds state.db; retired-WAL guard tells users what t…</div>
-            <div class="w">merged ~2 h</div>
+            <div class="w">merged ~10 h</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -883,217 +1398,343 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+289</span> <span class="del">-17</span></div>
             <div class="g">feat(sessions)</div>
             <div class="t">`hermes sessions set-journal-mode delete|wal` converts an existing WAL store offline</div>
-            <div class="w">merged ~2 h</div>
+            <div class="w">merged ~10 h</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
-      </div>
-      <div class="wrap">
-        <span class="p-num p-num-blue">#117679</span>
-        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117679" target="_blank" rel="noopener" title="#117679 fix(cron): stale-code ticker keeps dispatching when the lock holder is not a fresh gateway (#117275, salvage #117287)">
-          <div class="face">
-            <div class="d"><span class="add">+96</span> <span class="del">-9</span></div>
-            <div class="g">fix(cron)</div>
-            <div class="t">stale-code ticker keeps dispatching when the lock holder is not a fresh gateway</div>
-            <div class="w">merged ~2 h</div>
-          </div>
-        </a>
-        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
-      </div>
-      <div class="wrap">
-        <span class="p-num p-num-blue">#117669</span>
-        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117669" target="_blank" rel="noopener" title="#117669 fix(desktop): large text pastes attach from HERMES_HOME/composer-pastes when the chat cwd is elsewhere (#117149, supersedes #117150)">
-          <div class="face">
-            <div class="d"><span class="add">+87</span> <span class="del">-4</span></div>
-            <div class="g">fix(desktop)</div>
-            <div class="t">large text pastes attach from HERMES_HOME/composer-pastes when the chat cwd is elsewhere</div>
-            <div class="w">merged ~3 h</div>
-          </div>
-        </a>
-        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
-      </div>
-      <div class="wrap">
-        <span class="p-num p-num-blue">#117661</span>
-        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117661" target="_blank" rel="noopener" title="#117661 fix(desktop): link titles never load a sign-in wall in the hidden renderer, no OS passkey dialog (#117323, salvage #117388)">
-          <div class="face">
-            <div class="d"><span class="add">+254</span> <span class="del">-25</span></div>
-            <div class="g">fix(desktop)</div>
-            <div class="t">link titles never load a sign-in wall in the hidden renderer, no OS passkey dialog</div>
-            <div class="w">merged ~3 h</div>
-          </div>
-        </a>
-        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
-      </div>
-      <div class="wrap">
-        <span class="p-num p-num-blue">#117659</span>
-        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117659" target="_blank" rel="noopener" title="#117659 fix(desktop): remote-served Desktop updates no longer restart a local gateway (#117529, salvage #117537)">
-          <div class="face">
-            <div class="d"><span class="add">+210</span> <span class="del">-6</span></div>
-            <div class="g">fix(desktop)</div>
-            <div class="t">remote-served Desktop updates no longer restart a local gateway</div>
-            <div class="w">merged ~3 h</div>
-          </div>
-        </a>
-        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
-      </div>
-      <div class="wrap">
-        <span class="p-num p-num-blue">#117653</span>
-        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117653" target="_blank" rel="noopener" title="#117653 fix(desktop): externally-terminated renderer shows a recovery page instead of a blank window (#116472, salvage #117140)">
-          <div class="face">
-            <div class="d"><span class="add">+103</span> <span class="del">-2</span></div>
-            <div class="g">fix(desktop)</div>
-            <div class="t">externally-terminated renderer shows a recovery page instead of a blank window</div>
-            <div class="w">merged ~3 h</div>
-          </div>
-        </a>
-        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
-      </div>
-      <div class="wrap">
-        <span class="p-num p-num-blue">#117652</span>
-        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117652" target="_blank" rel="noopener" title="#117652 fix(desktop): SSH connections learn their backend install id so duplicate addresses collapse (#117226, salvage #117228)">
-          <div class="face">
-            <div class="d"><span class="add">+92</span> <span class="del">-2</span></div>
-            <div class="g">fix(desktop)</div>
-            <div class="t">SSH connections learn their backend install id so duplicate addresses collapse</div>
-            <div class="w">merged ~3 h</div>
-          </div>
-        </a>
-        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
-      </div>
-      <div class="wrap">
-        <span class="p-num p-num-blue">#117651</span>
-        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117651" target="_blank" rel="noopener" title="#117651 fix(desktop): removing or re-pointing a connection forgets its cached roster and identity (#117227, salvage #117232)">
-          <div class="face">
-            <div class="d"><span class="add">+132</span> <span class="del">-3</span></div>
-            <div class="g">fix(desktop)</div>
-            <div class="t">removing or re-pointing a connection forgets its cached roster and identity</div>
-            <div class="w">merged ~3 h</div>
-          </div>
-        </a>
-        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
-      </div>
-      <div class="wrap">
-        <span class="p-num p-num-blue">#117649</span>
-        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117649" target="_blank" rel="noopener" title="#117649 fix(kanban): completing a task with no result or summary is refused with an audit event (#117483, salvage #117511)">
-          <div class="face">
-            <div class="d"><span class="add">+172</span> <span class="del">-25</span></div>
-            <div class="g">fix(kanban)</div>
-            <div class="t">completing a task with no result or summary is refused with an audit event</div>
-            <div class="w">merged ~3 h</div>
-          </div>
-        </a>
-        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
-      </div>
-      <div class="wrap">
-        <span class="p-num p-num-blue">#117680</span>
-        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117680" target="_blank" rel="noopener" title="#117680 fix(lsp): one stalled request no longer silences a workspace for good — retry window, cold-root warm-up budget, per-root exclusion (#116446)">
-          <div class="face">
-            <div class="d"><span class="add">+343</span> <span class="del">-34</span></div>
-            <div class="g">fix(lsp)</div>
-            <div class="t">one stalled request no longer silences a workspace for good — retry window, cold-root warm-up b…</div>
-            <div class="w">merged ~3 h</div>
-          </div>
-        </a>
-        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
-      </div>
-      <div class="wrap">
-        <span class="p-num p-num-blue">#117668</span>
-        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117668" target="_blank" rel="noopener" title="#117668 fix(desktop): chat composer stays mounted through transient session loaders; no addRange on a detached editor (#117375, #117285)">
-          <div class="face">
-            <div class="d"><span class="add">+126</span> <span class="del">-5</span></div>
-            <div class="g">fix(desktop)</div>
-            <div class="t">chat composer stays mounted through transient session loaders; no addRange on a detached editor</div>
-            <div class="w">merged ~3 h</div>
-          </div>
-        </a>
-        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
-      </div>
-      <div class="wrap">
-        <span class="p-num p-num-blue">#117665</span>
-        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117665" target="_blank" rel="noopener" title="#117665 fix(compression): an auto-resolved summary model that fails falls back to the main model and is named in the warning (#116472, salvage #116592)">
-          <div class="face">
-            <div class="d"><span class="add">+88</span> <span class="del">-7</span></div>
-            <div class="g">fix(compression)</div>
-            <div class="t">an auto-resolved summary model that fails falls back to the main model and is named in the warn…</div>
-            <div class="w">merged ~3 h</div>
-          </div>
-        </a>
-        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
-      </div>
-      <div class="wrap">
-        <span class="p-num p-num-blue">#117663</span>
-        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117663" target="_blank" rel="noopener" title="#117663 fix(update): pending fleet restart leaves gateways already on the checkout code alone (#117051)">
-          <div class="face">
-            <div class="d"><span class="add">+150</span> <span class="del">-4</span></div>
-            <div class="g">fix(update)</div>
-            <div class="t">pending fleet restart leaves gateways already on the checkout code alone</div>
-            <div class="w">merged ~3 h</div>
-          </div>
-        </a>
-        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
-      </div>
-      <div class="wrap">
-        <span class="p-num p-num-blue">#117657</span>
-        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117657" target="_blank" rel="noopener" title="#117657 feat(update): hermes update --list-venv-holders reports venv holders as JSON, exit 3 (#117246)">
-          <div class="face">
-            <div class="d"><span class="add">+141</span> <span class="del">-0</span></div>
-            <div class="g">feat(update)</div>
-            <div class="t">hermes update --list-venv-holders reports venv holders as JSON, exit 3</div>
-            <div class="w">merged ~3 h</div>
-          </div>
-        </a>
-        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
-      </div>
-      <div class="wrap">
-        <span class="p-num p-num-blue">#117654</span>
-        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117654" target="_blank" rel="noopener" title="#117654 feat(delegation): owner-death recovery event includes transcript tails and git state so the parent can continue without forensics (#116000)">
-          <div class="face">
-            <div class="d"><span class="add">+102</span> <span class="del">-6</span></div>
-            <div class="g">feat(delegation)</div>
-            <div class="t">owner-death recovery event includes transcript tails and git state so the parent can continue w…</div>
-            <div class="w">merged ~3 h</div>
-          </div>
-        </a>
-        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
-      </div>
-      <div class="wrap">
-        <span class="p-num p-num-blue">#117695</span>
-        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117695" target="_blank" rel="noopener" title="#117695 chore(catalog): add oc-free-provider v3.0.0">
-          <div class="face">
-            <div class="d"><span class="add">+18</span> <span class="del">-0</span></div>
-            <div class="g">chore(catalog)</div>
-            <div class="t">add oc-free-provider v3.0.0</div>
-            <div class="w">merged ~4 h</div>
-          </div>
-        </a>
-        <div class="miner"><a class="" href="https://github.com/anpicasso" target="_blank" rel="noopener" title="author: anpicasso">anpicasso</a></div>
       </div>
     </div>
   </div>
+  <script>
+// Drag-to-scroll (mempool.space behaviour)
+(function(){
+  const el = document.getElementById('blockstrip');
+  if (!el) return;
+  let down = false, sx = 0, sl = 0;
+  el.addEventListener('mousedown', function(e){
+    if (e.target.closest('a')) return;           // let links through
+    down = true;
+    sx = e.pageX - el.offsetLeft;
+    sl = el.scrollLeft;
+    el.style.cursor = 'grabbing';
+    el.style.scrollBehavior = 'auto';
+    e.preventDefault();
+  });
+  el.addEventListener('mouseleave', function(){
+    down = false;
+    el.style.cursor = 'grab';
+  });
+  el.addEventListener('mouseup', function(){
+    down = false;
+    el.style.cursor = 'grab';
+  });
+  el.addEventListener('mousemove', function(e){
+    if (!down) return;
+    e.preventDefault();
+    el.scrollLeft = sl - (e.pageX - el.offsetLeft - sx);
+  });
+  // touch support
+  el.addEventListener('touchstart', function(e){
+    if (e.target.closest('a')) return;
+    down = true;
+    sx = e.touches[0].pageX - el.offsetLeft;
+    sl = el.scrollLeft;
+    el.style.scrollBehavior = 'auto';
+  }, {passive: false});
+  el.addEventListener('touchend', function(){ down = false; });
+  el.addEventListener('touchmove', function(e){
+    if (!down) return;
+    el.scrollLeft = sl - (e.touches[0].pageX - el.offsetLeft - sx);
+  }, {passive: false});
+})();
+  </script>
   <!-- BLOCKROW:END -->
   <!-- PANELS:START -->
+  <!-- ISSUES:START -->
+    <div class="dash-card full-width">
+      <h3><i class="hgi hgi-stroke hgi-alert-02"></i> Issues <span class="card-count">13,785 open &middot; 15,813 closed</span></h3>
+      <div class="iss-list">
+      <div class="iss-row">
+        <a class="iss-num" href="https://github.com/NousResearch/hermes-agent/issues/118182" target="_blank" rel="noopener">#118182</a>
+        <span class="iss-title">[Portal] Long sessions wedge with non-retryable 400 once cumulative replayed reasoni…</span>
+        <span class="iss-meta"><span class="iss-author">orkytech</span> <span class="iss-time">0m ago</span></span>
+      </div>      <div class="iss-row">
+        <a class="iss-num" href="https://github.com/NousResearch/hermes-agent/issues/118181" target="_blank" rel="noopener">#118181</a>
+        <span class="iss-title">[Feature]: Paste files from the OS file manager (Ctrl+C file → Ctrl+V in composer) w…</span>
+        <span class="iss-meta"><span class="iss-author">sz85101734</span> <span class="iss-time">1m ago</span></span>
+      </div>      <div class="iss-row">
+        <a class="iss-num" href="https://github.com/NousResearch/hermes-agent/issues/118178" target="_blank" rel="noopener">#118178</a>
+        <span class="iss-title">fix(cli): `hermes chat -m &lt;alias&gt;` ignores configured model aliases (silently runs a…</span>
+        <span class="iss-meta"><span class="iss-author">RichardLian</span> <span class="iss-time">5m ago</span></span>
+      </div>      <div class="iss-row">
+        <a class="iss-num" href="https://github.com/NousResearch/hermes-agent/issues/118176" target="_blank" rel="noopener">#118176</a>
+        <span class="iss-title">[Bug]: SenseNova over-cap 400 (&quot;field MaxTokens invalid, should be in [1, 65536]&quot;) i…</span>
+        <span class="iss-meta"><span class="iss-author">Raycc-lang</span> <span class="iss-time">6m ago</span></span>
+      </div>      <div class="iss-row">
+        <a class="iss-num" href="https://github.com/NousResearch/hermes-agent/issues/118175" target="_blank" rel="noopener">#118175</a>
+        <span class="iss-title">[Feature]: `platforms.webhook.extra.public_base_url` — webhook URLs are always shown…</span>
+        <span class="iss-meta"><span class="iss-author">deathlord911</span> <span class="iss-time">7m ago</span><span class="iss-comments">&#x1f4ac; 1</span></span>
+      </div>      <div class="iss-row">
+        <a class="iss-num" href="https://github.com/NousResearch/hermes-agent/issues/118165" target="_blank" rel="noopener">#118165</a>
+        <span class="iss-title">[Bug]: cron bot-chat delivery kills a bot&#x27;s turn at a wall-clock cap while it is sti…</span>
+        <span class="iss-meta"><span class="iss-author">zengzheqing</span> <span class="iss-time">16m ago</span></span>
+      </div>      <div class="iss-row">
+        <a class="iss-num" href="https://github.com/NousResearch/hermes-agent/issues/118161" target="_blank" rel="noopener">#118161</a>
+        <span class="iss-title">[Bug]: startup orphan sweep closes pinned sessions — session_reaper calls sweep_orph…</span>
+        <span class="iss-meta"><span class="iss-author">nicecuprani</span> <span class="iss-time">19m ago</span><span class="iss-comments">&#x1f4ac; 2</span></span>
+      </div>      <div class="iss-row">
+        <a class="iss-num" href="https://github.com/NousResearch/hermes-agent/issues/118159" target="_blank" rel="noopener">#118159</a>
+        <span class="iss-title">NO_PROXY containing a bracketed IPv6 ([::1]) breaks the Codex OAuth/refresh path wit…</span>
+        <span class="iss-label">provider/openai</span>
+        <span class="iss-meta"><span class="iss-author">lanjintr</span> <span class="iss-time">20m ago</span></span>
+      </div>      <div class="iss-row">
+        <a class="iss-num" href="https://github.com/NousResearch/hermes-agent/issues/118158" target="_blank" rel="noopener">#118158</a>
+        <span class="iss-title">gateway migrate --multiplex always rolls back when a secondary&#x27;s configured drain &gt;=…</span>
+        <span class="iss-meta"><span class="iss-author">jnickles85-bit</span> <span class="iss-time">21m ago</span></span>
+      </div>      <div class="iss-row">
+        <a class="iss-num" href="https://github.com/NousResearch/hermes-agent/issues/118157" target="_blank" rel="noopener">#118157</a>
+        <span class="iss-title">auxiliary provider=auto does not follow effective provider after primary model fallb…</span>
+        <span class="iss-meta"><span class="iss-author">ch3och3tw</span> <span class="iss-time">21m ago</span></span>
+      </div>
+      </div>
+    </div>
+  <!-- ISSUES:END -->
+  <!-- PRS:START -->
+    <div class="dash-card full-width">
+      <h3><i class="hgi hgi-stroke hgi-git-pull-request"></i> Pull Requests <span class="card-count">29,435 open &middot; 58,613 closed</span></h3>
+      <div class="prs-strip">
+    <article class="prs-card">
+      <div class="prs-header">
+        <a class="prs-num" href="https://github.com/NousResearch/hermes-agent/pull/118180" target="_blank" rel="noopener">#118180</a>
+        <span class="prs-status prs-open">open</span>
+        <span class="prs-time">4m ago</span>
+      </div>
+      <p class="prs-title">fix(cli): expand configured model aliases in `hermes chat -m`</p>
+      <div class="prs-footer">
+        <span class="prs-author">by RichardLian</span>
+        <span class="prs-diff"><span class="add">+229</span> <span class="del">-5</span></span>
+      </div>
+    </article>    <article class="prs-card">
+      <div class="prs-header">
+        <a class="prs-num" href="https://github.com/NousResearch/hermes-agent/pull/118179" target="_blank" rel="noopener">#118179</a>
+        <span class="prs-status prs-open">open</span>
+        <span class="prs-time">5m ago</span>
+      </div>
+      <p class="prs-title">fix(model_switch): tuning-only providers block must not hijack vendor…</p>
+      <div class="prs-footer">
+        <span class="prs-author">by strzhao</span>
+        <span class="prs-diff"><span class="add">+60</span> <span class="del">-2</span></span>
+      </div>
+    </article>    <article class="prs-card">
+      <div class="prs-header">
+        <a class="prs-num" href="https://github.com/NousResearch/hermes-agent/pull/118177" target="_blank" rel="noopener">#118177</a>
+        <span class="prs-status prs-open">open</span>
+        <span class="prs-time">5m ago</span>
+      </div>
+      <p class="prs-title">fix(model-metadata): parse SenseNova&#x27;s CamelCase bounded-range output…</p>
+      <div class="prs-footer">
+        <span class="prs-author">by Raycc-lang</span>
+        <span class="prs-diff"><span class="add">+13</span> <span class="del">-5</span></span>
+      </div>
+    </article>    <article class="prs-card">
+      <div class="prs-header">
+        <a class="prs-num" href="https://github.com/NousResearch/hermes-agent/pull/118174" target="_blank" rel="noopener">#118174</a>
+        <span class="prs-status prs-open">open</span>
+        <span class="prs-time">4m ago</span>
+      </div>
+      <p class="prs-title">fix(desktop): the preview refusal prints the size it measured, not th…</p>
+      <div class="prs-footer">
+        <span class="prs-author">by MazenMkhinini</span>
+        <span class="prs-diff"><span class="add">+94</span> <span class="del">-1</span></span>
+      </div>
+    </article>    <article class="prs-card">
+      <div class="prs-header">
+        <a class="prs-num" href="https://github.com/NousResearch/hermes-agent/pull/118173" target="_blank" rel="noopener">#118173</a>
+        <span class="prs-status prs-open">open</span>
+        <span class="prs-time">4m ago</span>
+      </div>
+      <p class="prs-title">fix(update): fail closed when the mixed-version reap cannot scope by…</p>
+      <div class="prs-footer">
+        <span class="prs-author">by liuhao1024</span>
+        <span class="prs-diff"><span class="add">+80</span> <span class="del">-1</span></span>
+      </div>
+    </article>    <article class="prs-card">
+      <div class="prs-header">
+        <a class="prs-num" href="https://github.com/NousResearch/hermes-agent/pull/118172" target="_blank" rel="noopener">#118172</a>
+        <span class="prs-status prs-open">open</span>
+        <span class="prs-time">4m ago</span>
+      </div>
+      <p class="prs-title">fix(agent): route auto titles through active fallback</p>
+      <div class="prs-footer">
+        <span class="prs-author">by KoNit-K</span>
+        <span class="prs-diff"><span class="add">+48</span> <span class="del">-5</span></span>
+      </div>
+    </article>    <article class="prs-card">
+      <div class="prs-header">
+        <a class="prs-num" href="https://github.com/NousResearch/hermes-agent/pull/118171" target="_blank" rel="noopener">#118171</a>
+        <span class="prs-status prs-open">open</span>
+        <span class="prs-time">4m ago</span>
+      </div>
+      <p class="prs-title">fix(sessions): spare pinned rows in the startup orphan sweep</p>
+      <div class="prs-footer">
+        <span class="prs-author">by 686f6c61</span>
+        <span class="prs-diff"><span class="add">+17</span> <span class="del">-1</span></span>
+      </div>
+    </article>    <article class="prs-card">
+      <div class="prs-header">
+        <a class="prs-num" href="https://github.com/NousResearch/hermes-agent/pull/118170" target="_blank" rel="noopener">#118170</a>
+        <span class="prs-status prs-open">open</span>
+        <span class="prs-time">4m ago</span>
+      </div>
+      <p class="prs-title">fix(auth): handle bracketed IPv6 no-proxy entries</p>
+      <div class="prs-footer">
+        <span class="prs-author">by KoNit-K</span>
+        <span class="prs-diff"><span class="add">+100</span> <span class="del">-4</span></span>
+      </div>
+    </article>    <article class="prs-card">
+      <div class="prs-header">
+        <a class="prs-num" href="https://github.com/NousResearch/hermes-agent/pull/118169" target="_blank" rel="noopener">#118169</a>
+        <span class="prs-status prs-open">open</span>
+        <span class="prs-time">4m ago</span>
+      </div>
+      <p class="prs-title">fix(website): compact plugin and skill directory headers</p>
+      <div class="prs-footer">
+        <span class="prs-author">by unsupportedpastels</span>
+        <span class="prs-diff"><span class="add">+564</span> <span class="del">-6</span></span>
+      </div>
+    </article>    <article class="prs-card">
+      <div class="prs-header">
+        <a class="prs-num" href="https://github.com/NousResearch/hermes-agent/pull/118168" target="_blank" rel="noopener">#118168</a>
+        <span class="prs-status prs-open">open</span>
+        <span class="prs-time">4m ago</span>
+      </div>
+      <p class="prs-title">fix(gateway): honor drain budget during migration uninstall</p>
+      <div class="prs-footer">
+        <span class="prs-author">by KoNit-K</span>
+        <span class="prs-diff"><span class="add">+40</span> <span class="del">-1</span></span>
+      </div>
+    </article>    <article class="prs-card">
+      <div class="prs-header">
+        <a class="prs-num" href="https://github.com/NousResearch/hermes-agent/pull/118167" target="_blank" rel="noopener">#118167</a>
+        <span class="prs-status prs-open">open</span>
+        <span class="prs-time">4m ago</span>
+      </div>
+      <p class="prs-title">fix(desktop): retain archived sidebar tombstones</p>
+      <div class="prs-footer">
+        <span class="prs-author">by KoNit-K</span>
+        <span class="prs-diff"><span class="add">+72</span> <span class="del">-7</span></span>
+      </div>
+    </article>    <article class="prs-card">
+      <div class="prs-header">
+        <a class="prs-num" href="https://github.com/NousResearch/hermes-agent/pull/118166" target="_blank" rel="noopener">#118166</a>
+        <span class="prs-status prs-open">open</span>
+        <span class="prs-time">3m ago</span>
+      </div>
+      <p class="prs-title">fix(cron): a bot-chat delivery bounds the child turn by idle time, no…</p>
+      <div class="prs-footer">
+        <span class="prs-author">by zengzheqing</span>
+        <span class="prs-diff"><span class="add">+275</span> <span class="del">-9</span></span>
+      </div>
+    </article>
+      </div>
+    </div>
+  <!-- PRS:END -->
+  <!-- CONTRIBUTORS:START -->
+    <div class="dash-card full-width">
+      <h3><i class="hgi hgi-stroke hgi-user-group"></i> Top Contributors</h3>
+      <div class="contrib-strip">
+      <a class="contrib-card" href="https://github.com/teknium1" target="_blank" rel="noopener">
+        <img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/127238744?v=4&s=64" alt="" loading="lazy" width="36" height="36">
+        <span class="contrib-name">teknium1</span>
+        <span class="contrib-count">17,828</span>
+      </a>      <a class="contrib-card" href="https://github.com/OutThisLife" target="_blank" rel="noopener">
+        <img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/770929?v=4&s=64" alt="" loading="lazy" width="36" height="36">
+        <span class="contrib-name">OutThisLife</span>
+        <span class="contrib-count">3,520</span>
+      </a>      <a class="contrib-card" href="https://github.com/kshitijk4poor" target="_blank" rel="noopener">
+        <img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/82637225?v=4&s=64" alt="" loading="lazy" width="36" height="36">
+        <span class="contrib-name">kshitijk4poor</span>
+        <span class="contrib-count">2,957</span>
+      </a>      <a class="contrib-card" href="https://github.com/ethernet8023" target="_blank" rel="noopener">
+        <img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/666465?v=4&s=64" alt="" loading="lazy" width="36" height="36">
+        <span class="contrib-name">ethernet8023</span>
+        <span class="contrib-count">562</span>
+      </a>      <a class="contrib-card" href="https://github.com/benbarclay" target="_blank" rel="noopener">
+        <img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/413810?v=4&s=64" alt="" loading="lazy" width="36" height="36">
+        <span class="contrib-name">benbarclay</span>
+        <span class="contrib-count">511</span>
+      </a>      <a class="contrib-card" href="https://github.com/liuhao1024" target="_blank" rel="noopener">
+        <img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/11816344?v=4&s=64" alt="" loading="lazy" width="36" height="36">
+        <span class="contrib-name">liuhao1024</span>
+        <span class="contrib-count">406</span>
+      </a>      <a class="contrib-card" href="https://github.com/helix4u" target="_blank" rel="noopener">
+        <img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/4317663?v=4&s=64" alt="" loading="lazy" width="36" height="36">
+        <span class="contrib-name">helix4u</span>
+        <span class="contrib-count">348</span>
+      </a>      <a class="contrib-card" href="https://github.com/fangliquanflq" target="_blank" rel="noopener">
+        <img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/280272527?v=4&s=64" alt="" loading="lazy" width="36" height="36">
+        <span class="contrib-name">fangliquanflq</span>
+        <span class="contrib-count">341</span>
+      </a>      <a class="contrib-card" href="https://github.com/apps/hermes-seaeye" target="_blank" rel="noopener">
+        <img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/134168893?v=4&s=64" alt="" loading="lazy" width="36" height="36">
+        <span class="contrib-name">hermes-seaeye[bot]</span>
+        <span class="contrib-count">313</span>
+      </a>      <a class="contrib-card" href="https://github.com/xxxigm" target="_blank" rel="noopener">
+        <img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/54813621?v=4&s=64" alt="" loading="lazy" width="36" height="36">
+        <span class="contrib-name">xxxigm</span>
+        <span class="contrib-count">268</span>
+      </a>      <a class="contrib-card" href="https://github.com/erosika" target="_blank" rel="noopener">
+        <img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/56565191?v=4&s=64" alt="" loading="lazy" width="36" height="36">
+        <span class="contrib-name">erosika</span>
+        <span class="contrib-count">245</span>
+      </a>      <a class="contrib-card" href="https://github.com/alt-glitch" target="_blank" rel="noopener">
+        <img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/52913345?v=4&s=64" alt="" loading="lazy" width="36" height="36">
+        <span class="contrib-name">alt-glitch</span>
+        <span class="contrib-count">221</span>
+      </a>      <a class="contrib-card" href="https://github.com/KoNit-K" target="_blank" rel="noopener">
+        <img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/124019182?v=4&s=64" alt="" loading="lazy" width="36" height="36">
+        <span class="contrib-name">KoNit-K</span>
+        <span class="contrib-count">215</span>
+      </a>      <a class="contrib-card" href="https://github.com/austinpickett" target="_blank" rel="noopener">
+        <img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/260188?v=4&s=64" alt="" loading="lazy" width="36" height="36">
+        <span class="contrib-name">austinpickett</span>
+        <span class="contrib-count">212</span>
+      </a>      <a class="contrib-card" href="https://github.com/JoaoMarcos44" target="_blank" rel="noopener">
+        <img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/87440198?v=4&s=64" alt="" loading="lazy" width="36" height="36">
+        <span class="contrib-name">JoaoMarcos44</span>
+        <span class="contrib-count">208</span>
+      </a>
+      </div>
+    </div>
+  <!-- CONTRIBUTORS:END -->
   <div class="dash-row">
     <div class="dash-card left">
-      <h3>PR Backlog</h3>
-      <div class="big-num">29,247</div>
+      <h3><i class="hgi hgi-stroke hgi-inbox"></i> PR Backlog</h3>
+      <div class="big-num">29,383</div>
       <div class="big-sub">open pull requests</div>
               <div class="stat-row">
           <span class="stat-label">newest</span>
-          <a class="stat-val" href="https://github.com/NousResearch/hermes-agent/pull/117889" target="_blank" rel="noopener">#117889</a>
-          <span class="stat-dim">0.0h ago</span>
+          <a class="stat-val" href="https://github.com/NousResearch/hermes-agent/pull/118180" target="_blank" rel="noopener">#118180</a>
+          <span class="stat-dim">0.1h ago</span>
         </div>
               <div class="stat-row">
           <span class="stat-label">oldest</span>
           <a class="stat-val" href="https://github.com/NousResearch/hermes-agent/pull/2637" target="_blank" rel="noopener">#2637</a>
           <span class="stat-dim">181d ago</span>
         </div>
-      <div class="section-label">by area</div>
-      <div class="area-cloud">
-        <span class="area-pill">fix(gateway) 34</span><span class="area-pill">fix(desktop) 30</span><span class="area-pill">feat(desktop) 26</span><span class="area-pill">other 20</span><span class="area-pill">fix(kanban) 18</span><span class="area-pill">fix(agent) 16</span><span class="area-pill">fix(cron) 10</span><span class="area-pill">fix(update) 10</span>
-      </div>
+      <div class="section-label">new PRs — last 7 days</div>
+      <svg class="line-chart" viewBox="0 0 240 80" width="240" height="80">
+  <polygon points="24.0,64.0 24.0,14.6 59.3,11.9 94.7,25.7 130.0,20.5 165.3,18.5 200.7,8.0 236.0,45.2 236.0,64.0" fill="url(#fade)"/>
+  <defs><linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="var(--nous-amber)" stop-opacity="0.25"/>
+    <stop offset="100%" stop-color="var(--nous-amber)" stop-opacity="0.02"/>
+  </linearGradient></defs>
+  <polyline points="24.0,14.6 59.3,11.9 94.7,25.7 130.0,20.5 165.3,18.5 200.7,8.0 236.0,45.2 " fill="none" stroke="var(--nous-amber)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+  <text x="24.0" y="78" class="chart-label">09-15</text><text x="59.3" y="78" class="chart-label">09-16</text><text x="94.7" y="78" class="chart-label">09-17</text><text x="130.0" y="78" class="chart-label">09-18</text><text x="165.3" y="78" class="chart-label">09-19</text><text x="200.7" y="78" class="chart-label">09-20</text><text x="236.0" y="78" class="chart-label">09-21</text>
+</svg>
     </div>
     <div class="dash-card right">
-      <h3>Release Velocity</h3>
+      <h3><i class="hgi hgi-stroke hgi-rocket-01"></i> Release Velocity</h3>
               <div class="stat-row">
           <span class="stat-label">latest</span>
           <span class="stat-val">v0.21.3</span>
@@ -1104,51 +1745,49 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
           <span class="stat-val">~5.6d</span>
           <span class="stat-dim">3 releases in 2 weeks</span>
         </div>
-      <div class="section-label">release timeline</div>
-      <div class="rel-dots">
-        <span class="rel-dot" title="v0.21.3 (v2026.9.14)"></span><span class="rel-dot" title="v0.21.2 (v2026.9.11)"></span><span class="rel-dot" title="v0.21.1 (v2026.9.7)"></span><span class="rel-dot" title="v0.21.0 (v2026.8.31)"></span><span class="rel-dot" title="v0.20.6 (v2026.8.27)"></span><span class="rel-dot" title="v0.20.5 (v2026.8.19)"></span><span class="rel-dot" title="v0.20.4 (v2026.8.18)"></span><span class="rel-dot" title="v0.20.3 (v2026.8.16.2)"></span><span class="rel-dot" title="v0.20.2 (v2026.8.16)"></span><span class="rel-dot" title="v0.20.1 (v2026.8.13)"></span><span class="rel-dot" title="v0.20.0 (v2026.8.3)"></span><span class="rel-dot" title="v0.19.1 (v2026.7.30)"></span>
-      </div>
+      <div class="section-label">releases — last 30 days</div>
+      <div class="rel-calendar"><span class="rel-cal rel-lv0" title="2026-08-23: 0 release(s)">23</span><span class="rel-cal rel-lv0" title="2026-08-24: 0 release(s)">24</span><span class="rel-cal rel-lv0" title="2026-08-25: 0 release(s)">25</span><span class="rel-cal rel-lv0" title="2026-08-26: 0 release(s)">26</span><span class="rel-cal rel-lv1" title="2026-08-27: 1 release(s)">27</span><span class="rel-cal rel-lv0" title="2026-08-28: 0 release(s)">28</span><span class="rel-cal rel-lv0" title="2026-08-29: 0 release(s)">29</span><span class="rel-cal rel-lv0" title="2026-08-30: 0 release(s)">30</span><span class="rel-cal rel-lv1" title="2026-08-31: 1 release(s)">31</span><span class="rel-cal rel-lv0" title="2026-09-01: 0 release(s)">1</span><span class="rel-cal rel-lv0" title="2026-09-02: 0 release(s)">2</span><span class="rel-cal rel-lv0" title="2026-09-03: 0 release(s)">3</span><span class="rel-cal rel-lv0" title="2026-09-04: 0 release(s)">4</span><span class="rel-cal rel-lv0" title="2026-09-05: 0 release(s)">5</span><span class="rel-cal rel-lv0" title="2026-09-06: 0 release(s)">6</span><span class="rel-cal rel-lv1" title="2026-09-07: 1 release(s)">7</span><span class="rel-cal rel-lv0" title="2026-09-08: 0 release(s)">8</span><span class="rel-cal rel-lv0" title="2026-09-09: 0 release(s)">9</span><span class="rel-cal rel-lv0" title="2026-09-10: 0 release(s)">10</span><span class="rel-cal rel-lv1" title="2026-09-11: 1 release(s)">11</span><span class="rel-cal rel-lv0" title="2026-09-12: 0 release(s)">12</span><span class="rel-cal rel-lv0" title="2026-09-13: 0 release(s)">13</span><span class="rel-cal rel-lv1" title="2026-09-14: 1 release(s)">14</span><span class="rel-cal rel-lv0" title="2026-09-15: 0 release(s)">15</span><span class="rel-cal rel-lv0" title="2026-09-16: 0 release(s)">16</span><span class="rel-cal rel-lv0" title="2026-09-17: 0 release(s)">17</span><span class="rel-cal rel-lv0" title="2026-09-18: 0 release(s)">18</span><span class="rel-cal rel-lv0" title="2026-09-19: 0 release(s)">19</span><span class="rel-cal rel-lv0" title="2026-09-20: 0 release(s)">20</span><span class="rel-cal rel-lv0" title="2026-09-21: 0 release(s)">21</span></div>
     </div>
     <div class="dash-card third">
-      <h3>PR Velocity</h3>
+      <h3><i class="hgi hgi-stroke hgi-activity-01"></i> PR Velocity</h3>
         <div class="stat-row">
           <span class="stat-label">7d</span>
-          <span class="stat-val">258.7 PR/day</span>
-          <span class="stat-dim">1811 merged</span>
+          <span class="stat-val">262.7 PR/day</span>
+          <span class="stat-dim">1839 merged</span>
         </div>        <div class="stat-row">
           <span class="stat-label">30d</span>
-          <span class="stat-val">128.5 PR/day</span>
-          <span class="stat-dim">3854 merged</span>
+          <span class="stat-val">129.4 PR/day</span>
+          <span class="stat-dim">3882 merged</span>
         </div>        <div class="stat-row">
           <span class="stat-label">90d</span>
-          <span class="stat-val">97.5 PR/day</span>
-          <span class="stat-dim">8776 merged</span>
+          <span class="stat-val">97.8 PR/day</span>
+          <span class="stat-dim">8804 merged</span>
         </div>
       <div class="section-label">merge speed by area</div>
       <div class="velo-list">
           <div class="velo-row">
-            <span class="velo-area">fix(desktop)</span>
-            <span class="velo-h">4.1h</span>
-            <span class="velo-n">(14)</span>
-          </div>          <div class="velo-row">
             <span class="velo-area">other</span>
             <span class="velo-h">1.4h</span>
-            <span class="velo-n">(5)</span>
+            <span class="velo-n">(14)</span>
           </div>          <div class="velo-row">
-            <span class="velo-area">chore(catalog)</span>
-            <span class="velo-h">1.2h</span>
+            <span class="velo-area">fix(desktop)</span>
+            <span class="velo-h">3.0h</span>
+            <span class="velo-n">(6)</span>
+          </div>          <div class="velo-row">
+            <span class="velo-area">fix(gateway)</span>
+            <span class="velo-h">2.1h</span>
+            <span class="velo-n">(3)</span>
+          </div>          <div class="velo-row">
+            <span class="velo-area">fix(cron)</span>
+            <span class="velo-h">2.7h</span>
             <span class="velo-n">(2)</span>
           </div>          <div class="velo-row">
-            <span class="velo-area">test</span>
-            <span class="velo-h">0.1h</span>
+            <span class="velo-area">gateway</span>
+            <span class="velo-h">1.3h</span>
             <span class="velo-n">(1)</span>
           </div>          <div class="velo-row">
-            <span class="velo-area">catalog</span>
-            <span class="velo-h">1.7h</span>
-            <span class="velo-n">(1)</span>
-          </div>          <div class="velo-row">
-            <span class="velo-area">refactor(cli)</span>
-            <span class="velo-h">4.5h</span>
+            <span class="velo-area">chore(auth)</span>
+            <span class="velo-h">1.4h</span>
             <span class="velo-n">(1)</span>
           </div>
       </div>
@@ -1156,10 +1795,45 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
   </div>
   <!-- PANELS:END -->
   <!-- NEWSLETTER:START -->
-
+  <section class="newsletter">
+    <h2 class="nw-title"><i class="hgi hgi-stroke hgi-news"></i> Latest Merges — Last Hour</h2>
+    <div class="nw-strip">
+  <article class="nw-card">
+    <div class="nw-header">
+      <a class="nw-link" href="https://github.com/NousResearch/hermes-agent/pull/118082" target="_blank" rel="noopener">#118082</a>
+      <span class="nw-tag"></span>
+      <span class="nw-time">~40 min</span>
+    </div>
+    <div class="nw-body">
+      <p class="nw-summary">Under multiplex-only, `doctor`, `cron status`, `claw` and the gateway liveness ladder now report the ONE host gateway and the profiles it serves, instead of implying one gateway per profile and tel...</p>
+      <div class="nw-gallery"><img src="https://v3b.fal.media/files/b/0aab4d1e/RaHTGLKr2AFBfrTS0ZF9q_M2hNQGG7.png" alt="" class="nw-img" loading="lazy"></div>
+    </div>
+    <div class="nw-footer">
+      <span class="nw-author">by <a href="https://github.com/teknium1" target="_blank" rel="noopener">teknium1</a></span>
+    </div>
+  </article>
+  <article class="nw-card">
+    <div class="nw-header">
+      <a class="nw-link" href="https://github.com/NousResearch/hermes-agent/pull/118097" target="_blank" rel="noopener">#118097</a>
+      <span class="nw-tag">gateway:</span>
+      <span class="nw-time">~44 min</span>
+    </div>
+    <div class="nw-body">
+      <p class="nw-summary">Part of #100896</p>
+      <div class="nw-gallery"><img src="https://v3b.fal.media/files/b/0aab4dba/Ot3HYanVkYFSNB8E5TBOA_3wZjLhsG.png" alt="" class="nw-img" loading="lazy"></div>
+    </div>
+    <div class="nw-footer">
+      <span class="nw-author">by <a href="https://github.com/teknium1" target="_blank" rel="noopener">teknium1</a></span>
+    </div>
+  </article>
+    </div>
+  </section>
   <!-- NEWSLETTER:END -->
   <!-- TICKER:START -->
-
+  <div class="ticker-wrap">
+    <div class="ticker"><span class="ticker-item"><span class="t-time">40m</span><span class="t-tag"></span> doctor, cron status and claw report the ONE hos...</span><span class="ticker-item"><span class="t-time">44m</span><span class="t-tag">gateway:</span> lifecycle verbs mean &quot;the one host multiplexer&quot;...</span><span class="ticker-item"><span class="t-time">40m</span><span class="t-tag"></span> doctor, cron status and claw report the ONE hos...</span><span class="ticker-item"><span class="t-time">44m</span><span class="t-tag">gateway:</span> lifecycle verbs mean &quot;the one host multiplexer&quot;...</span>
+    </div>
+  </div>
   <!-- TICKER:END -->
 </main>
 

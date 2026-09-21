@@ -162,18 +162,66 @@ def norm_merged(pr: dict, now: dt.datetime) -> dict:
         "age_min": minutes,
         "ago": ago,
         "url": f"https://github.com/{REPO}/pull/{pr['number']}",
+        "body": pr.get("body", ""),
+        "images": _extract_images(pr.get("body", "")),
+        "summary": _body_summary(pr.get("body", ""), pr.get("title", "")),
     }
+
+
+def _extract_images(body: str) -> list[str]:
+    """Pull image URLs from markdown body."""
+    import re
+    return re.findall(r'!\[.*?\]\(([^)]+)\)', body)
+
+
+def _body_summary(body: str, title: str) -> str:
+    """Extract a 1-2 sentence summary from PR body, or fall back to title."""
+    import re
+    if not body:
+        title_clean = re.sub(r'^\w+(\([^)]*\))?!?:\\s*', '', title)
+        return title_clean
+    # Strip images
+    text = re.sub(r'!\[.*?\]\([^)]+\)\n?', '', body)
+    # Split on headings
+    parts = re.split(r'\n#{1,3}\s+', text)
+    first = parts[0].strip()
+    if not first:
+        return title
+    # Take first 1-2 sentences from first paragraph
+    sentences = re.split(r'(?<=[.!?])\s+', first)
+    summary = ' '.join(sentences[:2])
+    # Cap at ~200 chars
+    if len(summary) > 200:
+        summary = summary[:197] + "..."
+    return summary
 
 
 # ── panel data ──────────────────────────────────────────────────────────────
 
 def backlog_stats() -> dict:
-    """Open-PR stats: true oldest (asc query), newest + area breakdown (desc query)."""
+    """Open-PR stats: oldest/newest + daily new PR counts for chart."""
     import re
     from collections import Counter
 
     now = dt.datetime.now(dt.timezone.utc)
     areas: Counter[str] = Counter()
+    today = now.date()
+
+    # ── daily new PRs over last 7 days (GitHub search: created:YYYY-MM-DD) ──
+    daily_new: list[dict] = []
+    for i in range(6, -1, -1):
+        d = today - dt.timedelta(days=i)
+        ds = d.isoformat()
+        r = subprocess.run(
+            ["gh", "api",
+             f"search/issues?q=repo:{REPO}+is:pr+base:{SOURCE_BRANCH}+created:{ds}"
+             "&per_page=1"],
+            capture_output=True, text=True)
+        count = 0
+        if r.returncode == 0:
+            data = json.loads(r.stdout)
+            count = data.get("total_count", 0)
+        daily_new.append({"date": ds, "count": count})
 
     # ── true oldest: asc query, first result ──
     oldest_pr: dict | None = None
@@ -226,34 +274,48 @@ def backlog_stats() -> dict:
         "areas": dict(areas.most_common(12)),
         "oldest_pr": oldest_pr,
         "newest_pr": newest_pr,
+        "daily_new": daily_new,
     }
 
 
 def release_stats() -> dict:
-    """Recent releases and cadence."""
+    """Recent releases + 30-day calendar grid (which days had releases)."""
     r = subprocess.run(
         ["gh", "release", "list", "-R", REPO, "--limit", "40",
          "--json", "tagName,name,publishedAt"],
         capture_output=True, text=True)
     if r.returncode != 0:
-        return {"releases": [], "cadence_days": None, "error": r.stderr.strip()[:200]}
+        return {"releases": [], "cadence_days": None, "calendar": [], "error": r.stderr.strip()[:200]}
     rels = json.loads(r.stdout)
     now = dt.datetime.now(dt.timezone.utc)
     recent = []
+    today = now.date()
+
+    # build 30-day calendar: each day has date, weekday, and release count
+    calendar: list[dict] = []
+    for i in range(29, -1, -1):
+        d = today - dt.timedelta(days=i)
+        calendar.append({"date": d.isoformat(), "dow": d.strftime("%a")[:2],
+                         "count": 0})
+
     for rel in rels:
         pub = parse(rel["publishedAt"])
         days_ago = (now - pub).days
         if days_ago <= 90:
-            # name field: "Hermes Agent v0.21.3 (v2026.9.14)"
-            # extract version like "v0.21.3"
             name = rel.get("name") or ""
             recent.append({"tag": rel["tagName"],
                            "version": name,
                            "date": rel["publishedAt"][:10],
                            "days_ago": days_ago})
+        # mark on calendar
+        pd = pub.date().isoformat()
+        for c in calendar:
+            if c["date"] == pd:
+                c["count"] += 1
+
     cadence = round(90 / len(recent), 1) if recent else None
     latest = recent[0] if recent else None
-    return {"releases": recent, "cadence_days": cadence, "latest": latest}
+    return {"releases": recent, "cadence_days": cadence, "latest": latest, "calendar": calendar}
 
 
 def merge_rate() -> dict:
@@ -280,6 +342,84 @@ def merge_rate() -> dict:
         else:
             rates[label] = {"count": 0, "per_day": 0}
     return rates
+
+
+def issues_stats() -> dict:
+    """Fetch top open issues from the repo."""
+    import subprocess as _sp
+    from datetime import datetime, timezone, timedelta
+
+    now = datetime.now(timezone.utc)
+    total_open = 0
+    total_closed = 0
+
+    # Get total counts
+    for state in ('open', 'closed'):
+        r = _sp.run(
+            ['gh', 'api', f'search/issues?q=repo:{REPO}+type:issue+state:{state}&per_page=1'],
+            capture_output=True, text=True, timeout=15)
+        if r.returncode == 0:
+            data = json.loads(r.stdout)
+            if state == 'open':
+                total_open = data.get('total_count', 0)
+            else:
+                total_closed = data.get('total_count', 0)
+
+    # Get 10 most recent open issues
+    r = _sp.run(
+        ['gh', 'api', f'search/issues?q=repo:{REPO}+type:issue+state:open&sort=created&order=desc&per_page=10'],
+        capture_output=True, text=True, timeout=15)
+    recent = []
+    if r.returncode == 0:
+        data = json.loads(r.stdout)
+        for item in data.get('items', []):
+            labels = item.get('labels', [])
+            # Filter: only show interesting labels (not type/*, comp/*, area/*)
+            display_labels = [l['name'] for l in labels
+                            if not l['name'].startswith(('type/', 'comp/', 'area/', 'sweeper:', 'P'))]
+            created = datetime.fromisoformat(item['created_at'].replace('Z', '+00:00'))
+            delta = now - created
+            if delta.total_seconds() < 3600:
+                ago = f"{int(delta.total_seconds()/60)}m ago"
+            elif delta.days < 1:
+                ago = f"{int(delta.total_seconds()/3600)}h ago"
+            else:
+                ago = f"{delta.days}d ago"
+            recent.append({
+                'number': item['number'],
+                'title': ' '.join((item.get('title', '') or '').split()),
+                'labels': display_labels,
+                'author': item.get('user', {}).get('login', ''),
+                'created_at': item['created_at'],
+                'ago': ago,
+                'comments': item.get('comments', 0),
+                'url': item.get('html_url', f"https://github.com/{REPO}/issues/{item['number']}")
+            })
+
+    return {'total_open': total_open, 'total_closed': total_closed, 'recent': recent}
+
+
+def contributors_stats() -> dict:
+    """Fetch top contributors from the repo."""
+    import subprocess as _sp2
+
+    r = _sp2.run(
+        ['gh', 'api', 'repos/NousResearch/hermes-agent/contributors?per_page=30'],
+        capture_output=True, text=True, timeout=15)
+    contribs: list[dict] = []
+    if r.returncode == 0:
+        data = json.loads(r.stdout)
+        if isinstance(data, list):
+            for c in data:
+                contribs.append({
+                    'login': c.get('login', ''),
+                    'contributions': c.get('contributions', 0),
+                    'avatar_url': c.get('avatar_url', ''),
+                    'html_url': c.get('html_url', '')
+                })
+
+    contribs.sort(key=lambda x: x.get('contributions', 0), reverse=True)
+    return {'contributors': contribs[:15]}
 
 
 def merge_velocity() -> dict:
@@ -314,7 +454,99 @@ def merge_velocity() -> dict:
     return velo
 
 
+def prs_stats() -> dict:
+    """Fetch recently updated open PRs from the repo."""
+    import subprocess, json
+    from datetime import datetime, timezone
+
+    now = datetime.now(timezone.utc)
+    total_open = 0
+    total_closed = 0
+
+    # Total counts
+    for state in ('open', 'closed'):
+        r = subprocess.run(
+            ['gh', 'api', f'search/issues?q=repo:{REPO}+type:pr+state:{state}&per_page=1'],
+            capture_output=True, text=True, timeout=15)
+        if r.returncode == 0:
+            data = json.loads(r.stdout)
+            if state == 'open':
+                total_open = data.get('total_count', 0)
+            else:
+                total_closed = data.get('total_count', 0)
+
+    # 12 most recently updated open PRs. Use `gh pr list` because the
+    # search endpoint does not return diff or review fields.
+    r = subprocess.run(
+        ['gh', 'pr', 'list', '-R', REPO, '--state', 'open', '--limit', '12',
+         '--json', 'number,title,author,updatedAt,isDraft,reviewDecision,additions,deletions,url'],
+        capture_output=True, text=True, timeout=15)
+    recent = []
+    if r.returncode == 0:
+        data = json.loads(r.stdout)
+        for item in data:
+            updated = datetime.fromisoformat(item['updatedAt'].replace('Z', '+00:00'))
+            delta = now - updated
+            if delta.total_seconds() < 3600:
+                ago = f"{int(delta.total_seconds()/60)}m ago"
+            elif delta.days < 1:
+                ago = f"{int(delta.total_seconds()/3600)}h ago"
+            else:
+                ago = f"{delta.days}d ago"
+            recent.append({
+                'number': item['number'],
+                'title': ' '.join((item.get('title', '') or '').split()),
+                'author': (item.get('author') or {}).get('login', ''),
+                'state': 'draft' if item.get('isDraft') else 'open',
+                'draft': bool(item.get('isDraft')),
+                'review': item.get('reviewDecision', '') or '',
+                'additions': item.get('additions', 0),
+                'deletions': item.get('deletions', 0),
+                'updated_at': item['updatedAt'],
+                'ago': ago,
+                'url': item.get('url', f"https://github.com/{REPO}/pull/{item['number']}")
+            })
+
+    return {'total_open': total_open, 'total_closed': total_closed, 'recent': recent}
+
+
 # ── main ────────────────────────────────────────────────────────────────────
+
+
+def _enrich_recent_bodies(merged: list[dict], raw_prs: list[dict]) -> None:
+    """Fetch PR body + images for recently merged PRs (≤ 90 min).
+
+    `gh pr list` doesn't return the body, so for PRs that are fresh
+    enough to appear in the newsletter we fetch them individually.
+    Modifies ``merged`` in-place.
+    """
+    import re
+
+    for m in merged:
+        if m["age_min"] > 90:
+            continue
+        # Already has body/fields from norm_merged (copied from raw)
+        body = m.get("body", "")
+        # If body was already present in the raw dict (unlikely), skip
+        if body and body.strip():
+            continue
+        # Fetch body via gh pr view
+        num = m["number"]
+        r = subprocess.run(
+            ["gh", "pr", "view", str(num), "-R", REPO, "--json", "body"],
+            capture_output=True, text=True, timeout=15,
+        )
+        if r.returncode != 0:
+            continue
+        try:
+            data = json.loads(r.stdout)
+            body = data.get("body", "") or ""
+        except json.JSONDecodeError:
+            body = ""
+        m["body"] = body
+        m["images"] = _extract_images(body)
+        m["summary"] = _body_summary(body, m["title"])
+
 
 def main() -> int:
     now = dt.datetime.now(dt.timezone.utc)
@@ -329,7 +561,11 @@ def main() -> int:
     merged_lane = [p for p in merged_all
                    if (p.get("mergedBy") or {}).get("login") == MAINTAINER
                    or (p.get("author") or {}).get("login") == MAINTAINER]
-    merged = [norm_merged(p, now) for p in merged_lane[:N_MERGED]]
+    merged_raw = merged_lane[:N_MERGED]
+    merged = [norm_merged(p, now) for p in merged_raw]
+
+    # ── enrich recent merges (≤90 min) with body + images ──
+    _enrich_recent_bodies(merged, merged_raw)
 
     state = {
         "generated": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -344,6 +580,9 @@ def main() -> int:
         "releases": release_stats(),
         "merge_velocity": merge_velocity(),
         "merge_rate": merge_rate(),
+        "issues": issues_stats(),
+        "pull_requests": prs_stats(),
+        "contributors": contributors_stats(),
     }
     OUT.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
     print(f"wrote {OUT.name}: {len(pending)} pending / {len(merged)} merged "
