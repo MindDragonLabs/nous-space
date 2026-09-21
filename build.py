@@ -29,6 +29,7 @@ PANELS_END = "<!-- PANELS:END -->"
 CSS_START = "/* ROWCSS:START */"
 CSS_END = "/* ROWCSS:END */"
 N_PER_SIDE = 5
+N_MERGED_SHOW = 15  # enough blocks to make the scrollable strip work
 TITLE_MAX = 96
 
 # trailing "(#12345, salvage #67890)" cross-references drop for display
@@ -112,7 +113,7 @@ def merged_cell(item: dict) -> str:
 
 def render_row(state: dict) -> str:
     pending = list(reversed(state["pending"][:N_PER_SIDE]))
-    merged = state["merged"][:N_PER_SIDE]
+    merged = state["merged"][:N_MERGED_SHOW]
     greens = "\n".join(cube(p, "p-green") for p in pending)
     blues = "\n".join(merged_cell(x) for x in merged)
     return f"""  <div class="stripscroll">

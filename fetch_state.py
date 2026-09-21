@@ -26,7 +26,7 @@ REPO = "NousResearch/hermes-agent"
 SOURCE_BRANCH = "main"
 MAINTAINER = "teknium1"
 N_PENDING = 6
-N_MERGED = 6
+N_MERGED = 20  # 15 for the strip + margin for the 5 closest to the divider
 OPEN_LIMIT = 30
 
 ROOT = pathlib.Path(__file__).resolve().parent
@@ -168,74 +168,63 @@ def norm_merged(pr: dict, now: dt.datetime) -> dict:
 # ── panel data ──────────────────────────────────────────────────────────────
 
 def backlog_stats() -> dict:
-    """Open-PR age buckets and area breakdown via GitHub Search API."""
+    """Open-PR stats: true oldest (asc query), newest + area breakdown (desc query)."""
     import re
     from collections import Counter
 
     now = dt.datetime.now(dt.UTC)
-    buckets: dict[str, int] = {}
     areas: Counter[str] = Counter()
-    oldest_item: dict | None = None
-    newest_item: dict | None = None
 
+    # ── true oldest: asc query, first result ──
+    oldest_pr: dict | None = None
+    r = subprocess.run(
+        ["gh", "api",
+         f"search/issues?q=repo:{REPO}+is:pr+is:open+base:{SOURCE_BRANCH}"
+         "&sort=created&order=asc&per_page=1"],
+        capture_output=True, text=True)
+    if r.returncode == 0:
+        data = json.loads(r.stdout)
+        items = data.get("items", [])
+        total_open = data.get("total_count", 0)
+        if items:
+            p = items[0]
+            oldest_pr = {"number": p["number"], "title": p.get("title", ""),
+                         "created": p["created_at"],
+                         "age_days": (now - parse(p["created_at"])).days}
+    else:
+        total_open = 0
+
+    # ── newest + area breakdown: desc query, 500 most recent ──
+    newest_pr: dict | None = None
     page = 1
     scanned = 0
-    while page <= 10:
-        q = f"repo:{REPO}+is:pr+is:open+base:{SOURCE_BRANCH}"
-        r = subprocess.run(
-            ["gh", "api", f"search/issues?q={q}&sort=created&order=desc"
-             f"&per_page=100&page={page}"],
+    while page <= 5:
+        r2 = subprocess.run(
+            ["gh", "api",
+             f"search/issues?q=repo:{REPO}+is:pr+is:open+base:{SOURCE_BRANCH}"
+             f"&sort=created&order=desc&per_page=100&page={page}"],
             capture_output=True, text=True)
-        if r.returncode != 0:
+        if r2.returncode != 0:
             break
-        data = json.loads(r.stdout)
+        data = json.loads(r2.stdout)
         items = data.get("items", [])
         if not items:
             break
-        if newest_item is None:
-            newest_item = items[0]
+        if newest_pr is None and page == 1:
+            p = items[0]
+            newest_pr = {"number": p["number"], "title": p.get("title", ""),
+                         "created": p["created_at"],
+                         "age_hours": round((now - parse(p["created_at"])).total_seconds() / 3600, 1)}
         for pr in items:
             scanned += 1
-            d = parse(pr["created_at"])
-            age_days = (now - d).days
-            if age_days <= 7:
-                buckets.setdefault("0-7d", 0)
-                buckets["0-7d"] += 1
-            elif age_days <= 30:
-                buckets.setdefault("8-30d", 0)
-                buckets["8-30d"] += 1
-            elif age_days <= 90:
-                buckets.setdefault("31-90d", 0)
-                buckets["31-90d"] += 1
-            else:
-                buckets.setdefault("91d+", 0)
-                buckets["91d+"] += 1
             m = re.match(r"^(\w+(\([^)]*\))?)!?:\s*", pr.get("title", ""))
             area = m.group(1) if m else "other"
             areas[area] += 1
         page += 1
 
-    total_open = data.get("total_count", scanned)
-    # With desc ordering, last item on last page is the oldest
-    oldest_item = items[-1] if items else None
-    oldest_pr: dict | None = None
-    if oldest_item:
-        oldest_pr = {"number": oldest_item["number"],
-                     "title": oldest_item.get("title", ""),
-                     "created": oldest_item["created_at"],
-                     "age_days": (now - parse(oldest_item["created_at"])).days}
-
-    newest_pr: dict | None = None
-    if newest_item:
-        newest_pr = {"number": newest_item["number"],
-                     "title": newest_item.get("title", ""),
-                     "created": newest_item["created_at"],
-                     "age_hours": round((now - parse(newest_item["created_at"])).total_seconds() / 3600, 1)}
-
     return {
         "total_open": total_open,
         "scanned": scanned,
-        "buckets": buckets,
         "areas": dict(areas.most_common(12)),
         "oldest_pr": oldest_pr,
         "newest_pr": newest_pr,

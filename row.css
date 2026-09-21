@@ -49,7 +49,9 @@
   letter-spacing: 0.02em;
   padding: 2px 7px 3px;
   border-radius: 3px 3px 0 0;
-  margin-bottom: -1px;
+  margin-bottom: 7px;  /* clear gap — the cube ::after (top face) extends above */
+  position: relative;
+  z-index: 3;
   white-space: nowrap;
 }
 .p-num-green { background: #0a2415; color: #4ade80; border: 1px solid rgba(74,222,128,.3); border-bottom: none; }
