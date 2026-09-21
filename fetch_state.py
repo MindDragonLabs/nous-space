@@ -177,10 +177,9 @@ def backlog_stats() -> dict:
 
     # ── true oldest: asc query, first result ──
     oldest_pr: dict | None = None
-    r = subprocess.run(
-        ["gh", "api",
-         f"search/issues?q=repo:{REPO}+is:pr+is:open+base:{SOURCE_BRANCH}"
-         "&sort=created&order=asc&per_page=1"],
+    q_oldest = (f"search/issues?q=repo:{REPO}+is:pr+is:open+base:{SOURCE_BRANCH}"
+                f"+author:{MAINTAINER}&sort=created&order=asc&per_page=1")
+    r = subprocess.run(["gh", "api", q_oldest],
         capture_output=True, text=True)
     if r.returncode == 0:
         data = json.loads(r.stdout)
@@ -199,10 +198,9 @@ def backlog_stats() -> dict:
     page = 1
     scanned = 0
     while page <= 5:
-        r2 = subprocess.run(
-            ["gh", "api",
-             f"search/issues?q=repo:{REPO}+is:pr+is:open+base:{SOURCE_BRANCH}"
-             f"&sort=created&order=desc&per_page=100&page={page}"],
+        q_newest = (f"search/issues?q=repo:{REPO}+is:pr+is:open+base:{SOURCE_BRANCH}"
+                 f"+author:{MAINTAINER}&sort=created&order=desc&per_page=100&page={page}")
+        r2 = subprocess.run(["gh", "api", q_newest],
             capture_output=True, text=True)
         if r2.returncode != 0:
             break
@@ -322,7 +320,7 @@ def main() -> int:
     now = dt.datetime.now(dt.UTC)
 
     pend_all = [norm_pending(p, now) for p in open_prs()]
-    pending = sorted(pend_all, key=lambda p: (-p["score"], -p["age_min"]))[:N_PENDING]
+    pending = sorted(pend_all, key=lambda p: (-p["score"], p["age_min"]))[:N_PENDING]
 
     merged_all = [p for p in gh(["pr", "list", "-R", REPO, "--state", "merged",
                                  "--limit", "40", "--base", SOURCE_BRANCH,
