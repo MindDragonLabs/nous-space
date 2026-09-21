@@ -6,7 +6,7 @@
 <title>NOUS SPACE</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='7'%20fill='#0d0d0f'/%3E%3Cpolygon%20points='16%2C4%2027%2C10%2016%2C16%205%2C10'%20fill='#5c4228'/%3E%3Cpolygon%20points='5%2C10%2016%2C16%2016%2C28%205%2C22'%20fill='#3d2b1a'/%3E%3Cpolygon%20points='27%2C10%2016%2C16%2016%2C28%2027%2C22'%20fill='#1a5c2e'/%3E%3C/svg%3E">
 <link rel="icon" type="image/x-icon" href="favicon.ico" sizes="32x32">
-<link rel="stylesheet" href="https://cdn.hugeicons.com/font/hgi-stroke-rounded.css">
+<link rel="stylesheet" href="hgi-stroke-rounded.css">
 <style>
 :root {
   --bg: #0d0d0f;
@@ -461,13 +461,35 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
   letter-spacing: 0.02em; white-space: nowrap;
 }
 
-/* release timeline dots */
-.rel-dots { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0; }
-.rel-dot {
-  width: 10px; height: 10px; border-radius: 50%;
-  background: var(--nous-electric); opacity: .6;
+/* ── line chart (backlog panel) ───────────────────────────────── */
+.line-chart {
+  display: block;
+  margin: 4px 0 0;
+  width: 100%;
+  max-width: 320px;
 }
-.rel-dot:nth-child(1) { width: 14px; height: 14px; opacity: 1; }
+.chart-label {
+  font-size: 7px;
+  fill: rgba(255,255,255,.42);
+  text-anchor: middle;
+}
+
+/* ── 30-day release calendar ───────────────────────────────────── */
+.rel-calendar {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 3px;
+  margin: 6px 0;
+}
+.rel-cal {
+  aspect-ratio: 1;
+  border-radius: 2px;
+  display: inline-block;
+}
+.rel-lv0 { background: rgba(255,255,255,.06); }
+.rel-lv1 { background: rgba(74,222,128,.30); }
+.rel-lv2 { background: rgba(74,222,128,.55); }
+.rel-lv3 { background: rgba(74,222,128,.85); }
 
 /* merge velocity rows */
 .velo-list { margin: 4px 0; }
@@ -549,7 +571,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+38</span> <span class="del">-2</span></div>
           <div class="g">feat(acp)</div>
             <div class="t">tool_call updates carry the programmatic tool name in _meta.tool_name</div>
-            <div class="w">idle ~1 h</div>
+            <div class="w">idle ~2 h</div>
           </div>
         </a>
       </div>
@@ -599,13 +621,25 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
       </div>
       <div class="split"></div>
             <div class="wrap">
+        <span class="p-num p-num-blue">#117669</span>
+        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117669" target="_blank" rel="noopener" title="#117669 fix(desktop): large text pastes attach from HERMES_HOME/composer-pastes when the chat cwd is elsewhere (#117149, supersedes #117150)">
+          <div class="face">
+            <div class="d"><span class="add">+87</span> <span class="del">-4</span></div>
+            <div class="g">fix(desktop)</div>
+            <div class="t">large text pastes attach from HERMES_HOME/composer-pastes when the chat cwd is elsewhere</div>
+            <div class="w">merged ~5 min</div>
+          </div>
+        </a>
+        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
+      </div>
+      <div class="wrap">
         <span class="p-num p-num-blue">#117661</span>
         <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117661" target="_blank" rel="noopener" title="#117661 fix(desktop): link titles never load a sign-in wall in the hidden renderer, no OS passkey dialog (#117323, salvage #117388)">
           <div class="face">
             <div class="d"><span class="add">+254</span> <span class="del">-25</span></div>
             <div class="g">fix(desktop)</div>
             <div class="t">link titles never load a sign-in wall in the hidden renderer, no OS passkey dialog</div>
-            <div class="w">merged ~6 min</div>
+            <div class="w">merged ~12 min</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -617,7 +651,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+210</span> <span class="del">-6</span></div>
             <div class="g">fix(desktop)</div>
             <div class="t">remote-served Desktop updates no longer restart a local gateway</div>
-            <div class="w">merged ~14 min</div>
+            <div class="w">merged ~20 min</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -629,7 +663,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+103</span> <span class="del">-2</span></div>
             <div class="g">fix(desktop)</div>
             <div class="t">externally-terminated renderer shows a recovery page instead of a blank window</div>
-            <div class="w">merged ~23 min</div>
+            <div class="w">merged ~29 min</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -641,7 +675,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+92</span> <span class="del">-2</span></div>
             <div class="g">fix(desktop)</div>
             <div class="t">SSH connections learn their backend install id so duplicate addresses collapse</div>
-            <div class="w">merged ~31 min</div>
+            <div class="w">merged ~37 min</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -653,7 +687,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+132</span> <span class="del">-3</span></div>
             <div class="g">fix(desktop)</div>
             <div class="t">removing or re-pointing a connection forgets its cached roster and identity</div>
-            <div class="w">merged ~40 min</div>
+            <div class="w">merged ~46 min</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -665,7 +699,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+172</span> <span class="del">-25</span></div>
             <div class="g">fix(kanban)</div>
             <div class="t">completing a task with no result or summary is refused with an audit event</div>
-            <div class="w">merged ~41 min</div>
+            <div class="w">merged ~47 min</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -677,7 +711,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+343</span> <span class="del">-34</span></div>
             <div class="g">fix(lsp)</div>
             <div class="t">one stalled request no longer silences a workspace for good — retry window, cold-root warm-up b…</div>
-            <div class="w">merged ~50 min</div>
+            <div class="w">merged ~56 min</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -689,7 +723,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+126</span> <span class="del">-5</span></div>
             <div class="g">fix(desktop)</div>
             <div class="t">chat composer stays mounted through transient session loaders; no addRange on a detached editor</div>
-            <div class="w">merged ~51 min</div>
+            <div class="w">merged ~57 min</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -701,7 +735,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+88</span> <span class="del">-7</span></div>
             <div class="g">fix(compression)</div>
             <div class="t">an auto-resolved summary model that fails falls back to the main model and is named in the warn…</div>
-            <div class="w">merged ~51 min</div>
+            <div class="w">merged ~57 min</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -713,7 +747,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+150</span> <span class="del">-4</span></div>
             <div class="g">fix(update)</div>
             <div class="t">pending fleet restart leaves gateways already on the checkout code alone</div>
-            <div class="w">merged ~52 min</div>
+            <div class="w">merged ~58 min</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -725,7 +759,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+141</span> <span class="del">-0</span></div>
             <div class="g">feat(update)</div>
             <div class="t">hermes update --list-venv-holders reports venv holders as JSON, exit 3</div>
-            <div class="w">merged ~53 min</div>
+            <div class="w">merged ~59 min</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -737,7 +771,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+102</span> <span class="del">-6</span></div>
             <div class="g">feat(delegation)</div>
             <div class="t">owner-death recovery event includes transcript tails and git state so the parent can continue w…</div>
-            <div class="w">merged ~54 min</div>
+            <div class="w">merged ~1 h</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -749,7 +783,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+120</span> <span class="del">-17</span></div>
             <div class="g">fix(desktop)</div>
             <div class="t">plain-text token banner is silent in the default keychain-off posture and its advice is platfor…</div>
-            <div class="w">merged ~57 min</div>
+            <div class="w">merged ~1 h</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -761,7 +795,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+55</span> <span class="del">-3</span></div>
             <div class="g">fix(gateway)</div>
             <div class="t">non-editable platforms deliver long replies once — interim finals join the delivery ledger</div>
-            <div class="w">merged ~58 min</div>
+            <div class="w">merged ~1 h</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -905,7 +939,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+16</span> <span class="del">-0</span></div>
             <div class="g">catalog</div>
             <div class="t">add Orbit Desktop scoped workspace plugin</div>
-            <div class="w">merged ~1 h</div>
+            <div class="w">merged ~2 h</div>
           </div>
         </a>
         <div class="miner"><a class="" href="https://github.com/mojomast" target="_blank" rel="noopener" title="author: mojomast">mojomast</a></div>
@@ -917,7 +951,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+6</span> <span class="del">-4</span></div>
             <div class="g">feat(plugin-catalog)</div>
             <div class="t">bump prompt-snippets to v1.6.0</div>
-            <div class="w">merged ~1 h</div>
+            <div class="w">merged ~2 h</div>
           </div>
         </a>
         <div class="miner"><a class="" href="https://github.com/Heybinshao" target="_blank" rel="noopener" title="author: Heybinshao">Heybinshao</a></div>
@@ -929,7 +963,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+17</span> <span class="del">-0</span></div>
             <div class="g">feat(plugin-catalog)</div>
             <div class="t">add prompt-tray community plugin</div>
-            <div class="w">merged ~1 h</div>
+            <div class="w">merged ~2 h</div>
           </div>
         </a>
         <div class="miner"><a class="" href="https://github.com/aydnOktay" target="_blank" rel="noopener" title="author: aydnOktay">aydnOktay</a></div>
@@ -946,18 +980,6 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
       </div>
-      <div class="wrap">
-        <span class="p-num p-num-blue">#117632</span>
-        <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117632" target="_blank" rel="noopener" title="#117632 fix(cli): kanban edit accepts --title/--body/--priority and cron list shows paused jobs (#117434, salvage #117454)">
-          <div class="face">
-            <div class="d"><span class="add">+142</span> <span class="del">-44</span></div>
-            <div class="g">fix(cli)</div>
-            <div class="t">kanban edit accepts --title/--body/--priority and cron list shows paused jobs</div>
-            <div class="w">merged ~3 h</div>
-          </div>
-        </a>
-        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
-      </div>
     </div>
   </div>
   <!-- BLOCKROW:END -->
@@ -965,11 +987,11 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
   <div class="dash-row">
     <div class="dash-card left">
       <h3><i class="hgi hgi-stroke hgi-inbox"></i> PR Backlog</h3>
-      <div class="big-num">29,244</div>
+      <div class="big-num">29,243</div>
       <div class="big-sub">open pull requests</div>
               <div class="stat-row">
           <span class="stat-label">newest</span>
-          <a class="stat-val" href="https://github.com/NousResearch/hermes-agent/pull/117809" target="_blank" rel="noopener">#117809</a>
+          <a class="stat-val" href="https://github.com/NousResearch/hermes-agent/pull/117811" target="_blank" rel="noopener">#117811</a>
           <span class="stat-dim">0.0h ago</span>
         </div>
               <div class="stat-row">
@@ -977,10 +999,16 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
           <a class="stat-val" href="https://github.com/NousResearch/hermes-agent/pull/2637" target="_blank" rel="noopener">#2637</a>
           <span class="stat-dim">181d ago</span>
         </div>
-      <div class="section-label">by area</div>
-      <div class="area-cloud">
-        <span class="area-pill">fix(desktop) 44</span><span class="area-pill">fix(gateway) 34</span><span class="area-pill">feat(desktop) 27</span><span class="area-pill">fix(kanban) 19</span><span class="area-pill">other 18</span><span class="area-pill">fix(agent) 14</span><span class="area-pill">fix(cron) 11</span><span class="area-pill">fix(cli) 10</span>
-      </div>
+      <div class="section-label">new PRs — last 7 days</div>
+      <svg class="line-chart" viewBox="0 0 240 80" width="240" height="80">
+  <polygon points="24.0,64.0 24.0,14.6 59.3,11.9 94.7,25.7 130.0,20.6 165.3,18.5 200.7,8.0 236.0,60.0 236.0,64.0" fill="url(#fade)"/>
+  <defs><linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="var(--nous-amber)" stop-opacity="0.25"/>
+    <stop offset="100%" stop-color="var(--nous-amber)" stop-opacity="0.02"/>
+  </linearGradient></defs>
+  <polyline points="24.0,14.6 59.3,11.9 94.7,25.7 130.0,20.6 165.3,18.5 200.7,8.0 236.0,60.0 " fill="none" stroke="var(--nous-amber)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+  <text x="24.0" y="78" class="chart-label">09-15</text><text x="59.3" y="78" class="chart-label">09-16</text><text x="94.7" y="78" class="chart-label">09-17</text><text x="130.0" y="78" class="chart-label">09-18</text><text x="165.3" y="78" class="chart-label">09-19</text><text x="200.7" y="78" class="chart-label">09-20</text><text x="236.0" y="78" class="chart-label">09-21</text>
+</svg>
     </div>
     <div class="dash-card right">
       <h3><i class="hgi hgi-stroke hgi-rocket-01"></i> Release Velocity</h3>
@@ -994,28 +1022,30 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
           <span class="stat-val">~5.6d</span>
           <span class="stat-dim">3 releases in 2 weeks</span>
         </div>
+      <div class="section-label">releases — last 30 days</div>
+      <div class="rel-calendar"><span class="rel-cal rel-lv0" title="2026-08-23: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-08-24: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-08-25: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-08-26: 0 release(s)"></span><span class="rel-cal rel-lv1" title="2026-08-27: 1 release(s)"></span><span class="rel-cal rel-lv0" title="2026-08-28: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-08-29: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-08-30: 0 release(s)"></span><span class="rel-cal rel-lv1" title="2026-08-31: 1 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-01: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-02: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-03: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-04: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-05: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-06: 0 release(s)"></span><span class="rel-cal rel-lv1" title="2026-09-07: 1 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-08: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-09: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-10: 0 release(s)"></span><span class="rel-cal rel-lv1" title="2026-09-11: 1 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-12: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-13: 0 release(s)"></span><span class="rel-cal rel-lv1" title="2026-09-14: 1 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-15: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-16: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-17: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-18: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-19: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-20: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-21: 0 release(s)"></span></div>
     </div>
     <div class="dash-card third">
       <h3><i class="hgi hgi-stroke hgi-activity-01"></i> PR Velocity</h3>
         <div class="stat-row">
           <span class="stat-label">7d</span>
-          <span class="stat-val">255.9 PR/day</span>
-          <span class="stat-dim">1791 merged</span>
+          <span class="stat-val">256.1 PR/day</span>
+          <span class="stat-dim">1793 merged</span>
         </div>        <div class="stat-row">
           <span class="stat-label">30d</span>
-          <span class="stat-val">127.8 PR/day</span>
-          <span class="stat-dim">3834 merged</span>
+          <span class="stat-val">127.9 PR/day</span>
+          <span class="stat-dim">3836 merged</span>
         </div>        <div class="stat-row">
           <span class="stat-label">90d</span>
           <span class="stat-val">97.3 PR/day</span>
-          <span class="stat-dim">8756 merged</span>
+          <span class="stat-dim">8758 merged</span>
         </div>
       <div class="section-label">merge speed by area</div>
       <div class="velo-list">
           <div class="velo-row">
             <span class="velo-area">fix(desktop)</span>
-            <span class="velo-h">3.4h</span>
-            <span class="velo-n">(12)</span>
+            <span class="velo-h">3.5h</span>
+            <span class="velo-n">(13)</span>
           </div>          <div class="velo-row">
             <span class="velo-area">fix(cli)</span>
             <span class="velo-h">2.9h</span>
