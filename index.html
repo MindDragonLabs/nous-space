@@ -229,14 +229,15 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,.15) transparent;
+  scrollbar-width: none;          /* hide scrollbar — drag to scroll */
   padding: 88px 10px 40px 34px;
   --block-size: 125px;
   --block-gap: calc(0.24 * var(--block-size));
+  cursor: grab;
+  user-select: none;
 }
-.stripscroll::-webkit-scrollbar { height: 4px; }
-.stripscroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 2px; }
+.stripscroll::-webkit-scrollbar { display: none; }     /* Chrome/Safari */
+.stripscroll:active { cursor: grabbing; }
 
 .strip {
   display: flex;
@@ -496,7 +497,46 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
 .velo-row { display: flex; align-items: baseline; gap: 10px; margin: 3px 0; }
 .velo-area { font-size: 10px; color: rgba(255,255,255,.72); width: 130px; font-weight: 600; }
 .velo-h    { font-size: 12px; color: var(--nous-electric); font-weight: 700; width: 36px; text-align: right; }
-.velo-n    { font-size: 10px; color: rgba(255,255,255,.36); }/* ROWCSS:END */
+.velo-n    { font-size: 10px; color: rgba(255,255,255,.36); }
+
+/* ── news ticker ─────────────────────────────────────────────────── */
+.ticker-wrap {
+  overflow: hidden;
+  background: #0d1220;
+  border-top: 1px solid rgba(255,255,255,.08);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  padding: 10px 0;
+  margin: 0;
+}
+.ticker {
+  display: flex;
+  gap: 0;
+  animation: ticker-scroll 120s linear infinite;
+  width: max-content;
+}
+.ticker-item {
+  flex-shrink: 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: rgba(255,255,255,.72);
+  white-space: nowrap;
+  padding: 0 32px;
+  border-right: 1px solid rgba(255,255,255,.12);
+}
+.ticker-item .t-tag {
+  font-weight: 700;
+  color: var(--nous-electric);
+}
+.ticker-item .t-time {
+  color: rgba(255,255,255,.36);
+  margin-right: 6px;
+}
+.ticker-wrap:hover .ticker { animation-play-state: paused; }
+
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}/* ROWCSS:END */
 </style>
 </head>
 <body>
@@ -562,20 +602,9 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
 
 <main class="main-content">
 <!-- BLOCKROW:START -->
-  <div class="stripscroll">
+  <div class="stripscroll" id="blockstrip">
     <div class="strip">
             <div class="wrap">
-        <span class="p-num p-num-green">#117690</span>
-        <a class="cube p-green" href="https://github.com/NousResearch/hermes-agent/pull/117690" target="_blank" rel="noopener" title="#117690 feat(acp): tool_call updates carry the programmatic tool name in _meta.tool_name (port of zed#64080, clean-room)">
-          <div class="face">
-            <div class="d"><span class="add">+38</span> <span class="del">-2</span></div>
-          <div class="g">feat(acp)</div>
-            <div class="t">tool_call updates carry the programmatic tool name in _meta.tool_name</div>
-            <div class="w">idle ~2 h</div>
-          </div>
-        </a>
-      </div>
-      <div class="wrap">
         <span class="p-num p-num-green">#117735</span>
         <a class="cube p-green" href="https://github.com/NousResearch/hermes-agent/pull/117735" target="_blank" rel="noopener" title="#117735 fix(gateway): long-message splits no longer tear emoji sequences and accented letters apart (port openclaw#151959)">
           <div class="face">
@@ -619,6 +648,17 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
           </div>
         </a>
       </div>
+      <div class="wrap">
+        <span class="p-num p-num-green">#117498</span>
+        <a class="cube p-green" href="https://github.com/NousResearch/hermes-agent/pull/117498" target="_blank" rel="noopener" title="#117498 fix(config): numeric model.provider loads as a string, gateway turn no longer crashes (#117345, salvage #117385)">
+          <div class="face">
+            <div class="d"><span class="add">+48</span> <span class="del">-4</span></div>
+          <div class="g">fix(config)</div>
+            <div class="t">numeric model.provider loads as a string, gateway turn no longer crashes</div>
+            <div class="w">idle ~6 h</div>
+          </div>
+        </a>
+      </div>
       <div class="split"></div>
             <div class="wrap">
         <span class="p-num p-num-blue">#117669</span>
@@ -627,7 +667,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+87</span> <span class="del">-4</span></div>
             <div class="g">fix(desktop)</div>
             <div class="t">large text pastes attach from HERMES_HOME/composer-pastes when the chat cwd is elsewhere</div>
-            <div class="w">merged ~5 min</div>
+            <div class="w">merged ~11 min</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -639,7 +679,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+254</span> <span class="del">-25</span></div>
             <div class="g">fix(desktop)</div>
             <div class="t">link titles never load a sign-in wall in the hidden renderer, no OS passkey dialog</div>
-            <div class="w">merged ~12 min</div>
+            <div class="w">merged ~18 min</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -651,7 +691,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+210</span> <span class="del">-6</span></div>
             <div class="g">fix(desktop)</div>
             <div class="t">remote-served Desktop updates no longer restart a local gateway</div>
-            <div class="w">merged ~20 min</div>
+            <div class="w">merged ~26 min</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -663,7 +703,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+103</span> <span class="del">-2</span></div>
             <div class="g">fix(desktop)</div>
             <div class="t">externally-terminated renderer shows a recovery page instead of a blank window</div>
-            <div class="w">merged ~29 min</div>
+            <div class="w">merged ~35 min</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -675,7 +715,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+92</span> <span class="del">-2</span></div>
             <div class="g">fix(desktop)</div>
             <div class="t">SSH connections learn their backend install id so duplicate addresses collapse</div>
-            <div class="w">merged ~37 min</div>
+            <div class="w">merged ~43 min</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -687,7 +727,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+132</span> <span class="del">-3</span></div>
             <div class="g">fix(desktop)</div>
             <div class="t">removing or re-pointing a connection forgets its cached roster and identity</div>
-            <div class="w">merged ~46 min</div>
+            <div class="w">merged ~52 min</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -699,7 +739,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+172</span> <span class="del">-25</span></div>
             <div class="g">fix(kanban)</div>
             <div class="t">completing a task with no result or summary is refused with an audit event</div>
-            <div class="w">merged ~47 min</div>
+            <div class="w">merged ~53 min</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -711,7 +751,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+343</span> <span class="del">-34</span></div>
             <div class="g">fix(lsp)</div>
             <div class="t">one stalled request no longer silences a workspace for good — retry window, cold-root warm-up b…</div>
-            <div class="w">merged ~56 min</div>
+            <div class="w">merged ~1 h</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -723,7 +763,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+126</span> <span class="del">-5</span></div>
             <div class="g">fix(desktop)</div>
             <div class="t">chat composer stays mounted through transient session loaders; no addRange on a detached editor</div>
-            <div class="w">merged ~57 min</div>
+            <div class="w">merged ~1 h</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -735,7 +775,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+88</span> <span class="del">-7</span></div>
             <div class="g">fix(compression)</div>
             <div class="t">an auto-resolved summary model that fails falls back to the main model and is named in the warn…</div>
-            <div class="w">merged ~57 min</div>
+            <div class="w">merged ~1 h</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -747,7 +787,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+150</span> <span class="del">-4</span></div>
             <div class="g">fix(update)</div>
             <div class="t">pending fleet restart leaves gateways already on the checkout code alone</div>
-            <div class="w">merged ~58 min</div>
+            <div class="w">merged ~1 h</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -759,7 +799,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+141</span> <span class="del">-0</span></div>
             <div class="g">feat(update)</div>
             <div class="t">hermes update --list-venv-holders reports venv holders as JSON, exit 3</div>
-            <div class="w">merged ~59 min</div>
+            <div class="w">merged ~1 h</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -891,7 +931,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+84</span> <span class="del">-8</span></div>
             <div class="g">fix(voice)</div>
             <div class="t">wake-word pause/stop returns promptly on a wedged microphone stream</div>
-            <div class="w">merged ~1 h</div>
+            <div class="w">merged ~2 h</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -903,7 +943,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+51</span> <span class="del">-10</span></div>
             <div class="g">fix(cli)</div>
             <div class="t">hermes -p PROFILE boots the interface the profile&#x27;s config selects</div>
-            <div class="w">merged ~1 h</div>
+            <div class="w">merged ~2 h</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -915,7 +955,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+52</span> <span class="del">-2</span></div>
             <div class="g">fix(cli)</div>
             <div class="t">dashboard under a scrubbed unit env is attributed to its owner&#x27;s home</div>
-            <div class="w">merged ~1 h</div>
+            <div class="w">merged ~2 h</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -927,7 +967,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+34</span> <span class="del">-4</span></div>
             <div class="g">fix(browser)</div>
             <div class="t">orphan reaper no longer kills a recycled PID that only mentions the socket-dir basename</div>
-            <div class="w">merged ~1 h</div>
+            <div class="w">merged ~2 h</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -982,16 +1022,59 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
       </div>
     </div>
   </div>
+  <script>
+// Drag-to-scroll (mempool.space behaviour)
+(function(){
+  const el = document.getElementById('blockstrip');
+  if (!el) return;
+  let down = false, sx = 0, sl = 0;
+  el.addEventListener('mousedown', function(e){
+    if (e.target.closest('a')) return;           // let links through
+    down = true;
+    sx = e.pageX - el.offsetLeft;
+    sl = el.scrollLeft;
+    el.style.cursor = 'grabbing';
+    el.style.scrollBehavior = 'auto';
+    e.preventDefault();
+  });
+  el.addEventListener('mouseleave', function(){
+    down = false;
+    el.style.cursor = 'grab';
+  });
+  el.addEventListener('mouseup', function(){
+    down = false;
+    el.style.cursor = 'grab';
+  });
+  el.addEventListener('mousemove', function(e){
+    if (!down) return;
+    e.preventDefault();
+    el.scrollLeft = sl - (e.pageX - el.offsetLeft - sx);
+  });
+  // touch support
+  el.addEventListener('touchstart', function(e){
+    if (e.target.closest('a')) return;
+    down = true;
+    sx = e.touches[0].pageX - el.offsetLeft;
+    sl = el.scrollLeft;
+    el.style.scrollBehavior = 'auto';
+  }, {passive: false});
+  el.addEventListener('touchend', function(){ down = false; });
+  el.addEventListener('touchmove', function(e){
+    if (!down) return;
+    el.scrollLeft = sl - (e.touches[0].pageX - el.offsetLeft - sx);
+  }, {passive: false});
+})();
+  </script>
   <!-- BLOCKROW:END -->
   <!-- PANELS:START -->
   <div class="dash-row">
     <div class="dash-card left">
       <h3><i class="hgi hgi-stroke hgi-inbox"></i> PR Backlog</h3>
-      <div class="big-num">29,243</div>
+      <div class="big-num">29,245</div>
       <div class="big-sub">open pull requests</div>
               <div class="stat-row">
           <span class="stat-label">newest</span>
-          <a class="stat-val" href="https://github.com/NousResearch/hermes-agent/pull/117811" target="_blank" rel="noopener">#117811</a>
+          <a class="stat-val" href="https://github.com/NousResearch/hermes-agent/pull/117813" target="_blank" rel="noopener">#117813</a>
           <span class="stat-dim">0.0h ago</span>
         </div>
               <div class="stat-row">
@@ -1001,12 +1084,12 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
         </div>
       <div class="section-label">new PRs — last 7 days</div>
       <svg class="line-chart" viewBox="0 0 240 80" width="240" height="80">
-  <polygon points="24.0,64.0 24.0,14.6 59.3,11.9 94.7,25.7 130.0,20.6 165.3,18.5 200.7,8.0 236.0,60.0 236.0,64.0" fill="url(#fade)"/>
+  <polygon points="24.0,64.0 24.0,14.6 59.3,11.9 94.7,25.7 130.0,20.6 165.3,18.5 200.7,8.0 236.0,59.8 236.0,64.0" fill="url(#fade)"/>
   <defs><linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
     <stop offset="0%" stop-color="var(--nous-amber)" stop-opacity="0.25"/>
     <stop offset="100%" stop-color="var(--nous-amber)" stop-opacity="0.02"/>
   </linearGradient></defs>
-  <polyline points="24.0,14.6 59.3,11.9 94.7,25.7 130.0,20.6 165.3,18.5 200.7,8.0 236.0,60.0 " fill="none" stroke="var(--nous-amber)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+  <polyline points="24.0,14.6 59.3,11.9 94.7,25.7 130.0,20.6 165.3,18.5 200.7,8.0 236.0,59.8 " fill="none" stroke="var(--nous-amber)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
   <text x="24.0" y="78" class="chart-label">09-15</text><text x="59.3" y="78" class="chart-label">09-16</text><text x="94.7" y="78" class="chart-label">09-17</text><text x="130.0" y="78" class="chart-label">09-18</text><text x="165.3" y="78" class="chart-label">09-19</text><text x="200.7" y="78" class="chart-label">09-20</text><text x="236.0" y="78" class="chart-label">09-21</text>
 </svg>
     </div>
@@ -1071,6 +1154,12 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
     </div>
   </div>
   <!-- PANELS:END -->
+  <!-- TICKER:START -->
+  <div class="ticker-wrap">
+    <div class="ticker"><span class="ticker-item"><span class="t-time">11m</span><span class="t-tag">fix(desktop):</span> large text pastes attach from HERMES_HOME/compo...</span><span class="ticker-item"><span class="t-time">18m</span><span class="t-tag">fix(desktop):</span> link titles never load a sign-in wall in the hi...</span><span class="ticker-item"><span class="t-time">26m</span><span class="t-tag">fix(desktop):</span> remote-served Desktop updates no longer restart...</span><span class="ticker-item"><span class="t-time">35m</span><span class="t-tag">fix(desktop):</span> externally-terminated renderer shows a recovery...</span><span class="ticker-item"><span class="t-time">43m</span><span class="t-tag">fix(desktop):</span> SSH connections learn their backend install id ...</span><span class="ticker-item"><span class="t-time">52m</span><span class="t-tag">fix(desktop):</span> removing or re-pointing a connection forgets it...</span><span class="ticker-item"><span class="t-time">53m</span><span class="t-tag">fix(kanban):</span> completing a task with no result or summary is ...</span><span class="ticker-item"><span class="t-time">11m</span><span class="t-tag">fix(desktop):</span> large text pastes attach from HERMES_HOME/compo...</span><span class="ticker-item"><span class="t-time">18m</span><span class="t-tag">fix(desktop):</span> link titles never load a sign-in wall in the hi...</span><span class="ticker-item"><span class="t-time">26m</span><span class="t-tag">fix(desktop):</span> remote-served Desktop updates no longer restart...</span><span class="ticker-item"><span class="t-time">35m</span><span class="t-tag">fix(desktop):</span> externally-terminated renderer shows a recovery...</span><span class="ticker-item"><span class="t-time">43m</span><span class="t-tag">fix(desktop):</span> SSH connections learn their backend install id ...</span><span class="ticker-item"><span class="t-time">52m</span><span class="t-tag">fix(desktop):</span> removing or re-pointing a connection forgets it...</span><span class="ticker-item"><span class="t-time">53m</span><span class="t-tag">fix(kanban):</span> completing a task with no result or summary is ...</span>
+    </div>
+  </div>
+  <!-- TICKER:END -->
 </main>
 
 <script>
