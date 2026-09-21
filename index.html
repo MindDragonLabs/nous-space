@@ -442,15 +442,6 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
   <div class="blockrow">
     <div class="col pending">
       <div class="cluster">
-      <a class="cube p-green" href="https://github.com/NousResearch/hermes-agent/pull/117690" target="_blank" rel="noopener" title="#117690 feat(acp): tool_call updates carry the programmatic tool name in _meta.tool_name (port of zed#64080, clean-room)">
-        <div class="face">
-          <div class="n">#117690</div>
-          <div class="d"><span class="add">+38</span> <span class="del">-2</span></div>
-          <div class="g">feat(acp)</div>
-          <div class="t">tool_call updates carry the programmatic tool name in _meta.tool_name</div>
-          <div class="w">idle ~46 min</div>
-        </div>
-      </a>
       <a class="cube p-green" href="https://github.com/NousResearch/hermes-agent/pull/117735" target="_blank" rel="noopener" title="#117735 fix(gateway): long-message splits no longer tear emoji sequences and accented letters apart (port openclaw#151959)">
         <div class="face">
           <div class="n">#117735</div>
@@ -475,7 +466,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
           <div class="d"><span class="add">+79</span> <span class="del">-2</span></div>
           <div class="g">fix(bedrock)</div>
           <div class="t">tool-result images reach the model as Converse image blocks</div>
-          <div class="w">idle ~1 h</div>
+          <div class="w">idle ~2 h</div>
         </div>
       </a>
       <a class="cube p-green" href="https://github.com/NousResearch/hermes-agent/pull/117716" target="_blank" rel="noopener" title="#117716 fix(config): saved .env value no longer shadowed by stale duplicate lines (#8270, salvage #20100)">
@@ -487,6 +478,15 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
           <div class="w">idle ~2 h</div>
         </div>
       </a>
+      <a class="cube p-green" href="https://github.com/NousResearch/hermes-agent/pull/117598" target="_blank" rel="noopener" title="#117598 fix(terminal): embedded agent hosts can opt into per-worker cgroup scopes; timeout schema says it does not bound background commands (#116936, salvage #117020)">
+        <div class="face">
+          <div class="n">#117598</div>
+          <div class="d"><span class="add">+371</span> <span class="del">-17</span></div>
+          <div class="g">fix(terminal)</div>
+          <div class="t">embedded agent hosts can opt into per-worker cgroup scopes; timeout schema says it does not bou…</div>
+          <div class="w">idle ~4 h</div>
+        </div>
+      </a>
       </div>
     </div>
 
@@ -495,13 +495,37 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
     <div class="col merged">
       <div class="cluster">
       <div class="wrap">
+      <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117651" target="_blank" rel="noopener" title="#117651 fix(desktop): removing or re-pointing a connection forgets its cached roster and identity (#117227, salvage #117232)">
+        <div class="face">
+          <div class="n">#117651</div>
+          <div class="d"><span class="add">+132</span> <span class="del">-3</span></div>
+          <div class="g">fix(desktop)</div>
+          <div class="t">removing or re-pointing a connection forgets its cached roster and identity</div>
+          <div class="w">merged ~4 min</div>
+        </div>
+      </a>
+        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
+      </div>
+      <div class="wrap">
+      <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117649" target="_blank" rel="noopener" title="#117649 fix(kanban): completing a task with no result or summary is refused with an audit event (#117483, salvage #117511)">
+        <div class="face">
+          <div class="n">#117649</div>
+          <div class="d"><span class="add">+172</span> <span class="del">-25</span></div>
+          <div class="g">fix(kanban)</div>
+          <div class="t">completing a task with no result or summary is refused with an audit event</div>
+          <div class="w">merged ~5 min</div>
+        </div>
+      </a>
+        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
+      </div>
+      <div class="wrap">
       <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117680" target="_blank" rel="noopener" title="#117680 fix(lsp): one stalled request no longer silences a workspace for good — retry window, cold-root warm-up budget, per-root exclusion (#116446)">
         <div class="face">
           <div class="n">#117680</div>
           <div class="d"><span class="add">+343</span> <span class="del">-34</span></div>
           <div class="g">fix(lsp)</div>
           <div class="t">one stalled request no longer silences a workspace for good — retry window, cold-root warm-up b…</div>
-          <div class="w">merged ~8 min</div>
+          <div class="w">merged ~14 min</div>
         </div>
       </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -513,7 +537,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
           <div class="d"><span class="add">+126</span> <span class="del">-5</span></div>
           <div class="g">fix(desktop)</div>
           <div class="t">chat composer stays mounted through transient session loaders; no addRange on a detached editor</div>
-          <div class="w">merged ~9 min</div>
+          <div class="w">merged ~15 min</div>
         </div>
       </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -525,31 +549,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
           <div class="d"><span class="add">+88</span> <span class="del">-7</span></div>
           <div class="g">fix(compression)</div>
           <div class="t">an auto-resolved summary model that fails falls back to the main model and is named in the warn…</div>
-          <div class="w">merged ~9 min</div>
-        </div>
-      </a>
-        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
-      </div>
-      <div class="wrap">
-      <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117663" target="_blank" rel="noopener" title="#117663 fix(update): pending fleet restart leaves gateways already on the checkout code alone (#117051)">
-        <div class="face">
-          <div class="n">#117663</div>
-          <div class="d"><span class="add">+150</span> <span class="del">-4</span></div>
-          <div class="g">fix(update)</div>
-          <div class="t">pending fleet restart leaves gateways already on the checkout code alone</div>
-          <div class="w">merged ~10 min</div>
-        </div>
-      </a>
-        <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
-      </div>
-      <div class="wrap">
-      <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117657" target="_blank" rel="noopener" title="#117657 feat(update): hermes update --list-venv-holders reports venv holders as JSON, exit 3 (#117246)">
-        <div class="face">
-          <div class="n">#117657</div>
-          <div class="d"><span class="add">+141</span> <span class="del">-0</span></div>
-          <div class="g">feat(update)</div>
-          <div class="t">hermes update --list-venv-holders reports venv holders as JSON, exit 3</div>
-          <div class="w">merged ~11 min</div>
+          <div class="w">merged ~15 min</div>
         </div>
       </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
