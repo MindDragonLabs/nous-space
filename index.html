@@ -6,7 +6,7 @@
 <title>NOUS SPACE</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='7'%20fill='#0d0d0f'/%3E%3Cpolygon%20points='16%2C4%2027%2C10%2016%2C16%205%2C10'%20fill='#5c4228'/%3E%3Cpolygon%20points='5%2C10%2016%2C16%2016%2C28%205%2C22'%20fill='#3d2b1a'/%3E%3Cpolygon%20points='27%2C10%2016%2C16%2016%2C28%2027%2C22'%20fill='#1a5c2e'/%3E%3C/svg%3E">
 <link rel="icon" type="image/x-icon" href="favicon.ico" sizes="32x32">
-<link rel="stylesheet" href="hgi-stroke-rounded.css">
+<link rel="stylesheet" href="https://cdn.hugeicons.com/font/hgi-stroke-rounded.css">
 <style>
 :root {
   --bg: #0d0d0f;
@@ -485,12 +485,17 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
 .rel-cal {
   aspect-ratio: 1;
   border-radius: 2px;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 8px;
+  color: rgba(255,255,255,.42);
 }
-.rel-lv0 { background: rgba(255,255,255,.06); }
-.rel-lv1 { background: rgba(74,222,128,.30); }
-.rel-lv2 { background: rgba(74,222,128,.55); }
-.rel-lv3 { background: rgba(74,222,128,.85); }
+.rel-lv0 { background: rgba(255,255,255,.06); color: rgba(255,255,255,.32); }
+.rel-lv1 { background: rgba(0,174,239,.30); color: rgba(255,255,255,.85); }
+.rel-lv2 { background: rgba(0,174,239,.55); color: rgba(255,255,255,.92); }
+.rel-lv3 { background: rgba(0,174,239,.85); color: #fff; }
 
 /* merge velocity rows */
 .velo-list { margin: 4px 0; }
@@ -577,7 +582,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
       <i class="hgi hgi-stroke hgi-dashboard-square-01"></i>
     </button>
     <button class="nav-icon" title="Issues">
-      <i class="hgi hgi-stroke hgi-alert-02"></i>
+      <i class="hgi hgi-stroke hgi-information-circle"></i>
     </button>
     <button class="nav-icon" title="PRs">
       <i class="hgi hgi-stroke hgi-git-pull-request"></i>
@@ -667,7 +672,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+87</span> <span class="del">-4</span></div>
             <div class="g">fix(desktop)</div>
             <div class="t">large text pastes attach from HERMES_HOME/composer-pastes when the chat cwd is elsewhere</div>
-            <div class="w">merged ~11 min</div>
+            <div class="w">merged ~17 min</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -679,7 +684,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+254</span> <span class="del">-25</span></div>
             <div class="g">fix(desktop)</div>
             <div class="t">link titles never load a sign-in wall in the hidden renderer, no OS passkey dialog</div>
-            <div class="w">merged ~18 min</div>
+            <div class="w">merged ~24 min</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -691,7 +696,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+210</span> <span class="del">-6</span></div>
             <div class="g">fix(desktop)</div>
             <div class="t">remote-served Desktop updates no longer restart a local gateway</div>
-            <div class="w">merged ~26 min</div>
+            <div class="w">merged ~32 min</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -703,7 +708,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+103</span> <span class="del">-2</span></div>
             <div class="g">fix(desktop)</div>
             <div class="t">externally-terminated renderer shows a recovery page instead of a blank window</div>
-            <div class="w">merged ~35 min</div>
+            <div class="w">merged ~41 min</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -715,7 +720,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+92</span> <span class="del">-2</span></div>
             <div class="g">fix(desktop)</div>
             <div class="t">SSH connections learn their backend install id so duplicate addresses collapse</div>
-            <div class="w">merged ~43 min</div>
+            <div class="w">merged ~49 min</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -727,7 +732,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+132</span> <span class="del">-3</span></div>
             <div class="g">fix(desktop)</div>
             <div class="t">removing or re-pointing a connection forgets its cached roster and identity</div>
-            <div class="w">merged ~52 min</div>
+            <div class="w">merged ~58 min</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -739,7 +744,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+172</span> <span class="del">-25</span></div>
             <div class="g">fix(kanban)</div>
             <div class="t">completing a task with no result or summary is refused with an audit event</div>
-            <div class="w">merged ~53 min</div>
+            <div class="w">merged ~59 min</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -883,7 +888,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+37</span> <span class="del">-2</span></div>
             <div class="g">fix(desktop)</div>
             <div class="t">edit composer keeps working after a timeline rail jump</div>
-            <div class="w">merged ~1 h</div>
+            <div class="w">merged ~2 h</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -895,7 +900,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+291</span> <span class="del">-22</span></div>
             <div class="g">fix(desktop)</div>
             <div class="t">right rail shows only the focused chat&#x27;s preview tabs</div>
-            <div class="w">merged ~1 h</div>
+            <div class="w">merged ~2 h</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -907,7 +912,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+72</span> <span class="del">-3</span></div>
             <div class="g">fix(auth)</div>
             <div class="t">a user provider plugin&#x27;s aliases and display name win in the auth registry</div>
-            <div class="w">merged ~1 h</div>
+            <div class="w">merged ~2 h</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -919,7 +924,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+65</span> <span class="del">-21</span></div>
             <div class="g">fix(desktop)</div>
             <div class="t">cron editor keeps custom:&lt;name&gt; provider pins intact</div>
-            <div class="w">merged ~1 h</div>
+            <div class="w">merged ~2 h</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -1070,11 +1075,11 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
   <div class="dash-row">
     <div class="dash-card left">
       <h3><i class="hgi hgi-stroke hgi-inbox"></i> PR Backlog</h3>
-      <div class="big-num">29,245</div>
+      <div class="big-num">29,247</div>
       <div class="big-sub">open pull requests</div>
               <div class="stat-row">
           <span class="stat-label">newest</span>
-          <a class="stat-val" href="https://github.com/NousResearch/hermes-agent/pull/117813" target="_blank" rel="noopener">#117813</a>
+          <a class="stat-val" href="https://github.com/NousResearch/hermes-agent/pull/117816" target="_blank" rel="noopener">#117816</a>
           <span class="stat-dim">0.0h ago</span>
         </div>
               <div class="stat-row">
@@ -1084,12 +1089,12 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
         </div>
       <div class="section-label">new PRs — last 7 days</div>
       <svg class="line-chart" viewBox="0 0 240 80" width="240" height="80">
-  <polygon points="24.0,64.0 24.0,14.6 59.3,11.9 94.7,25.7 130.0,20.6 165.3,18.5 200.7,8.0 236.0,59.8 236.0,64.0" fill="url(#fade)"/>
+  <polygon points="24.0,64.0 24.0,14.6 59.3,11.9 94.7,25.7 130.0,20.6 165.3,18.5 200.7,8.0 236.0,59.7 236.0,64.0" fill="url(#fade)"/>
   <defs><linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
     <stop offset="0%" stop-color="var(--nous-amber)" stop-opacity="0.25"/>
     <stop offset="100%" stop-color="var(--nous-amber)" stop-opacity="0.02"/>
   </linearGradient></defs>
-  <polyline points="24.0,14.6 59.3,11.9 94.7,25.7 130.0,20.6 165.3,18.5 200.7,8.0 236.0,59.8 " fill="none" stroke="var(--nous-amber)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+  <polyline points="24.0,14.6 59.3,11.9 94.7,25.7 130.0,20.6 165.3,18.5 200.7,8.0 236.0,59.7 " fill="none" stroke="var(--nous-amber)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
   <text x="24.0" y="78" class="chart-label">09-15</text><text x="59.3" y="78" class="chart-label">09-16</text><text x="94.7" y="78" class="chart-label">09-17</text><text x="130.0" y="78" class="chart-label">09-18</text><text x="165.3" y="78" class="chart-label">09-19</text><text x="200.7" y="78" class="chart-label">09-20</text><text x="236.0" y="78" class="chart-label">09-21</text>
 </svg>
     </div>
@@ -1106,7 +1111,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
           <span class="stat-dim">3 releases in 2 weeks</span>
         </div>
       <div class="section-label">releases — last 30 days</div>
-      <div class="rel-calendar"><span class="rel-cal rel-lv0" title="2026-08-23: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-08-24: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-08-25: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-08-26: 0 release(s)"></span><span class="rel-cal rel-lv1" title="2026-08-27: 1 release(s)"></span><span class="rel-cal rel-lv0" title="2026-08-28: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-08-29: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-08-30: 0 release(s)"></span><span class="rel-cal rel-lv1" title="2026-08-31: 1 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-01: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-02: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-03: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-04: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-05: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-06: 0 release(s)"></span><span class="rel-cal rel-lv1" title="2026-09-07: 1 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-08: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-09: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-10: 0 release(s)"></span><span class="rel-cal rel-lv1" title="2026-09-11: 1 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-12: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-13: 0 release(s)"></span><span class="rel-cal rel-lv1" title="2026-09-14: 1 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-15: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-16: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-17: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-18: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-19: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-20: 0 release(s)"></span><span class="rel-cal rel-lv0" title="2026-09-21: 0 release(s)"></span></div>
+      <div class="rel-calendar"><span class="rel-cal rel-lv0" title="2026-08-23: 0 release(s)">23</span><span class="rel-cal rel-lv0" title="2026-08-24: 0 release(s)">24</span><span class="rel-cal rel-lv0" title="2026-08-25: 0 release(s)">25</span><span class="rel-cal rel-lv0" title="2026-08-26: 0 release(s)">26</span><span class="rel-cal rel-lv1" title="2026-08-27: 1 release(s)">27</span><span class="rel-cal rel-lv0" title="2026-08-28: 0 release(s)">28</span><span class="rel-cal rel-lv0" title="2026-08-29: 0 release(s)">29</span><span class="rel-cal rel-lv0" title="2026-08-30: 0 release(s)">30</span><span class="rel-cal rel-lv1" title="2026-08-31: 1 release(s)">31</span><span class="rel-cal rel-lv0" title="2026-09-01: 0 release(s)">1</span><span class="rel-cal rel-lv0" title="2026-09-02: 0 release(s)">2</span><span class="rel-cal rel-lv0" title="2026-09-03: 0 release(s)">3</span><span class="rel-cal rel-lv0" title="2026-09-04: 0 release(s)">4</span><span class="rel-cal rel-lv0" title="2026-09-05: 0 release(s)">5</span><span class="rel-cal rel-lv0" title="2026-09-06: 0 release(s)">6</span><span class="rel-cal rel-lv1" title="2026-09-07: 1 release(s)">7</span><span class="rel-cal rel-lv0" title="2026-09-08: 0 release(s)">8</span><span class="rel-cal rel-lv0" title="2026-09-09: 0 release(s)">9</span><span class="rel-cal rel-lv0" title="2026-09-10: 0 release(s)">10</span><span class="rel-cal rel-lv1" title="2026-09-11: 1 release(s)">11</span><span class="rel-cal rel-lv0" title="2026-09-12: 0 release(s)">12</span><span class="rel-cal rel-lv0" title="2026-09-13: 0 release(s)">13</span><span class="rel-cal rel-lv1" title="2026-09-14: 1 release(s)">14</span><span class="rel-cal rel-lv0" title="2026-09-15: 0 release(s)">15</span><span class="rel-cal rel-lv0" title="2026-09-16: 0 release(s)">16</span><span class="rel-cal rel-lv0" title="2026-09-17: 0 release(s)">17</span><span class="rel-cal rel-lv0" title="2026-09-18: 0 release(s)">18</span><span class="rel-cal rel-lv0" title="2026-09-19: 0 release(s)">19</span><span class="rel-cal rel-lv0" title="2026-09-20: 0 release(s)">20</span><span class="rel-cal rel-lv0" title="2026-09-21: 0 release(s)">21</span></div>
     </div>
     <div class="dash-card third">
       <h3><i class="hgi hgi-stroke hgi-activity-01"></i> PR Velocity</h3>
@@ -1156,7 +1161,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
   <!-- PANELS:END -->
   <!-- TICKER:START -->
   <div class="ticker-wrap">
-    <div class="ticker"><span class="ticker-item"><span class="t-time">11m</span><span class="t-tag">fix(desktop):</span> large text pastes attach from HERMES_HOME/compo...</span><span class="ticker-item"><span class="t-time">18m</span><span class="t-tag">fix(desktop):</span> link titles never load a sign-in wall in the hi...</span><span class="ticker-item"><span class="t-time">26m</span><span class="t-tag">fix(desktop):</span> remote-served Desktop updates no longer restart...</span><span class="ticker-item"><span class="t-time">35m</span><span class="t-tag">fix(desktop):</span> externally-terminated renderer shows a recovery...</span><span class="ticker-item"><span class="t-time">43m</span><span class="t-tag">fix(desktop):</span> SSH connections learn their backend install id ...</span><span class="ticker-item"><span class="t-time">52m</span><span class="t-tag">fix(desktop):</span> removing or re-pointing a connection forgets it...</span><span class="ticker-item"><span class="t-time">53m</span><span class="t-tag">fix(kanban):</span> completing a task with no result or summary is ...</span><span class="ticker-item"><span class="t-time">11m</span><span class="t-tag">fix(desktop):</span> large text pastes attach from HERMES_HOME/compo...</span><span class="ticker-item"><span class="t-time">18m</span><span class="t-tag">fix(desktop):</span> link titles never load a sign-in wall in the hi...</span><span class="ticker-item"><span class="t-time">26m</span><span class="t-tag">fix(desktop):</span> remote-served Desktop updates no longer restart...</span><span class="ticker-item"><span class="t-time">35m</span><span class="t-tag">fix(desktop):</span> externally-terminated renderer shows a recovery...</span><span class="ticker-item"><span class="t-time">43m</span><span class="t-tag">fix(desktop):</span> SSH connections learn their backend install id ...</span><span class="ticker-item"><span class="t-time">52m</span><span class="t-tag">fix(desktop):</span> removing or re-pointing a connection forgets it...</span><span class="ticker-item"><span class="t-time">53m</span><span class="t-tag">fix(kanban):</span> completing a task with no result or summary is ...</span>
+    <div class="ticker"><span class="ticker-item"><span class="t-time">17m</span><span class="t-tag">fix(desktop):</span> large text pastes attach from HERMES_HOME/compo...</span><span class="ticker-item"><span class="t-time">24m</span><span class="t-tag">fix(desktop):</span> link titles never load a sign-in wall in the hi...</span><span class="ticker-item"><span class="t-time">32m</span><span class="t-tag">fix(desktop):</span> remote-served Desktop updates no longer restart...</span><span class="ticker-item"><span class="t-time">41m</span><span class="t-tag">fix(desktop):</span> externally-terminated renderer shows a recovery...</span><span class="ticker-item"><span class="t-time">49m</span><span class="t-tag">fix(desktop):</span> SSH connections learn their backend install id ...</span><span class="ticker-item"><span class="t-time">58m</span><span class="t-tag">fix(desktop):</span> removing or re-pointing a connection forgets it...</span><span class="ticker-item"><span class="t-time">59m</span><span class="t-tag">fix(kanban):</span> completing a task with no result or summary is ...</span><span class="ticker-item"><span class="t-time">17m</span><span class="t-tag">fix(desktop):</span> large text pastes attach from HERMES_HOME/compo...</span><span class="ticker-item"><span class="t-time">24m</span><span class="t-tag">fix(desktop):</span> link titles never load a sign-in wall in the hi...</span><span class="ticker-item"><span class="t-time">32m</span><span class="t-tag">fix(desktop):</span> remote-served Desktop updates no longer restart...</span><span class="ticker-item"><span class="t-time">41m</span><span class="t-tag">fix(desktop):</span> externally-terminated renderer shows a recovery...</span><span class="ticker-item"><span class="t-time">49m</span><span class="t-tag">fix(desktop):</span> SSH connections learn their backend install id ...</span><span class="ticker-item"><span class="t-time">58m</span><span class="t-tag">fix(desktop):</span> removing or re-pointing a connection forgets it...</span><span class="ticker-item"><span class="t-time">59m</span><span class="t-tag">fix(kanban):</span> completing a task with no result or summary is ...</span>
     </div>
   </div>
   <!-- TICKER:END -->
