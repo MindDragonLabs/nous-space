@@ -229,15 +229,14 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;          /* hide scrollbar — drag to scroll */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.15) transparent;
   padding: 88px 10px 40px 34px;
   --block-size: 125px;
   --block-gap: calc(0.24 * var(--block-size));
-  cursor: grab;
-  user-select: none;
 }
-.stripscroll::-webkit-scrollbar { display: none; }     /* Chrome/Safari */
-.stripscroll:active { cursor: grabbing; }
+.stripscroll::-webkit-scrollbar { height: 4px; }
+.stripscroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 2px; }
 
 .strip {
   display: flex;
@@ -462,186 +461,20 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
   letter-spacing: 0.02em; white-space: nowrap;
 }
 
-/* ── line chart (backlog panel) ───────────────────────────────── */
-.line-chart {
-  display: block;
-  margin: 4px 0 0;
-  width: 100%;
-  max-width: 320px;
+/* release timeline dots */
+.rel-dots { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0; }
+.rel-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--nous-electric); opacity: .6;
 }
-.chart-label {
-  font-size: 7px;
-  fill: rgba(255,255,255,.42);
-  text-anchor: middle;
-}
-
-/* ── 30-day release calendar ───────────────────────────────────── */
-.rel-calendar {
-  display: grid;
-  grid-template-columns: repeat(10, 1fr);
-  gap: 3px;
-  margin: 6px 0;
-}
-.rel-cal {
-  aspect-ratio: 1;
-  border-radius: 2px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--mono);
-  font-size: 8px;
-  color: rgba(255,255,255,.42);
-}
-.rel-lv0 { background: rgba(255,255,255,.06); color: rgba(255,255,255,.32); }
-.rel-lv1 { background: rgba(0,174,239,.30); color: rgba(255,255,255,.85); }
-.rel-lv2 { background: rgba(0,174,239,.55); color: rgba(255,255,255,.92); }
-.rel-lv3 { background: rgba(0,174,239,.85); color: #fff; }
+.rel-dot:nth-child(1) { width: 14px; height: 14px; opacity: 1; }
 
 /* merge velocity rows */
 .velo-list { margin: 4px 0; }
 .velo-row { display: flex; align-items: baseline; gap: 10px; margin: 3px 0; }
 .velo-area { font-size: 10px; color: rgba(255,255,255,.72); width: 130px; font-weight: 600; }
 .velo-h    { font-size: 12px; color: var(--nous-electric); font-weight: 700; width: 36px; text-align: right; }
-.velo-n    { font-size: 10px; color: rgba(255,255,255,.36); }
-
-/* ── newsletter (last-hour merges as article blocks) ─────────────── */
-.newsletter {
-  border-top: 1px solid rgba(255,255,255,.08);
-  padding: 16px 20px 12px;
-  margin: 0;
-  background: #0b0e16;
-}
-.nw-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--nous-amber);
-  margin: 0 0 12px 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.nw-title .hgi { font-size: 18px; }
-.nw-strip {
-  display: flex;
-  gap: 14px;
-  overflow-x: auto;
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 4px;
-}
-.nw-strip::-webkit-scrollbar { height: 4px; }
-.nw-strip::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 2px; }
-.nw-card {
-  flex: 0 0 310px;
-  background: #0d1220;
-  border: 1px solid rgba(255,255,255,.08);
-  border-radius: 6px;
-  padding: 14px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.nw-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.nw-link {
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--nous-electric);
-  text-decoration: none;
-}
-.nw-link:hover { color: var(--nous-amber); }
-.nw-tag {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: rgba(255,255,255,.5);
-  font-weight: 600;
-}
-.nw-time {
-  margin-left: auto;
-  font-family: var(--mono);
-  font-size: 10px;
-  color: rgba(255,255,255,.36);
-}
-.nw-body {
-  flex: 1;
-}
-.nw-summary {
-  font-size: 12px;
-  line-height: 1.55;
-  color: rgba(255,255,255,.72);
-  margin: 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.nw-gallery {
-  margin-top: 10px;
-  border-radius: 4px;
-  overflow: hidden;
-}
-.nw-img {
-  width: 100%;
-  border-radius: 4px;
-  display: block;
-}
-.nw-footer {
-  border-top: 1px solid rgba(255,255,255,.06);
-  padding-top: 8px;
-}
-.nw-author {
-  font-size: 10px;
-  color: rgba(255,255,255,.42);
-}
-.nw-author a {
-  color: rgba(255,255,255,.6);
-  text-decoration: none;
-  font-weight: 600;
-}
-.nw-author a:hover { color: var(--nous-amber); }
-
-/* ── news ticker ─────────────────────────────────────────────────── */
-.ticker-wrap {
-  overflow: hidden;
-  background: #0d1220;
-  border-top: 1px solid rgba(255,255,255,.08);
-  border-bottom: 1px solid rgba(255,255,255,.08);
-  padding: 10px 0;
-  margin: 0;
-}
-.ticker {
-  display: flex;
-  gap: 0;
-  animation: ticker-scroll 120s linear infinite;
-  width: max-content;
-}
-.ticker-item {
-  flex-shrink: 0;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: rgba(255,255,255,.72);
-  white-space: nowrap;
-  padding: 0 32px;
-  border-right: 1px solid rgba(255,255,255,.12);
-}
-.ticker-item .t-tag {
-  font-weight: 700;
-  color: var(--nous-electric);
-}
-.ticker-item .t-time {
-  color: rgba(255,255,255,.36);
-  margin-right: 6px;
-}
-.ticker-wrap:hover .ticker { animation-play-state: paused; }
-
-@keyframes ticker-scroll {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}/* ROWCSS:END */
+.velo-n    { font-size: 10px; color: rgba(255,255,255,.36); }/* ROWCSS:END */
 </style>
 </head>
 <body>
@@ -707,7 +540,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
 
 <main class="main-content">
 <!-- BLOCKROW:START -->
-  <div class="stripscroll" id="blockstrip">
+  <div class="stripscroll">
     <div class="strip">
             <div class="wrap">
         <span class="p-num p-num-green">#115682</span>
@@ -959,7 +792,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
             <div class="d"><span class="add">+87</span> <span class="del">-4</span></div>
             <div class="g">fix(desktop)</div>
             <div class="t">large text pastes attach from HERMES_HOME/composer-pastes when the chat cwd is elsewhere</div>
-            <div class="w">merged ~2 h</div>
+            <div class="w">merged ~3 h</div>
           </div>
         </a>
         <div class="miner"><a class="mine" href="https://github.com/teknium1" target="_blank" rel="noopener" title="author: teknium1">teknium1</a></div>
@@ -1122,79 +955,30 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
       </div>
     </div>
   </div>
-  <script>
-// Drag-to-scroll (mempool.space behaviour)
-(function(){
-  const el = document.getElementById('blockstrip');
-  if (!el) return;
-  let down = false, sx = 0, sl = 0;
-  el.addEventListener('mousedown', function(e){
-    if (e.target.closest('a')) return;           // let links through
-    down = true;
-    sx = e.pageX - el.offsetLeft;
-    sl = el.scrollLeft;
-    el.style.cursor = 'grabbing';
-    el.style.scrollBehavior = 'auto';
-    e.preventDefault();
-  });
-  el.addEventListener('mouseleave', function(){
-    down = false;
-    el.style.cursor = 'grab';
-  });
-  el.addEventListener('mouseup', function(){
-    down = false;
-    el.style.cursor = 'grab';
-  });
-  el.addEventListener('mousemove', function(e){
-    if (!down) return;
-    e.preventDefault();
-    el.scrollLeft = sl - (e.pageX - el.offsetLeft - sx);
-  });
-  // touch support
-  el.addEventListener('touchstart', function(e){
-    if (e.target.closest('a')) return;
-    down = true;
-    sx = e.touches[0].pageX - el.offsetLeft;
-    sl = el.scrollLeft;
-    el.style.scrollBehavior = 'auto';
-  }, {passive: false});
-  el.addEventListener('touchend', function(){ down = false; });
-  el.addEventListener('touchmove', function(e){
-    if (!down) return;
-    el.scrollLeft = sl - (e.touches[0].pageX - el.offsetLeft - sx);
-  }, {passive: false});
-})();
-  </script>
   <!-- BLOCKROW:END -->
   <!-- PANELS:START -->
   <div class="dash-row">
     <div class="dash-card left">
-      <h3><i class="hgi hgi-stroke hgi-inbox"></i> PR Backlog</h3>
-      <div class="big-num">29,245</div>
+      <h3>PR Backlog</h3>
+      <div class="big-num">29,247</div>
       <div class="big-sub">open pull requests</div>
               <div class="stat-row">
           <span class="stat-label">newest</span>
-          <a class="stat-val" href="https://github.com/NousResearch/hermes-agent/pull/117887" target="_blank" rel="noopener">#117887</a>
-          <span class="stat-dim">0.1h ago</span>
+          <a class="stat-val" href="https://github.com/NousResearch/hermes-agent/pull/117889" target="_blank" rel="noopener">#117889</a>
+          <span class="stat-dim">0.0h ago</span>
         </div>
               <div class="stat-row">
           <span class="stat-label">oldest</span>
           <a class="stat-val" href="https://github.com/NousResearch/hermes-agent/pull/2637" target="_blank" rel="noopener">#2637</a>
           <span class="stat-dim">181d ago</span>
         </div>
-      <div class="section-label">new PRs — last 7 days</div>
-      <svg class="line-chart" viewBox="0 0 240 80" width="240" height="80">
-  <polygon points="24.0,64.0 24.0,14.6 59.3,11.9 94.7,25.7 130.0,20.5 165.3,18.5 200.7,8.0 236.0,56.3 236.0,64.0" fill="url(#fade)"/>
-  <defs><linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="0%" stop-color="var(--nous-amber)" stop-opacity="0.25"/>
-    <stop offset="100%" stop-color="var(--nous-amber)" stop-opacity="0.02"/>
-  </linearGradient></defs>
-  <polyline points="24.0,14.6 59.3,11.9 94.7,25.7 130.0,20.5 165.3,18.5 200.7,8.0 236.0,56.3 " fill="none" stroke="var(--nous-amber)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
-  <text x="24.0" y="78" class="chart-label">09-15</text><text x="59.3" y="78" class="chart-label">09-16</text><text x="94.7" y="78" class="chart-label">09-17</text><text x="130.0" y="78" class="chart-label">09-18</text><text x="165.3" y="78" class="chart-label">09-19</text><text x="200.7" y="78" class="chart-label">09-20</text><text x="236.0" y="78" class="chart-label">09-21</text>
-</svg>
+      <div class="section-label">by area</div>
+      <div class="area-cloud">
+        <span class="area-pill">fix(gateway) 34</span><span class="area-pill">fix(desktop) 30</span><span class="area-pill">feat(desktop) 26</span><span class="area-pill">other 20</span><span class="area-pill">fix(kanban) 18</span><span class="area-pill">fix(agent) 16</span><span class="area-pill">fix(cron) 10</span><span class="area-pill">fix(update) 10</span>
+      </div>
     </div>
     <div class="dash-card right">
-      <h3><i class="hgi hgi-stroke hgi-rocket-01"></i> Release Velocity</h3>
+      <h3>Release Velocity</h3>
               <div class="stat-row">
           <span class="stat-label">latest</span>
           <span class="stat-val">v0.21.3</span>
@@ -1205,11 +989,13 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
           <span class="stat-val">~5.6d</span>
           <span class="stat-dim">3 releases in 2 weeks</span>
         </div>
-      <div class="section-label">releases — last 30 days</div>
-      <div class="rel-calendar"><span class="rel-cal rel-lv0" title="2026-08-23: 0 release(s)">23</span><span class="rel-cal rel-lv0" title="2026-08-24: 0 release(s)">24</span><span class="rel-cal rel-lv0" title="2026-08-25: 0 release(s)">25</span><span class="rel-cal rel-lv0" title="2026-08-26: 0 release(s)">26</span><span class="rel-cal rel-lv1" title="2026-08-27: 1 release(s)">27</span><span class="rel-cal rel-lv0" title="2026-08-28: 0 release(s)">28</span><span class="rel-cal rel-lv0" title="2026-08-29: 0 release(s)">29</span><span class="rel-cal rel-lv0" title="2026-08-30: 0 release(s)">30</span><span class="rel-cal rel-lv1" title="2026-08-31: 1 release(s)">31</span><span class="rel-cal rel-lv0" title="2026-09-01: 0 release(s)">1</span><span class="rel-cal rel-lv0" title="2026-09-02: 0 release(s)">2</span><span class="rel-cal rel-lv0" title="2026-09-03: 0 release(s)">3</span><span class="rel-cal rel-lv0" title="2026-09-04: 0 release(s)">4</span><span class="rel-cal rel-lv0" title="2026-09-05: 0 release(s)">5</span><span class="rel-cal rel-lv0" title="2026-09-06: 0 release(s)">6</span><span class="rel-cal rel-lv1" title="2026-09-07: 1 release(s)">7</span><span class="rel-cal rel-lv0" title="2026-09-08: 0 release(s)">8</span><span class="rel-cal rel-lv0" title="2026-09-09: 0 release(s)">9</span><span class="rel-cal rel-lv0" title="2026-09-10: 0 release(s)">10</span><span class="rel-cal rel-lv1" title="2026-09-11: 1 release(s)">11</span><span class="rel-cal rel-lv0" title="2026-09-12: 0 release(s)">12</span><span class="rel-cal rel-lv0" title="2026-09-13: 0 release(s)">13</span><span class="rel-cal rel-lv1" title="2026-09-14: 1 release(s)">14</span><span class="rel-cal rel-lv0" title="2026-09-15: 0 release(s)">15</span><span class="rel-cal rel-lv0" title="2026-09-16: 0 release(s)">16</span><span class="rel-cal rel-lv0" title="2026-09-17: 0 release(s)">17</span><span class="rel-cal rel-lv0" title="2026-09-18: 0 release(s)">18</span><span class="rel-cal rel-lv0" title="2026-09-19: 0 release(s)">19</span><span class="rel-cal rel-lv0" title="2026-09-20: 0 release(s)">20</span><span class="rel-cal rel-lv0" title="2026-09-21: 0 release(s)">21</span></div>
+      <div class="section-label">release timeline</div>
+      <div class="rel-dots">
+        <span class="rel-dot" title="v0.21.3 (v2026.9.14)"></span><span class="rel-dot" title="v0.21.2 (v2026.9.11)"></span><span class="rel-dot" title="v0.21.1 (v2026.9.7)"></span><span class="rel-dot" title="v0.21.0 (v2026.8.31)"></span><span class="rel-dot" title="v0.20.6 (v2026.8.27)"></span><span class="rel-dot" title="v0.20.5 (v2026.8.19)"></span><span class="rel-dot" title="v0.20.4 (v2026.8.18)"></span><span class="rel-dot" title="v0.20.3 (v2026.8.16.2)"></span><span class="rel-dot" title="v0.20.2 (v2026.8.16)"></span><span class="rel-dot" title="v0.20.1 (v2026.8.13)"></span><span class="rel-dot" title="v0.20.0 (v2026.8.3)"></span><span class="rel-dot" title="v0.19.1 (v2026.7.30)"></span>
+      </div>
     </div>
     <div class="dash-card third">
-      <h3><i class="hgi hgi-stroke hgi-activity-01"></i> PR Velocity</h3>
+      <h3>PR Velocity</h3>
         <div class="stat-row">
           <span class="stat-label">7d</span>
           <span class="stat-val">258.7 PR/day</span>

@@ -172,7 +172,7 @@ def backlog_stats() -> dict:
     import re
     from collections import Counter
 
-    now = dt.datetime.now(dt.UTC)
+    now = dt.datetime.now(dt.timezone.utc)
     areas: Counter[str] = Counter()
 
     # ── true oldest: asc query, first result ──
@@ -240,7 +240,7 @@ def release_stats() -> dict:
     if r.returncode != 0:
         return {"releases": [], "cadence_days": None, "error": r.stderr.strip()[:200]}
     rels = json.loads(r.stdout)
-    now = dt.datetime.now(dt.UTC)
+    now = dt.datetime.now(dt.timezone.utc)
     recent = []
     for rel in rels:
         pub = parse(rel["publishedAt"])
@@ -260,7 +260,7 @@ def release_stats() -> dict:
 
 def merge_rate() -> dict:
     """Merged PR counts in recent windows for PRs/day velocity."""
-    now = dt.datetime.now(dt.UTC)
+    now = dt.datetime.now(dt.timezone.utc)
     windows = [
         ("7d", now - dt.timedelta(days=7)),
         ("30d", now - dt.timedelta(days=30)),
@@ -319,7 +319,7 @@ def merge_velocity() -> dict:
 # ── main ────────────────────────────────────────────────────────────────────
 
 def main() -> int:
-    now = dt.datetime.now(dt.UTC)
+    now = dt.datetime.now(dt.timezone.utc)
 
     pend_all = [norm_pending(p, now) for p in open_prs()]
     pending = sorted(pend_all, key=lambda p: (-p["score"], -p["age_min"]))[:N_PENDING]
