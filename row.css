@@ -20,16 +20,7 @@
   --block-gap: calc(0.24 * var(--block-size));
 }
 
-.col { display: flex; flex-direction: column; gap: 12px; flex: 0 0 auto; }
-
-.cap {
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-.cap.pending { color: #4ade80; }
-.cap.merged  { color: var(--nous-electric); }
+.col { display: flex; flex-direction: column; gap: 0; flex: 0 0 auto; }
 
 .cluster { display: flex; align-items: flex-start; gap: var(--block-gap); }
 .wrap { display: flex; flex-direction: column; align-items: stretch; }
@@ -129,7 +120,7 @@
 .cube.p-blue .face .w { color: #d8f4ff; }
 
 /* ---- name under a merged block: mempool's .badge.miner-name box ---- */
-.miner { margin-top: calc(0.17 * var(--block-size)); max-width: var(--block-size); }
+.miner { margin-top: calc(0.152 * var(--block-size)); max-width: var(--block-size); }
 .miner a {
   display: block;
   padding: 5px 7px;

@@ -95,7 +95,6 @@ def merged_cell(item: dict) -> str:
 
 
 def render_row(state: dict) -> str:
-    maintainer = state.get("maintainer", "maintainer")
     # strongest pending PR sits nearest the divider, so render the list reversed
     pending = list(reversed(state["pending"][:N_PER_SIDE]))
     merged = state["merged"][:N_PER_SIDE]
@@ -103,7 +102,6 @@ def render_row(state: dict) -> str:
     blues = "\n".join(merged_cell(x) for x in merged)
     return f"""  <div class="blockrow">
     <div class="col pending">
-      <div class="cap pending">awaiting merge · {esc(maintainer)}</div>
       <div class="cluster">
 {greens}
       </div>
@@ -112,7 +110,6 @@ def render_row(state: dict) -> str:
     <div class="split"></div>
 
     <div class="col merged">
-      <div class="cap merged">merged to main · latest {len(merged)}</div>
       <div class="cluster">
 {blues}
       </div>

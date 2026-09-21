@@ -231,16 +231,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
   --block-gap: calc(0.24 * var(--block-size));
 }
 
-.col { display: flex; flex-direction: column; gap: 12px; flex: 0 0 auto; }
-
-.cap {
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-.cap.pending { color: #4ade80; }
-.cap.merged  { color: var(--nous-electric); }
+.col { display: flex; flex-direction: column; gap: 0; flex: 0 0 auto; }
 
 .cluster { display: flex; align-items: flex-start; gap: var(--block-gap); }
 .wrap { display: flex; flex-direction: column; align-items: stretch; }
@@ -340,7 +331,7 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
 .cube.p-blue .face .w { color: #d8f4ff; }
 
 /* ---- name under a merged block: mempool's .badge.miner-name box ---- */
-.miner { margin-top: calc(0.17 * var(--block-size)); max-width: var(--block-size); }
+.miner { margin-top: calc(0.152 * var(--block-size)); max-width: var(--block-size); }
 .miner a {
   display: block;
   padding: 5px 7px;
@@ -450,7 +441,6 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
 <!-- BLOCKROW:START -->
   <div class="blockrow">
     <div class="col pending">
-      <div class="cap pending">awaiting merge · teknium1</div>
       <div class="cluster">
       <a class="cube p-green" href="https://github.com/NousResearch/hermes-agent/pull/117748" target="_blank" rel="noopener" title="#117748 Fleet-restart warning no longer sticks forever when a serve backend is running (#117275)">
         <div class="face">
@@ -502,7 +492,6 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
     <div class="split"></div>
 
     <div class="col merged">
-      <div class="cap merged">merged to main · latest 5</div>
       <div class="cluster">
       <div class="wrap">
       <a class="cube p-blue" href="https://github.com/NousResearch/hermes-agent/pull/117680" target="_blank" rel="noopener" title="#117680 fix(lsp): one stalled request no longer silences a workspace for good — retry window, cold-root warm-up budget, per-root exclusion (#116446)">
