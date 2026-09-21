@@ -536,18 +536,18 @@ def contributors_panel(state: dict) -> str:
 
 
 def render_panels(state: dict) -> str:
-    # Keep nested markers intact. Later passes fill each section.
-    return f"""  <!-- ISSUES:START -->
+    # Keep the original summary cards first. The long lists stay below the fold.
+    return f"""  <div class="dash-row">
+{backlog_panel(state)}
+{releases_panel(state)}
+{merge_rate_panel(state)}
+  </div>
+  <!-- ISSUES:START -->
   <!-- ISSUES:END -->
   <!-- PRS:START -->
   <!-- PRS:END -->
   <!-- CONTRIBUTORS:START -->
-  <!-- CONTRIBUTORS:END -->
-  <div class="dash-row">
-{backlog_panel(state)}
-{releases_panel(state)}
-{merge_rate_panel(state)}
-  </div>"""
+  <!-- CONTRIBUTORS:END -->"""
 
 
 # ── main ────────────────────────────────────────────────────────────────────
