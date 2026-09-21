@@ -550,17 +550,131 @@ def render_panels(state: dict) -> str:
   <!-- CONTRIBUTORS:END -->"""
 
 
+# ── mission ledger lower-page renderers ─────────────────────────────────────
+# These renderers intentionally keep the locked summary cards above unchanged.
+
+def ticker_html(state: dict) -> str:
+    merged = [p for p in state.get("merged", []) if p.get("age_min", 999) <= 60]
+    if not merged:
+        return ""
+    cells = []
+    for pr in sorted(merged, key=lambda item: item.get("age_min", 999)):
+        tag, desc = _prefix(pr.get("title", ""))
+        cells.append(
+            f'<a class="ticker-item" href="{esc(pr.get("url", "#"))}" target="_blank" rel="noopener">'
+            f'<span class="t-time">{pr.get("age_min", 0)}m</span>'
+            f'<span class="t-tag">{esc(tag)}</span> {esc(clip(desc, 64))}</a>'
+        )
+    return '  <div class="ticker-wrap" aria-label="Recent merged pull requests"><div class="ticker">' + "".join(cells) + '</div></div>'
+
+
+def newsletter_html(state: dict) -> str:
+    merged = [p for p in state.get("merged", []) if p.get("age_min", 999) <= 60]
+    if not merged:
+        return ""
+    rows = []
+    for item in sorted(merged, key=lambda p: p.get("age_min", 999)):
+        tag, desc = _prefix(item.get("title", ""))
+        summary = item.get("summary") or desc
+        rows.append(
+            f'''      <a class="now-row" href="{esc(item.get("url", "#"))}" target="_blank" rel="noopener">
+        <span class="now-mark" aria-hidden="true">+</span>
+        <span class="now-number">#{item.get("number", "")}</span>
+        <span class="now-title">{esc(clip(summary, 120))}</span>
+        <span class="now-author">{esc(item.get("author", ""))}</span>
+        <time class="now-time">{esc(item.get("ago", ""))}</time>
+      </a>'''
+        )
+    content = "\n".join(rows)
+    return f'''  <section class="newsletter" id="now">
+    <div class="ledger-heading"><div><span class="ledger-kicker">00 / WIRE</span><h2 class="nw-title">Now</h2></div><span class="ledger-note">merged in the last hour</span></div>
+    <div class="now-list" aria-label="Merged pull requests from the last hour">
+{content}
+    </div>
+  </section>'''
+
+
+def issues_panel(state: dict) -> str:
+    data = state.get("issues", {})
+    items = data.get("recent", [])
+    if not items:
+        return ""
+    rows = []
+    for item in items:
+        labels = "".join(f'<span class="iss-label">{esc(label)}</span>' for label in item.get("labels", [])[:3])
+        comments = item.get("comments", 0)
+        comment_text = f'{comments} comment{"s" if comments != 1 else ""}' if comments else ""
+        rows.append(f'''      <div class="iss-row"><a class="iss-main" href="{esc(item.get("url", "#"))}" target="_blank" rel="noopener">
+        <span class="iss-num">#{item.get("number", "")}</span><span class="iss-title">{esc(clip(item.get("title", ""), 120))}</span><span class="iss-labels">{labels}</span>
+        <span class="iss-meta"><span class="iss-author">{esc(item.get("author", ""))}</span><span class="iss-time">{esc(item.get("ago", ""))}</span>{f'<span class="iss-comments">{comment_text}</span>' if comment_text else ''}</span>
+      </a></div>''')
+    content = "\n".join(rows)
+    return f'''    <section class="ledger-section full-width" id="issues"><div class="ledger-heading"><div><span class="ledger-kicker">01 / QUEUE</span><h2><i class="hgi hgi-stroke hgi-alert-02"></i> Issues</h2></div><span class="card-count">{data.get("total_open", 0):,} open · {data.get("total_closed", 0):,} closed</span></div><div class="iss-list">{content}</div></section>'''
+
+
+def prs_panel(state: dict) -> str:
+    data = state.get("pull_requests", {})
+    rows = []
+    for item in data.get("recent", []):
+        if item.get("draft"):
+            status = '<span class="prs-status prs-draft">draft</span>'
+        elif item.get("review") == "APPROVED":
+            status = '<span class="prs-status prs-approved">approved</span>'
+        elif item.get("review") == "CHANGES_REQUESTED":
+            status = '<span class="prs-status prs-changes">changes req</span>'
+        else:
+            status = '<span class="prs-status prs-open">open</span>'
+        rows.append(f'''      <div class="prs-row"><a class="prs-main" href="{esc(item.get("url", "#"))}" target="_blank" rel="noopener">
+        <span class="prs-num">#{item.get("number", "")}</span><span class="prs-title">{esc(clip(item.get("title", ""), 120))}</span>{status}<span class="prs-author">{esc(item.get("author", ""))}</span><span class="prs-diff"><span class="add">+{item.get("additions", 0)}</span> <span class="del">-{item.get("deletions", 0)}</span></span><span class="prs-time">{esc(item.get("ago", ""))}</span>
+      </a></div>''')
+    if not rows:
+        return ""
+    content = "\n".join(rows)
+    return f'''    <section class="ledger-section full-width" id="prs"><div class="ledger-heading"><div><span class="ledger-kicker">02 / REVIEW</span><h2><i class="hgi hgi-stroke hgi-git-pull-request"></i> Pull Requests</h2></div><span class="card-count">{data.get("total_open", 0):,} open · {data.get("total_closed", 0):,} closed</span></div><div class="prs-list">{content}</div></section>'''
+
+
+def contributors_panel(state: dict) -> str:
+    contribs = state.get("contributors", {}).get("contributors", [])
+    if not contribs:
+        return ""
+    rows = []
+    for rank, item in enumerate(contribs, 1):
+        rows.append(f'''      <a class="contrib-row" href="{esc(item.get("html_url", "#"))}" target="_blank" rel="noopener"><span class="contrib-rank">{rank:02d}</span><img class="contrib-avatar" src="{esc(item.get("avatar_url", ""))}&s=64" alt="" loading="lazy" width="28" height="28"><span class="contrib-name">{esc(item.get("login", ""))}</span><span class="contrib-count">{item.get("contributions", 0):,} contributions</span></a>''')
+    content = "\n".join(rows)
+    return f'''    <section class="ledger-section full-width" id="contributors"><div class="ledger-heading"><div><span class="ledger-kicker">03 / DISPATCHES</span><h2><i class="hgi hgi-stroke hgi-user-group"></i> Contributors</h2></div><span class="ledger-note">ranked by contributions</span></div><div class="contrib-list">{content}</div></section>'''
+
+
+def render_panels(state: dict) -> str:
+    return f'''  <div class="dash-row">
+{backlog_panel(state)}
+{releases_panel(state)}
+{merge_rate_panel(state)}
+  </div>
+  <div class="dash-deck">
+  <!-- TICKER:START -->
+  <!-- TICKER:END -->
+  <!-- NEWSLETTER:START -->
+  <!-- NEWSLETTER:END -->
+  <!-- ISSUES:START -->
+  <!-- ISSUES:END -->
+  <!-- PRS:START -->
+  <!-- PRS:END -->
+  <!-- CONTRIBUTORS:START -->
+  <!-- CONTRIBUTORS:END -->
+  </div>'''
+
+
 # ── main ────────────────────────────────────────────────────────────────────
 
 def main() -> int:
     state = json.loads(STATE.read_text(encoding="utf-8"))
     page = INDEX.read_text(encoding="utf-8")
 
-    # Remove stale section markers left after PANELS:END by older builds.
-    # The live section markers must exist only inside the panels block.
+    # Remove stale newsletter/ticker bodies that used to live after PANELS.
+    # The current render places both sections inside the lower deck.
     page = re.sub(
-        re.escape(PANELS_END) + r".*?" + re.escape(NEWSLETTER_START),
-        PANELS_END + "\n  " + NEWSLETTER_START,
+        re.escape(PANELS_END) + r".*?" + re.escape(TICKER_END),
+        PANELS_END,
         page,
         count=1,
         flags=re.S,
@@ -574,7 +688,7 @@ def main() -> int:
         page = re.sub(re.escape(start) + r".*?" + re.escape(end),
                       start + end, page, flags=re.S)
 
-    for marker in (START, END, PANELS_START, PANELS_END, TICKER_START, TICKER_END, CSS_START, CSS_END, NEWSLETTER_START, NEWSLETTER_END, ISSUES_START, ISSUES_END, PRS_START, PRS_END, CONTRIBUTORS_START, CONTRIBUTORS_END):
+    for marker in (START, END, PANELS_START, PANELS_END, CSS_START, CSS_END):
         if marker not in page:
             raise SystemExit(f"ERROR: marker {marker} missing from index.html")
 

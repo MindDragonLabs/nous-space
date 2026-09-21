@@ -829,13 +829,8 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
   font-weight: 600;
 }
 
-/* ── search bar ──────────────────────────────────────────────────── */
-.search-bar {
-  position: relative;
-  width: 100%;
-  max-width: 480px;
-  margin: 12px auto 8px;
-}
+/* Lower-page search styles intentionally omitted.
+   The nav owns .search-bar; duplicate geometry here breaks mobile width. */
 .search-icon {
   position: absolute;
   left: 12px;
@@ -924,6 +919,58 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
 .sr-author { font-size: 10px; color: rgba(255,255,255,.42); flex-shrink: 0; font-family: var(--mono); }
 .sr-date { font-size: 10px; color: rgba(255,255,255,.28); flex-shrink: 0; font-family: var(--mono); }
 .card-count { font-weight: 400; font-size: 10px; color: rgba(255,255,255,.36); margin-left: 8px; }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MISSION LEDGER — lower page operations deck
+   ═════════════════════════════════════════════════════════════════════════ */
+.main-content { overflow-x: clip; }
+.dash-deck { width: min(100%, 1160px); margin: 0 auto 64px; padding: 0 20px; box-sizing: border-box; font-family: var(--mono); line-height: 1.4; }
+.dash-deck .ticker-wrap, .dash-deck .newsletter, .dash-deck .ledger-section { width: 100%; box-sizing: border-box; background: #0d1220; border: 1px solid rgba(255,255,255,.11); border-radius: 2px; }
+.dash-deck .ticker-wrap { margin: 0 0 12px; padding: 0; overflow: hidden; }
+.dash-deck .ticker { display: flex; width: auto; animation: none; overflow-x: auto; }
+.dash-deck .ticker-item { display: block; flex: 0 0 auto; min-height: 40px; padding: 10px 16px; color: rgba(255,255,255,.74); text-decoration: none; border-right: 1px solid rgba(255,255,255,.11); }
+.dash-deck .ticker-item:hover { background: rgba(255,255,255,.04); color: #fff; }
+.dash-deck .t-time { color: #a0a0a8; margin-right: 8px; }
+.dash-deck .t-tag { color: var(--nous-electric); font-weight: 700; }
+.ledger-heading { display: flex; align-items: end; justify-content: space-between; gap: 16px; padding: 18px 20px 14px; border-bottom: 1px solid rgba(255,255,255,.11); }
+.ledger-heading h2 { margin: 3px 0 0; color: #fff; font-size: 16px; line-height: 1.2; letter-spacing: .03em; }
+.ledger-kicker { display: block; color: var(--nous-amber); font-size: 10px; font-weight: 700; letter-spacing: .16em; }
+.ledger-note, .card-count { color: #a0a0a8; font-size: 11px; white-space: nowrap; }
+.dash-deck .nw-title { color: #fff; font-size: 16px; margin: 3px 0 0; }
+.now-list, .iss-list, .prs-list, .contrib-list { width: 100%; }
+.now-row, .iss-main, .prs-main, .contrib-row { color: rgba(255,255,255,.78); text-decoration: none; }
+.now-row { display: grid; grid-template-columns: 18px 72px minmax(0,1fr) 140px 82px; align-items: center; gap: 10px; min-height: 44px; padding: 0 20px; border-bottom: 1px solid rgba(255,255,255,.07); box-sizing: border-box; }
+.now-row:hover, .iss-row:hover, .prs-row:hover, .contrib-row:hover { background: rgba(255,255,255,.035); }
+.now-mark { color: #4ade80; font-weight: 700; }
+.now-number, .iss-num, .prs-num { color: var(--nous-electric); font-weight: 700; }
+.now-title, .iss-title, .prs-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.now-author, .now-time, .iss-author, .iss-time, .iss-comments, .prs-author, .prs-time { color: #a0a0a8; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.now-time { text-align: right; }
+.ledger-section { margin-top: 12px; overflow: hidden; }
+.iss-row, .prs-row { min-width: 0; border-bottom: 1px solid rgba(255,255,255,.07); }
+.iss-main { display: grid; grid-template-columns: 72px minmax(0,1fr) minmax(120px, 220px) 230px; align-items: center; gap: 12px; min-height: 46px; padding: 0 20px; box-sizing: border-box; }
+.iss-title, .prs-title { color: rgba(255,255,255,.82); font-size: 13px; }
+.iss-labels { min-width: 0; overflow: hidden; white-space: nowrap; }
+.iss-label { display: inline-block; padding: 3px 6px; margin-right: 4px; border: 1px solid rgba(0,174,239,.28); border-radius: 2px; color: #a0dff2; font-size: 10px; }
+.iss-meta { display: flex; justify-content: flex-end; gap: 10px; min-width: 0; }
+.prs-main { display: grid; grid-template-columns: 72px minmax(0,1fr) 78px 140px 90px 82px; align-items: center; gap: 12px; min-height: 46px; padding: 0 20px; box-sizing: border-box; }
+.prs-status { justify-self: start; padding: 3px 6px; border-radius: 2px; font-size: 10px; text-transform: uppercase; }
+.prs-open, .prs-approved { color: #83fd00; background: rgba(131,253,0,.10); }
+.prs-draft { color: #a0a0a8; background: rgba(255,255,255,.08); }
+.prs-changes { color: var(--nous-amber); background: rgba(245,166,35,.12); }
+.prs-diff { white-space: nowrap; font-size: 11px; }
+.prs-diff .add { color: #83fd00; }
+.prs-diff .del { color: #ff7a86; }
+.contrib-row { display: grid; grid-template-columns: 44px 28px minmax(0,1fr) 180px; align-items: center; gap: 12px; min-height: 46px; padding: 0 20px; border-bottom: 1px solid rgba(255,255,255,.07); box-sizing: border-box; }
+.contrib-rank { color: #a0a0a8; font-size: 11px; }
+.contrib-avatar { border-radius: 50%; background: rgba(255,255,255,.08); }
+.contrib-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: rgba(255,255,255,.82); }
+.contrib-count { color: var(--nous-amber); font-size: 11px; text-align: right; }
+.iss-main:focus-visible, .prs-main:focus-visible, .now-row:focus-visible, .contrib-row:focus-visible, .ticker-item:focus-visible { outline: 2px solid var(--nous-electric); outline-offset: -2px; }
+@media (max-width: 900px) { .dash-deck { padding: 0 14px; } .iss-main { grid-template-columns: 64px minmax(0,1fr) 170px; } .iss-labels { display: none; } .prs-main { grid-template-columns: 64px minmax(0,1fr) 74px 120px 78px; } .prs-status { display: none; } }
+@media (max-width: 640px) { .dash-deck { padding: 0 10px; } .ledger-heading { align-items: flex-start; padding: 14px; } .ledger-note, .card-count { font-size: 10px; } .now-row { grid-template-columns: 16px 58px minmax(0,1fr) 58px; gap: 7px; padding: 0 14px; } .now-author { display: none; } .iss-main, .prs-main { grid-template-columns: 58px minmax(0,1fr) 74px; gap: 8px; padding: 8px 14px; min-height: 52px; } .iss-meta { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 4px 8px; } .iss-title, .prs-title { white-space: normal; line-height: 1.35; } .prs-author, .prs-diff { display: none; } .prs-time { text-align: right; } .contrib-row { grid-template-columns: 34px 28px minmax(0,1fr) 112px; padding: 0 14px; gap: 8px; } .contrib-count { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .dash-deck .ticker { scrollbar-width: none; } .dash-deck .ticker::-webkit-scrollbar { display: none; } .topnav { overflow: hidden; } .topnav > .sep, .topnav > .search-bar { display: none; } .topnav .nav-icons { flex: 1 1 auto; min-width: 0; justify-content: space-between; gap: 0; } .topnav .nav-icon { width: 28px; } }
+@media (prefers-reduced-motion: reduce) { .dash-deck *, .dash-deck *::before, .dash-deck *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+}
 /* ROWCSS:END */
 </style>
 </head>
@@ -1536,305 +1583,130 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
       </div>
     </div>
   </div>
-  <!-- ISSUES:START -->
-    <div class="dash-card full-width">
-      <h3><i class="hgi hgi-stroke hgi-alert-02"></i> Issues <span class="card-count">13,785 open &middot; 15,813 closed</span></h3>
-      <div class="iss-list">
-      <div class="iss-row">
-        <a class="iss-num" href="https://github.com/NousResearch/hermes-agent/issues/118182" target="_blank" rel="noopener">#118182</a>
-        <span class="iss-title">[Portal] Long sessions wedge with non-retryable 400 once cumulative replayed reasoni…</span>
-        <span class="iss-meta"><span class="iss-author">orkytech</span> <span class="iss-time">0m ago</span></span>
-      </div>      <div class="iss-row">
-        <a class="iss-num" href="https://github.com/NousResearch/hermes-agent/issues/118181" target="_blank" rel="noopener">#118181</a>
-        <span class="iss-title">[Feature]: Paste files from the OS file manager (Ctrl+C file → Ctrl+V in composer) w…</span>
-        <span class="iss-meta"><span class="iss-author">sz85101734</span> <span class="iss-time">1m ago</span></span>
-      </div>      <div class="iss-row">
-        <a class="iss-num" href="https://github.com/NousResearch/hermes-agent/issues/118178" target="_blank" rel="noopener">#118178</a>
-        <span class="iss-title">fix(cli): `hermes chat -m &lt;alias&gt;` ignores configured model aliases (silently runs a…</span>
-        <span class="iss-meta"><span class="iss-author">RichardLian</span> <span class="iss-time">5m ago</span></span>
-      </div>      <div class="iss-row">
-        <a class="iss-num" href="https://github.com/NousResearch/hermes-agent/issues/118176" target="_blank" rel="noopener">#118176</a>
-        <span class="iss-title">[Bug]: SenseNova over-cap 400 (&quot;field MaxTokens invalid, should be in [1, 65536]&quot;) i…</span>
-        <span class="iss-meta"><span class="iss-author">Raycc-lang</span> <span class="iss-time">6m ago</span></span>
-      </div>      <div class="iss-row">
-        <a class="iss-num" href="https://github.com/NousResearch/hermes-agent/issues/118175" target="_blank" rel="noopener">#118175</a>
-        <span class="iss-title">[Feature]: `platforms.webhook.extra.public_base_url` — webhook URLs are always shown…</span>
-        <span class="iss-meta"><span class="iss-author">deathlord911</span> <span class="iss-time">7m ago</span><span class="iss-comments">&#x1f4ac; 1</span></span>
-      </div>      <div class="iss-row">
-        <a class="iss-num" href="https://github.com/NousResearch/hermes-agent/issues/118165" target="_blank" rel="noopener">#118165</a>
-        <span class="iss-title">[Bug]: cron bot-chat delivery kills a bot&#x27;s turn at a wall-clock cap while it is sti…</span>
-        <span class="iss-meta"><span class="iss-author">zengzheqing</span> <span class="iss-time">16m ago</span></span>
-      </div>      <div class="iss-row">
-        <a class="iss-num" href="https://github.com/NousResearch/hermes-agent/issues/118161" target="_blank" rel="noopener">#118161</a>
-        <span class="iss-title">[Bug]: startup orphan sweep closes pinned sessions — session_reaper calls sweep_orph…</span>
-        <span class="iss-meta"><span class="iss-author">nicecuprani</span> <span class="iss-time">19m ago</span><span class="iss-comments">&#x1f4ac; 2</span></span>
-      </div>      <div class="iss-row">
-        <a class="iss-num" href="https://github.com/NousResearch/hermes-agent/issues/118159" target="_blank" rel="noopener">#118159</a>
-        <span class="iss-title">NO_PROXY containing a bracketed IPv6 ([::1]) breaks the Codex OAuth/refresh path wit…</span>
-        <span class="iss-label">provider/openai</span>
-        <span class="iss-meta"><span class="iss-author">lanjintr</span> <span class="iss-time">20m ago</span></span>
-      </div>      <div class="iss-row">
-        <a class="iss-num" href="https://github.com/NousResearch/hermes-agent/issues/118158" target="_blank" rel="noopener">#118158</a>
-        <span class="iss-title">gateway migrate --multiplex always rolls back when a secondary&#x27;s configured drain &gt;=…</span>
-        <span class="iss-meta"><span class="iss-author">jnickles85-bit</span> <span class="iss-time">21m ago</span></span>
-      </div>      <div class="iss-row">
-        <a class="iss-num" href="https://github.com/NousResearch/hermes-agent/issues/118157" target="_blank" rel="noopener">#118157</a>
-        <span class="iss-title">auxiliary provider=auto does not follow effective provider after primary model fallb…</span>
-        <span class="iss-meta"><span class="iss-author">ch3och3tw</span> <span class="iss-time">21m ago</span></span>
-      </div>
-      </div>
-    </div>
-  <!-- ISSUES:END -->
-  <!-- PRS:START -->
-    <div class="dash-card full-width">
-      <h3><i class="hgi hgi-stroke hgi-git-pull-request"></i> Pull Requests <span class="card-count">29,435 open &middot; 58,613 closed</span></h3>
-      <div class="prs-strip">
-    <article class="prs-card">
-      <div class="prs-header">
-        <a class="prs-num" href="https://github.com/NousResearch/hermes-agent/pull/118180" target="_blank" rel="noopener">#118180</a>
-        <span class="prs-status prs-open">open</span>
-        <span class="prs-time">4m ago</span>
-      </div>
-      <p class="prs-title">fix(cli): expand configured model aliases in `hermes chat -m`</p>
-      <div class="prs-footer">
-        <span class="prs-author">by RichardLian</span>
-        <span class="prs-diff"><span class="add">+229</span> <span class="del">-5</span></span>
-      </div>
-    </article>    <article class="prs-card">
-      <div class="prs-header">
-        <a class="prs-num" href="https://github.com/NousResearch/hermes-agent/pull/118179" target="_blank" rel="noopener">#118179</a>
-        <span class="prs-status prs-open">open</span>
-        <span class="prs-time">5m ago</span>
-      </div>
-      <p class="prs-title">fix(model_switch): tuning-only providers block must not hijack vendor…</p>
-      <div class="prs-footer">
-        <span class="prs-author">by strzhao</span>
-        <span class="prs-diff"><span class="add">+60</span> <span class="del">-2</span></span>
-      </div>
-    </article>    <article class="prs-card">
-      <div class="prs-header">
-        <a class="prs-num" href="https://github.com/NousResearch/hermes-agent/pull/118177" target="_blank" rel="noopener">#118177</a>
-        <span class="prs-status prs-open">open</span>
-        <span class="prs-time">5m ago</span>
-      </div>
-      <p class="prs-title">fix(model-metadata): parse SenseNova&#x27;s CamelCase bounded-range output…</p>
-      <div class="prs-footer">
-        <span class="prs-author">by Raycc-lang</span>
-        <span class="prs-diff"><span class="add">+13</span> <span class="del">-5</span></span>
-      </div>
-    </article>    <article class="prs-card">
-      <div class="prs-header">
-        <a class="prs-num" href="https://github.com/NousResearch/hermes-agent/pull/118174" target="_blank" rel="noopener">#118174</a>
-        <span class="prs-status prs-open">open</span>
-        <span class="prs-time">4m ago</span>
-      </div>
-      <p class="prs-title">fix(desktop): the preview refusal prints the size it measured, not th…</p>
-      <div class="prs-footer">
-        <span class="prs-author">by MazenMkhinini</span>
-        <span class="prs-diff"><span class="add">+94</span> <span class="del">-1</span></span>
-      </div>
-    </article>    <article class="prs-card">
-      <div class="prs-header">
-        <a class="prs-num" href="https://github.com/NousResearch/hermes-agent/pull/118173" target="_blank" rel="noopener">#118173</a>
-        <span class="prs-status prs-open">open</span>
-        <span class="prs-time">4m ago</span>
-      </div>
-      <p class="prs-title">fix(update): fail closed when the mixed-version reap cannot scope by…</p>
-      <div class="prs-footer">
-        <span class="prs-author">by liuhao1024</span>
-        <span class="prs-diff"><span class="add">+80</span> <span class="del">-1</span></span>
-      </div>
-    </article>    <article class="prs-card">
-      <div class="prs-header">
-        <a class="prs-num" href="https://github.com/NousResearch/hermes-agent/pull/118172" target="_blank" rel="noopener">#118172</a>
-        <span class="prs-status prs-open">open</span>
-        <span class="prs-time">4m ago</span>
-      </div>
-      <p class="prs-title">fix(agent): route auto titles through active fallback</p>
-      <div class="prs-footer">
-        <span class="prs-author">by KoNit-K</span>
-        <span class="prs-diff"><span class="add">+48</span> <span class="del">-5</span></span>
-      </div>
-    </article>    <article class="prs-card">
-      <div class="prs-header">
-        <a class="prs-num" href="https://github.com/NousResearch/hermes-agent/pull/118171" target="_blank" rel="noopener">#118171</a>
-        <span class="prs-status prs-open">open</span>
-        <span class="prs-time">4m ago</span>
-      </div>
-      <p class="prs-title">fix(sessions): spare pinned rows in the startup orphan sweep</p>
-      <div class="prs-footer">
-        <span class="prs-author">by 686f6c61</span>
-        <span class="prs-diff"><span class="add">+17</span> <span class="del">-1</span></span>
-      </div>
-    </article>    <article class="prs-card">
-      <div class="prs-header">
-        <a class="prs-num" href="https://github.com/NousResearch/hermes-agent/pull/118170" target="_blank" rel="noopener">#118170</a>
-        <span class="prs-status prs-open">open</span>
-        <span class="prs-time">4m ago</span>
-      </div>
-      <p class="prs-title">fix(auth): handle bracketed IPv6 no-proxy entries</p>
-      <div class="prs-footer">
-        <span class="prs-author">by KoNit-K</span>
-        <span class="prs-diff"><span class="add">+100</span> <span class="del">-4</span></span>
-      </div>
-    </article>    <article class="prs-card">
-      <div class="prs-header">
-        <a class="prs-num" href="https://github.com/NousResearch/hermes-agent/pull/118169" target="_blank" rel="noopener">#118169</a>
-        <span class="prs-status prs-open">open</span>
-        <span class="prs-time">4m ago</span>
-      </div>
-      <p class="prs-title">fix(website): compact plugin and skill directory headers</p>
-      <div class="prs-footer">
-        <span class="prs-author">by unsupportedpastels</span>
-        <span class="prs-diff"><span class="add">+564</span> <span class="del">-6</span></span>
-      </div>
-    </article>    <article class="prs-card">
-      <div class="prs-header">
-        <a class="prs-num" href="https://github.com/NousResearch/hermes-agent/pull/118168" target="_blank" rel="noopener">#118168</a>
-        <span class="prs-status prs-open">open</span>
-        <span class="prs-time">4m ago</span>
-      </div>
-      <p class="prs-title">fix(gateway): honor drain budget during migration uninstall</p>
-      <div class="prs-footer">
-        <span class="prs-author">by KoNit-K</span>
-        <span class="prs-diff"><span class="add">+40</span> <span class="del">-1</span></span>
-      </div>
-    </article>    <article class="prs-card">
-      <div class="prs-header">
-        <a class="prs-num" href="https://github.com/NousResearch/hermes-agent/pull/118167" target="_blank" rel="noopener">#118167</a>
-        <span class="prs-status prs-open">open</span>
-        <span class="prs-time">4m ago</span>
-      </div>
-      <p class="prs-title">fix(desktop): retain archived sidebar tombstones</p>
-      <div class="prs-footer">
-        <span class="prs-author">by KoNit-K</span>
-        <span class="prs-diff"><span class="add">+72</span> <span class="del">-7</span></span>
-      </div>
-    </article>    <article class="prs-card">
-      <div class="prs-header">
-        <a class="prs-num" href="https://github.com/NousResearch/hermes-agent/pull/118166" target="_blank" rel="noopener">#118166</a>
-        <span class="prs-status prs-open">open</span>
-        <span class="prs-time">3m ago</span>
-      </div>
-      <p class="prs-title">fix(cron): a bot-chat delivery bounds the child turn by idle time, no…</p>
-      <div class="prs-footer">
-        <span class="prs-author">by zengzheqing</span>
-        <span class="prs-diff"><span class="add">+275</span> <span class="del">-9</span></span>
-      </div>
-    </article>
-      </div>
-    </div>
-  <!-- PRS:END -->
-  <!-- CONTRIBUTORS:START -->
-    <div class="dash-card full-width">
-      <h3><i class="hgi hgi-stroke hgi-user-group"></i> Top Contributors</h3>
-      <div class="contrib-strip">
-      <a class="contrib-card" href="https://github.com/teknium1" target="_blank" rel="noopener">
-        <img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/127238744?v=4&s=64" alt="" loading="lazy" width="36" height="36">
-        <span class="contrib-name">teknium1</span>
-        <span class="contrib-count">17,828</span>
-      </a>      <a class="contrib-card" href="https://github.com/OutThisLife" target="_blank" rel="noopener">
-        <img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/770929?v=4&s=64" alt="" loading="lazy" width="36" height="36">
-        <span class="contrib-name">OutThisLife</span>
-        <span class="contrib-count">3,520</span>
-      </a>      <a class="contrib-card" href="https://github.com/kshitijk4poor" target="_blank" rel="noopener">
-        <img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/82637225?v=4&s=64" alt="" loading="lazy" width="36" height="36">
-        <span class="contrib-name">kshitijk4poor</span>
-        <span class="contrib-count">2,957</span>
-      </a>      <a class="contrib-card" href="https://github.com/ethernet8023" target="_blank" rel="noopener">
-        <img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/666465?v=4&s=64" alt="" loading="lazy" width="36" height="36">
-        <span class="contrib-name">ethernet8023</span>
-        <span class="contrib-count">562</span>
-      </a>      <a class="contrib-card" href="https://github.com/benbarclay" target="_blank" rel="noopener">
-        <img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/413810?v=4&s=64" alt="" loading="lazy" width="36" height="36">
-        <span class="contrib-name">benbarclay</span>
-        <span class="contrib-count">511</span>
-      </a>      <a class="contrib-card" href="https://github.com/liuhao1024" target="_blank" rel="noopener">
-        <img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/11816344?v=4&s=64" alt="" loading="lazy" width="36" height="36">
-        <span class="contrib-name">liuhao1024</span>
-        <span class="contrib-count">406</span>
-      </a>      <a class="contrib-card" href="https://github.com/helix4u" target="_blank" rel="noopener">
-        <img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/4317663?v=4&s=64" alt="" loading="lazy" width="36" height="36">
-        <span class="contrib-name">helix4u</span>
-        <span class="contrib-count">348</span>
-      </a>      <a class="contrib-card" href="https://github.com/fangliquanflq" target="_blank" rel="noopener">
-        <img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/280272527?v=4&s=64" alt="" loading="lazy" width="36" height="36">
-        <span class="contrib-name">fangliquanflq</span>
-        <span class="contrib-count">341</span>
-      </a>      <a class="contrib-card" href="https://github.com/apps/hermes-seaeye" target="_blank" rel="noopener">
-        <img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/134168893?v=4&s=64" alt="" loading="lazy" width="36" height="36">
-        <span class="contrib-name">hermes-seaeye[bot]</span>
-        <span class="contrib-count">313</span>
-      </a>      <a class="contrib-card" href="https://github.com/xxxigm" target="_blank" rel="noopener">
-        <img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/54813621?v=4&s=64" alt="" loading="lazy" width="36" height="36">
-        <span class="contrib-name">xxxigm</span>
-        <span class="contrib-count">268</span>
-      </a>      <a class="contrib-card" href="https://github.com/erosika" target="_blank" rel="noopener">
-        <img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/56565191?v=4&s=64" alt="" loading="lazy" width="36" height="36">
-        <span class="contrib-name">erosika</span>
-        <span class="contrib-count">245</span>
-      </a>      <a class="contrib-card" href="https://github.com/alt-glitch" target="_blank" rel="noopener">
-        <img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/52913345?v=4&s=64" alt="" loading="lazy" width="36" height="36">
-        <span class="contrib-name">alt-glitch</span>
-        <span class="contrib-count">221</span>
-      </a>      <a class="contrib-card" href="https://github.com/KoNit-K" target="_blank" rel="noopener">
-        <img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/124019182?v=4&s=64" alt="" loading="lazy" width="36" height="36">
-        <span class="contrib-name">KoNit-K</span>
-        <span class="contrib-count">215</span>
-      </a>      <a class="contrib-card" href="https://github.com/austinpickett" target="_blank" rel="noopener">
-        <img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/260188?v=4&s=64" alt="" loading="lazy" width="36" height="36">
-        <span class="contrib-name">austinpickett</span>
-        <span class="contrib-count">212</span>
-      </a>      <a class="contrib-card" href="https://github.com/JoaoMarcos44" target="_blank" rel="noopener">
-        <img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/87440198?v=4&s=64" alt="" loading="lazy" width="36" height="36">
-        <span class="contrib-name">JoaoMarcos44</span>
-        <span class="contrib-count">208</span>
-      </a>
-      </div>
-    </div>
-  <!-- CONTRIBUTORS:END -->
-  <!-- PANELS:END -->
+  <div class="dash-deck">
+  <!-- TICKER:START -->
+  <div class="ticker-wrap" aria-label="Recent merged pull requests"><div class="ticker"><a class="ticker-item" href="https://github.com/NousResearch/hermes-agent/pull/118082" target="_blank" rel="noopener"><span class="t-time">40m</span><span class="t-tag"></span> doctor, cron status and claw report the ONE host gateway servin…</a><a class="ticker-item" href="https://github.com/NousResearch/hermes-agent/pull/118097" target="_blank" rel="noopener"><span class="t-time">44m</span><span class="t-tag">gateway:</span> lifecycle verbs mean &quot;the one host multiplexer&quot; (attach-or-resc…</a></div></div>
+  <!-- TICKER:END -->
   <!-- NEWSLETTER:START -->
-  <section class="newsletter">
-    <h2 class="nw-title"><i class="hgi hgi-stroke hgi-news"></i> Latest Merges — Last Hour</h2>
-    <div class="nw-strip">
-  <article class="nw-card">
-    <div class="nw-header">
-      <a class="nw-link" href="https://github.com/NousResearch/hermes-agent/pull/118082" target="_blank" rel="noopener">#118082</a>
-      <span class="nw-tag"></span>
-      <span class="nw-time">~40 min</span>
-    </div>
-    <div class="nw-body">
-      <p class="nw-summary">Under multiplex-only, `doctor`, `cron status`, `claw` and the gateway liveness ladder now report the ONE host gateway and the profiles it serves, instead of implying one gateway per profile and tel...</p>
-      <div class="nw-gallery"><img src="https://v3b.fal.media/files/b/0aab4d1e/RaHTGLKr2AFBfrTS0ZF9q_M2hNQGG7.png" alt="" class="nw-img" loading="lazy"></div>
-    </div>
-    <div class="nw-footer">
-      <span class="nw-author">by <a href="https://github.com/teknium1" target="_blank" rel="noopener">teknium1</a></span>
-    </div>
-  </article>
-  <article class="nw-card">
-    <div class="nw-header">
-      <a class="nw-link" href="https://github.com/NousResearch/hermes-agent/pull/118097" target="_blank" rel="noopener">#118097</a>
-      <span class="nw-tag">gateway:</span>
-      <span class="nw-time">~44 min</span>
-    </div>
-    <div class="nw-body">
-      <p class="nw-summary">Part of #100896</p>
-      <div class="nw-gallery"><img src="https://v3b.fal.media/files/b/0aab4dba/Ot3HYanVkYFSNB8E5TBOA_3wZjLhsG.png" alt="" class="nw-img" loading="lazy"></div>
-    </div>
-    <div class="nw-footer">
-      <span class="nw-author">by <a href="https://github.com/teknium1" target="_blank" rel="noopener">teknium1</a></span>
-    </div>
-  </article>
+  <section class="newsletter" id="now">
+    <div class="ledger-heading"><div><span class="ledger-kicker">00 / WIRE</span><h2 class="nw-title">Now</h2></div><span class="ledger-note">merged in the last hour</span></div>
+    <div class="now-list" aria-label="Merged pull requests from the last hour">
+      <a class="now-row" href="https://github.com/NousResearch/hermes-agent/pull/118082" target="_blank" rel="noopener">
+        <span class="now-mark" aria-hidden="true">+</span>
+        <span class="now-number">#118082</span>
+        <span class="now-title">Under multiplex-only, `doctor`, `cron status`, `claw` and the gateway liveness ladder now report the ONE host gateway a…</span>
+        <span class="now-author">teknium1</span>
+        <time class="now-time">~40 min</time>
+      </a>
+      <a class="now-row" href="https://github.com/NousResearch/hermes-agent/pull/118097" target="_blank" rel="noopener">
+        <span class="now-mark" aria-hidden="true">+</span>
+        <span class="now-number">#118097</span>
+        <span class="now-title">Part of #100896</span>
+        <span class="now-author">teknium1</span>
+        <time class="now-time">~44 min</time>
+      </a>
     </div>
   </section>
   <!-- NEWSLETTER:END -->
-  <!-- TICKER:START -->
-  <div class="ticker-wrap">
-    <div class="ticker"><span class="ticker-item"><span class="t-time">40m</span><span class="t-tag"></span> doctor, cron status and claw report the ONE hos...</span><span class="ticker-item"><span class="t-time">44m</span><span class="t-tag">gateway:</span> lifecycle verbs mean &quot;the one host multiplexer&quot;...</span><span class="ticker-item"><span class="t-time">40m</span><span class="t-tag"></span> doctor, cron status and claw report the ONE hos...</span><span class="ticker-item"><span class="t-time">44m</span><span class="t-tag">gateway:</span> lifecycle verbs mean &quot;the one host multiplexer&quot;...</span>
-    </div>
+  <!-- ISSUES:START -->
+    <section class="ledger-section full-width" id="issues"><div class="ledger-heading"><div><span class="ledger-kicker">01 / QUEUE</span><h2><i class="hgi hgi-stroke hgi-alert-02"></i> Issues</h2></div><span class="card-count">13,785 open · 15,813 closed</span></div><div class="iss-list">      <div class="iss-row"><a class="iss-main" href="https://github.com/NousResearch/hermes-agent/issues/118182" target="_blank" rel="noopener">
+        <span class="iss-num">#118182</span><span class="iss-title">[Portal] Long sessions wedge with non-retryable 400 once cumulative replayed reasoning_details exceeds upstream budget…</span><span class="iss-labels"></span>
+        <span class="iss-meta"><span class="iss-author">orkytech</span><span class="iss-time">0m ago</span></span>
+      </a></div>
+      <div class="iss-row"><a class="iss-main" href="https://github.com/NousResearch/hermes-agent/issues/118181" target="_blank" rel="noopener">
+        <span class="iss-num">#118181</span><span class="iss-title">[Feature]: Paste files from the OS file manager (Ctrl+C file → Ctrl+V in composer) with original paths, like drag-and-d…</span><span class="iss-labels"></span>
+        <span class="iss-meta"><span class="iss-author">sz85101734</span><span class="iss-time">1m ago</span></span>
+      </a></div>
+      <div class="iss-row"><a class="iss-main" href="https://github.com/NousResearch/hermes-agent/issues/118178" target="_blank" rel="noopener">
+        <span class="iss-num">#118178</span><span class="iss-title">fix(cli): `hermes chat -m &lt;alias&gt;` ignores configured model aliases (silently runs a different model)</span><span class="iss-labels"></span>
+        <span class="iss-meta"><span class="iss-author">RichardLian</span><span class="iss-time">5m ago</span></span>
+      </a></div>
+      <div class="iss-row"><a class="iss-main" href="https://github.com/NousResearch/hermes-agent/issues/118176" target="_blank" rel="noopener">
+        <span class="iss-num">#118176</span><span class="iss-title">[Bug]: SenseNova over-cap 400 (&quot;field MaxTokens invalid, should be in [1, 65536]&quot;) is parsed by neither output-cap gate</span><span class="iss-labels"></span>
+        <span class="iss-meta"><span class="iss-author">Raycc-lang</span><span class="iss-time">6m ago</span></span>
+      </a></div>
+      <div class="iss-row"><a class="iss-main" href="https://github.com/NousResearch/hermes-agent/issues/118175" target="_blank" rel="noopener">
+        <span class="iss-num">#118175</span><span class="iss-title">[Feature]: `platforms.webhook.extra.public_base_url` — webhook URLs are always shown as `http://host:port`, which is wr…</span><span class="iss-labels"></span>
+        <span class="iss-meta"><span class="iss-author">deathlord911</span><span class="iss-time">7m ago</span><span class="iss-comments">1 comment</span></span>
+      </a></div>
+      <div class="iss-row"><a class="iss-main" href="https://github.com/NousResearch/hermes-agent/issues/118165" target="_blank" rel="noopener">
+        <span class="iss-num">#118165</span><span class="iss-title">[Bug]: cron bot-chat delivery kills a bot&#x27;s turn at a wall-clock cap while it is still actively working</span><span class="iss-labels"></span>
+        <span class="iss-meta"><span class="iss-author">zengzheqing</span><span class="iss-time">16m ago</span></span>
+      </a></div>
+      <div class="iss-row"><a class="iss-main" href="https://github.com/NousResearch/hermes-agent/issues/118161" target="_blank" rel="noopener">
+        <span class="iss-num">#118161</span><span class="iss-title">[Bug]: startup orphan sweep closes pinned sessions — session_reaper calls sweep_orphaned_sessions() without exclude_pin…</span><span class="iss-labels"></span>
+        <span class="iss-meta"><span class="iss-author">nicecuprani</span><span class="iss-time">19m ago</span><span class="iss-comments">2 comments</span></span>
+      </a></div>
+      <div class="iss-row"><a class="iss-main" href="https://github.com/NousResearch/hermes-agent/issues/118159" target="_blank" rel="noopener">
+        <span class="iss-num">#118159</span><span class="iss-title">NO_PROXY containing a bracketed IPv6 ([::1]) breaks the Codex OAuth/refresh path with Invalid port: &#x27;:1]&#x27; while chat ke…</span><span class="iss-labels"><span class="iss-label">provider/openai</span></span>
+        <span class="iss-meta"><span class="iss-author">lanjintr</span><span class="iss-time">20m ago</span></span>
+      </a></div>
+      <div class="iss-row"><a class="iss-main" href="https://github.com/NousResearch/hermes-agent/issues/118158" target="_blank" rel="noopener">
+        <span class="iss-num">#118158</span><span class="iss-title">gateway migrate --multiplex always rolls back when a secondary&#x27;s configured drain &gt;= the hardcoded 90s systemctl stop t…</span><span class="iss-labels"></span>
+        <span class="iss-meta"><span class="iss-author">jnickles85-bit</span><span class="iss-time">21m ago</span></span>
+      </a></div>
+      <div class="iss-row"><a class="iss-main" href="https://github.com/NousResearch/hermes-agent/issues/118157" target="_blank" rel="noopener">
+        <span class="iss-num">#118157</span><span class="iss-title">auxiliary provider=auto does not follow effective provider after primary model fallback</span><span class="iss-labels"></span>
+        <span class="iss-meta"><span class="iss-author">ch3och3tw</span><span class="iss-time">21m ago</span></span>
+      </a></div></div></section>
+  <!-- ISSUES:END -->
+  <!-- PRS:START -->
+    <section class="ledger-section full-width" id="prs"><div class="ledger-heading"><div><span class="ledger-kicker">02 / REVIEW</span><h2><i class="hgi hgi-stroke hgi-git-pull-request"></i> Pull Requests</h2></div><span class="card-count">29,435 open · 58,613 closed</span></div><div class="prs-list">      <div class="prs-row"><a class="prs-main" href="https://github.com/NousResearch/hermes-agent/pull/118180" target="_blank" rel="noopener">
+        <span class="prs-num">#118180</span><span class="prs-title">fix(cli): expand configured model aliases in `hermes chat -m`</span><span class="prs-status prs-open">open</span><span class="prs-author">RichardLian</span><span class="prs-diff"><span class="add">+229</span> <span class="del">-5</span></span><span class="prs-time">4m ago</span>
+      </a></div>
+      <div class="prs-row"><a class="prs-main" href="https://github.com/NousResearch/hermes-agent/pull/118179" target="_blank" rel="noopener">
+        <span class="prs-num">#118179</span><span class="prs-title">fix(model_switch): tuning-only providers block must not hijack vendor-prefixed default</span><span class="prs-status prs-open">open</span><span class="prs-author">strzhao</span><span class="prs-diff"><span class="add">+60</span> <span class="del">-2</span></span><span class="prs-time">5m ago</span>
+      </a></div>
+      <div class="prs-row"><a class="prs-main" href="https://github.com/NousResearch/hermes-agent/pull/118177" target="_blank" rel="noopener">
+        <span class="prs-num">#118177</span><span class="prs-title">fix(model-metadata): parse SenseNova&#x27;s CamelCase bounded-range output cap</span><span class="prs-status prs-open">open</span><span class="prs-author">Raycc-lang</span><span class="prs-diff"><span class="add">+13</span> <span class="del">-5</span></span><span class="prs-time">5m ago</span>
+      </a></div>
+      <div class="prs-row"><a class="prs-main" href="https://github.com/NousResearch/hermes-agent/pull/118174" target="_blank" rel="noopener">
+        <span class="prs-num">#118174</span><span class="prs-title">fix(desktop): the preview refusal prints the size it measured, not the tab&#x27;s stale one</span><span class="prs-status prs-open">open</span><span class="prs-author">MazenMkhinini</span><span class="prs-diff"><span class="add">+94</span> <span class="del">-1</span></span><span class="prs-time">4m ago</span>
+      </a></div>
+      <div class="prs-row"><a class="prs-main" href="https://github.com/NousResearch/hermes-agent/pull/118173" target="_blank" rel="noopener">
+        <span class="prs-num">#118173</span><span class="prs-title">fix(update): fail closed when the mixed-version reap cannot scope by home</span><span class="prs-status prs-open">open</span><span class="prs-author">liuhao1024</span><span class="prs-diff"><span class="add">+80</span> <span class="del">-1</span></span><span class="prs-time">4m ago</span>
+      </a></div>
+      <div class="prs-row"><a class="prs-main" href="https://github.com/NousResearch/hermes-agent/pull/118172" target="_blank" rel="noopener">
+        <span class="prs-num">#118172</span><span class="prs-title">fix(agent): route auto titles through active fallback</span><span class="prs-status prs-open">open</span><span class="prs-author">KoNit-K</span><span class="prs-diff"><span class="add">+48</span> <span class="del">-5</span></span><span class="prs-time">4m ago</span>
+      </a></div>
+      <div class="prs-row"><a class="prs-main" href="https://github.com/NousResearch/hermes-agent/pull/118171" target="_blank" rel="noopener">
+        <span class="prs-num">#118171</span><span class="prs-title">fix(sessions): spare pinned rows in the startup orphan sweep</span><span class="prs-status prs-open">open</span><span class="prs-author">686f6c61</span><span class="prs-diff"><span class="add">+17</span> <span class="del">-1</span></span><span class="prs-time">4m ago</span>
+      </a></div>
+      <div class="prs-row"><a class="prs-main" href="https://github.com/NousResearch/hermes-agent/pull/118170" target="_blank" rel="noopener">
+        <span class="prs-num">#118170</span><span class="prs-title">fix(auth): handle bracketed IPv6 no-proxy entries</span><span class="prs-status prs-open">open</span><span class="prs-author">KoNit-K</span><span class="prs-diff"><span class="add">+100</span> <span class="del">-4</span></span><span class="prs-time">4m ago</span>
+      </a></div>
+      <div class="prs-row"><a class="prs-main" href="https://github.com/NousResearch/hermes-agent/pull/118169" target="_blank" rel="noopener">
+        <span class="prs-num">#118169</span><span class="prs-title">fix(website): compact plugin and skill directory headers</span><span class="prs-status prs-open">open</span><span class="prs-author">unsupportedpastels</span><span class="prs-diff"><span class="add">+564</span> <span class="del">-6</span></span><span class="prs-time">4m ago</span>
+      </a></div>
+      <div class="prs-row"><a class="prs-main" href="https://github.com/NousResearch/hermes-agent/pull/118168" target="_blank" rel="noopener">
+        <span class="prs-num">#118168</span><span class="prs-title">fix(gateway): honor drain budget during migration uninstall</span><span class="prs-status prs-open">open</span><span class="prs-author">KoNit-K</span><span class="prs-diff"><span class="add">+40</span> <span class="del">-1</span></span><span class="prs-time">4m ago</span>
+      </a></div>
+      <div class="prs-row"><a class="prs-main" href="https://github.com/NousResearch/hermes-agent/pull/118167" target="_blank" rel="noopener">
+        <span class="prs-num">#118167</span><span class="prs-title">fix(desktop): retain archived sidebar tombstones</span><span class="prs-status prs-open">open</span><span class="prs-author">KoNit-K</span><span class="prs-diff"><span class="add">+72</span> <span class="del">-7</span></span><span class="prs-time">4m ago</span>
+      </a></div>
+      <div class="prs-row"><a class="prs-main" href="https://github.com/NousResearch/hermes-agent/pull/118166" target="_blank" rel="noopener">
+        <span class="prs-num">#118166</span><span class="prs-title">fix(cron): a bot-chat delivery bounds the child turn by idle time, not wall-clock</span><span class="prs-status prs-open">open</span><span class="prs-author">zengzheqing</span><span class="prs-diff"><span class="add">+275</span> <span class="del">-9</span></span><span class="prs-time">3m ago</span>
+      </a></div></div></section>
+  <!-- PRS:END -->
+  <!-- CONTRIBUTORS:START -->
+    <section class="ledger-section full-width" id="contributors"><div class="ledger-heading"><div><span class="ledger-kicker">03 / DISPATCHES</span><h2><i class="hgi hgi-stroke hgi-user-group"></i> Contributors</h2></div><span class="ledger-note">ranked by contributions</span></div><div class="contrib-list">      <a class="contrib-row" href="https://github.com/teknium1" target="_blank" rel="noopener"><span class="contrib-rank">01</span><img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/127238744?v=4&s=64" alt="" loading="lazy" width="28" height="28"><span class="contrib-name">teknium1</span><span class="contrib-count">17,828 contributions</span></a>
+      <a class="contrib-row" href="https://github.com/OutThisLife" target="_blank" rel="noopener"><span class="contrib-rank">02</span><img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/770929?v=4&s=64" alt="" loading="lazy" width="28" height="28"><span class="contrib-name">OutThisLife</span><span class="contrib-count">3,520 contributions</span></a>
+      <a class="contrib-row" href="https://github.com/kshitijk4poor" target="_blank" rel="noopener"><span class="contrib-rank">03</span><img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/82637225?v=4&s=64" alt="" loading="lazy" width="28" height="28"><span class="contrib-name">kshitijk4poor</span><span class="contrib-count">2,957 contributions</span></a>
+      <a class="contrib-row" href="https://github.com/ethernet8023" target="_blank" rel="noopener"><span class="contrib-rank">04</span><img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/666465?v=4&s=64" alt="" loading="lazy" width="28" height="28"><span class="contrib-name">ethernet8023</span><span class="contrib-count">562 contributions</span></a>
+      <a class="contrib-row" href="https://github.com/benbarclay" target="_blank" rel="noopener"><span class="contrib-rank">05</span><img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/413810?v=4&s=64" alt="" loading="lazy" width="28" height="28"><span class="contrib-name">benbarclay</span><span class="contrib-count">511 contributions</span></a>
+      <a class="contrib-row" href="https://github.com/liuhao1024" target="_blank" rel="noopener"><span class="contrib-rank">06</span><img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/11816344?v=4&s=64" alt="" loading="lazy" width="28" height="28"><span class="contrib-name">liuhao1024</span><span class="contrib-count">406 contributions</span></a>
+      <a class="contrib-row" href="https://github.com/helix4u" target="_blank" rel="noopener"><span class="contrib-rank">07</span><img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/4317663?v=4&s=64" alt="" loading="lazy" width="28" height="28"><span class="contrib-name">helix4u</span><span class="contrib-count">348 contributions</span></a>
+      <a class="contrib-row" href="https://github.com/fangliquanflq" target="_blank" rel="noopener"><span class="contrib-rank">08</span><img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/280272527?v=4&s=64" alt="" loading="lazy" width="28" height="28"><span class="contrib-name">fangliquanflq</span><span class="contrib-count">341 contributions</span></a>
+      <a class="contrib-row" href="https://github.com/apps/hermes-seaeye" target="_blank" rel="noopener"><span class="contrib-rank">09</span><img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/134168893?v=4&s=64" alt="" loading="lazy" width="28" height="28"><span class="contrib-name">hermes-seaeye[bot]</span><span class="contrib-count">313 contributions</span></a>
+      <a class="contrib-row" href="https://github.com/xxxigm" target="_blank" rel="noopener"><span class="contrib-rank">10</span><img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/54813621?v=4&s=64" alt="" loading="lazy" width="28" height="28"><span class="contrib-name">xxxigm</span><span class="contrib-count">268 contributions</span></a>
+      <a class="contrib-row" href="https://github.com/erosika" target="_blank" rel="noopener"><span class="contrib-rank">11</span><img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/56565191?v=4&s=64" alt="" loading="lazy" width="28" height="28"><span class="contrib-name">erosika</span><span class="contrib-count">245 contributions</span></a>
+      <a class="contrib-row" href="https://github.com/alt-glitch" target="_blank" rel="noopener"><span class="contrib-rank">12</span><img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/52913345?v=4&s=64" alt="" loading="lazy" width="28" height="28"><span class="contrib-name">alt-glitch</span><span class="contrib-count">221 contributions</span></a>
+      <a class="contrib-row" href="https://github.com/KoNit-K" target="_blank" rel="noopener"><span class="contrib-rank">13</span><img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/124019182?v=4&s=64" alt="" loading="lazy" width="28" height="28"><span class="contrib-name">KoNit-K</span><span class="contrib-count">215 contributions</span></a>
+      <a class="contrib-row" href="https://github.com/austinpickett" target="_blank" rel="noopener"><span class="contrib-rank">14</span><img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/260188?v=4&s=64" alt="" loading="lazy" width="28" height="28"><span class="contrib-name">austinpickett</span><span class="contrib-count">212 contributions</span></a>
+      <a class="contrib-row" href="https://github.com/JoaoMarcos44" target="_blank" rel="noopener"><span class="contrib-rank">15</span><img class="contrib-avatar" src="https://avatars.githubusercontent.com/u/87440198?v=4&s=64" alt="" loading="lazy" width="28" height="28"><span class="contrib-name">JoaoMarcos44</span><span class="contrib-count">208 contributions</span></a></div></section>
+  <!-- CONTRIBUTORS:END -->
   </div>
-  <!-- TICKER:END -->
+  <!-- PANELS:END -->
 </main>
 
 <script>
