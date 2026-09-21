@@ -9,6 +9,8 @@
 .main-content {
   min-height: calc(100vh - 58px);
   padding: 0 14px;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 /* ── scrollable strip ──────────────────────────────────────────────────── */
@@ -194,13 +196,14 @@
 }
 
 .dash-card {
-  flex: 1 1 400px;
+  flex: 1 1 340px;
   max-width: 520px;
   background: #171c2a;
   border: 1px solid rgba(255,255,255,.11);
   border-radius: 8px;
-  padding: 20px 22px 22px;
+  padding: 20px 22px 22px 22px;
   font-family: var(--mono);
+  min-width: 0;
 }
 
 .dash-card h3 {
@@ -262,3 +265,95 @@
 .velo-area { font-size: 10px; color: rgba(255,255,255,.72); width: 130px; font-weight: 600; }
 .velo-h    { font-size: 12px; color: var(--nous-electric); font-weight: 700; width: 36px; text-align: right; }
 .velo-n    { font-size: 10px; color: rgba(255,255,255,.36); }
+
+/* ──────────────────────────────────────────────────
+   RESPONSIVE — Tablet (≤1024px)
+   ────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  body { font-size: 12px; }
+  .topnav { gap: 10px; padding: 0 10px; }
+  .topnav-brand { font-size: 16px; }
+  .topnav-link { font-size: 11px; padding: 6px 10px; }
+  .cube-container { gap: 4px; }
+  .cube-scene { width: 105px; height: 105px; }
+  .cube-face { width: 105px; height: 105px; }
+  .cube-rt { width: 20px; height: 105px; transform: rotateY(90deg) translateZ(85px); }
+  .cube-lt { width: 20px; height: 105px; transform: rotateY(-90deg) translateZ(20px); }
+  .cube-ft { width: 105px; height: 20px; transform: rotateX(90deg) translateZ(85px); }
+  .cube-face-front { width: 105px; height: 105px; transform: translateZ(10px); }
+  .cube-face-front .block-num { font-size: 16px; }
+  .cube-face-front .block-author { font-size: 9px; }
+  .cube-face-front .block-size { font-size: 12px; }
+  .cube-face-right { width: 20px; height: 105px; transform: rotateY(90deg) translateZ(95px); }
+  .cube-face-left { width: 20px; height: 105px; transform: rotateY(-90deg) translateZ(10px); }
+  .cube-face-top { width: 105px; height: 20px; transform: rotateX(90deg) translateZ(10px); }
+  .cube-face-top .block-lines { display: none; }
+  .dash-row { gap: 12px; padding: 12px 10px; }
+  .dash-card { padding: 14px; flex: 1 1 260px; }
+}
+
+/* ──────────────────────────────────────────────────
+   RESPONSIVE — Mobile (≤767px)
+   ────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  body { font-size: 11px; }
+  .topnav { height: 44px; gap: 6px; padding: 0 8px; overflow-x: auto; }
+  .topnav-brand { font-size: 14px; }
+  .topnav-link { font-size: 10px; padding: 4px 7px; }
+  .search-bar { display: none; }
+  .main-content { padding: 0 6px; }
+  .stripscroll { padding: 24px 6px 20px 6px; }
+  .cube-container { gap: 4px; padding: 2px; }
+  .cube-scene { width: 84px; height: 84px; }
+  .cube-face { width: 84px; height: 84px; }
+  .cube-rt { width: 15px; height: 84px; transform: rotateY(90deg) translateZ(69px); }
+  .cube-lt { width: 15px; height: 84px; transform: rotateY(-90deg) translateZ(15px); }
+  .cube-ft { width: 84px; height: 15px; transform: rotateX(90deg) translateZ(69px); }
+  .cube-face-front { width: 84px; height: 84px; transform: translateZ(8px); }
+  .cube-face-front .block-num { font-size: 14px; }
+  .cube-face-front .block-author { font-size: 8px; }
+  .cube-face-front .block-size { font-size: 10px; }
+  .cube-face-front .block-lines { font-size: 8px; }
+  .cube-face-right { width: 15px; height: 84px; transform: rotateY(90deg) translateZ(77px); }
+  .cube-face-left { width: 15px; height: 84px; transform: rotateY(-90deg) translateZ(8px); }
+  .cube-face-top { width: 84px; height: 15px; transform: rotateX(90deg) translateZ(8px); }
+  .cube-face-top .block-lines { display: none; }
+  .block-miner { display: none; }
+  .dash-row { flex-direction: column; gap: 12px; padding: 16px 6px 40px 6px; }
+  .dash-card { flex: 1 1 auto; max-width: none; padding: 16px 14px; }
+  .cube-scroll { overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+  .cube-scroll::-webkit-scrollbar { height: 4px; }
+  .big-num { font-size: 32px; }
+  .branch-btn .branch-name { display: none; }
+}
+
+/* ──────────────────────────────────────────────────
+   RESPONSIVE — Small phone (≤379px)
+   ────────────────────────────────────────────────── */
+@media (max-width: 379px) {
+  .cube-scene { width: 72px; height: 72px; }
+  .cube-face { width: 72px; height: 72px; }
+  .cube-rt { width: 13px; height: 72px; transform: rotateY(90deg) translateZ(59px); }
+  .cube-lt { width: 13px; height: 72px; transform: rotateY(-90deg) translateZ(13px); }
+  .cube-ft { width: 72px; height: 13px; transform: rotateX(90deg) translateZ(59px); }
+  .cube-face-front { width: 72px; height: 72px; transform: translateZ(7px); }
+  .cube-face-front .block-num { font-size: 12px; }
+  .cube-face-front .block-size { font-size: 9px; }
+  .cube-face-right { width: 13px; height: 72px; transform: rotateY(90deg) translateZ(66px); }
+  .cube-face-left { width: 13px; height: 72px; transform: rotateY(-90deg) translateZ(7px); }
+  .cube-face-top { width: 72px; height: 13px; transform: rotateX(90deg) translateZ(7px); }
+  .dash-card { padding: 12px 10px; }
+  .big-num { font-size: 28px; }
+}
+
+/* ──────────────────────────────────────────────────
+   RESPONSIVE — Landscape mobile (short height)
+   ────────────────────────────────────────────────── */
+@media (max-height: 500px) and (max-width: 1024px) {
+  .topnav { height: 38px; }
+  .stripscroll { padding: 12px 6px 16px 6px; }
+  .cube-scene { width: 64px; height: 64px; }
+  .cube-face-front { width: 64px; height: 64px; }
+  .dash-row { padding: 8px 6px 20px 6px; gap: 8px; }
+  .dash-card { padding: 10px 12px; }
+}

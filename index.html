@@ -3,7 +3,27 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NOUS SPACE</title>
+<meta name="description" content="Live PR dashboard for the Hermes Agent open-source project. Monitor pull requests, merge velocity, backlog, and release cadence — mempool.space style.">
+<meta name="author" content="Nous Fleet">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#0d0d0f">
+<link rel="canonical" href="https://nous-space.vercel.app">
+<meta property="og:type" content="website">
+<meta property="og:title" content="NOUS SPACE — Hermes Agent Maintainer Dashboard">
+<meta property="og:description" content="Live PR dashboard: pending merges, backlog, release velocity. Built for the Hermes Agent open-source project.">
+<meta property="og:image" content="https://nous-space.vercel.app/social-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Nous Space — dark dashboard with green and blue blocks, Hermes Agent monitor">
+<meta property="og:url" content="https://nous-space.vercel.app">
+<meta property="og:site_name" content="Nous Space">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="NOUS SPACE — Hermes Agent Maintainer Dashboard">
+<meta name="twitter:description" content="Live PR dashboard: pending merges, backlog, release velocity. Built for the Hermes Agent project.">
+<meta name="twitter:image" content="https://nous-space.vercel.app/social-card.png">
+<meta name="twitter:image:alt" content="Nous Space dashboard — dark theme with floating merge blocks">
+<title>NOUS SPACE — Hermes Agent Maintainer Dashboard</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='7'%20fill='#0d0d0f'/%3E%3Cpolygon%20points='16%2C4%2027%2C10%2016%2C16%205%2C10'%20fill='#5c4228'/%3E%3Cpolygon%20points='5%2C10%2016%2C16%2016%2C28%205%2C22'%20fill='#3d2b1a'/%3E%3Cpolygon%20points='27%2C10%2016%2C16%2016%2C28%2027%2C22'%20fill='#1a5c2e'/%3E%3C/svg%3E">
 <link rel="icon" type="image/x-icon" href="favicon.ico" sizes="32x32">
 <link rel="stylesheet" href="https://cdn.hugeicons.com/font/hgi-stroke-rounded.css">
@@ -222,6 +242,8 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
 .main-content {
   min-height: calc(100vh - 58px);
   padding: 0 14px;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 /* ── scrollable strip ──────────────────────────────────────────────────── */
@@ -407,13 +429,14 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
 }
 
 .dash-card {
-  flex: 1 1 400px;
+  flex: 1 1 340px;
   max-width: 520px;
   background: #171c2a;
   border: 1px solid rgba(255,255,255,.11);
   border-radius: 8px;
-  padding: 20px 22px 22px;
+  padding: 20px 22px 22px 22px;
   font-family: var(--mono);
+  min-width: 0;
 }
 
 .dash-card h3 {
@@ -474,7 +497,99 @@ button:focus-visible { outline: 2px solid var(--nous-amber); outline-offset: 2px
 .velo-row { display: flex; align-items: baseline; gap: 10px; margin: 3px 0; }
 .velo-area { font-size: 10px; color: rgba(255,255,255,.72); width: 130px; font-weight: 600; }
 .velo-h    { font-size: 12px; color: var(--nous-electric); font-weight: 700; width: 36px; text-align: right; }
-.velo-n    { font-size: 10px; color: rgba(255,255,255,.36); }/* ROWCSS:END */
+.velo-n    { font-size: 10px; color: rgba(255,255,255,.36); }
+
+/* ──────────────────────────────────────────────────
+   RESPONSIVE — Tablet (≤1024px)
+   ────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  body { font-size: 12px; }
+  .topnav { gap: 10px; padding: 0 10px; }
+  .topnav-brand { font-size: 16px; }
+  .topnav-link { font-size: 11px; padding: 6px 10px; }
+  .cube-container { gap: 4px; }
+  .cube-scene { width: 105px; height: 105px; }
+  .cube-face { width: 105px; height: 105px; }
+  .cube-rt { width: 20px; height: 105px; transform: rotateY(90deg) translateZ(85px); }
+  .cube-lt { width: 20px; height: 105px; transform: rotateY(-90deg) translateZ(20px); }
+  .cube-ft { width: 105px; height: 20px; transform: rotateX(90deg) translateZ(85px); }
+  .cube-face-front { width: 105px; height: 105px; transform: translateZ(10px); }
+  .cube-face-front .block-num { font-size: 16px; }
+  .cube-face-front .block-author { font-size: 9px; }
+  .cube-face-front .block-size { font-size: 12px; }
+  .cube-face-right { width: 20px; height: 105px; transform: rotateY(90deg) translateZ(95px); }
+  .cube-face-left { width: 20px; height: 105px; transform: rotateY(-90deg) translateZ(10px); }
+  .cube-face-top { width: 105px; height: 20px; transform: rotateX(90deg) translateZ(10px); }
+  .cube-face-top .block-lines { display: none; }
+  .dash-row { gap: 12px; padding: 12px 10px; }
+  .dash-card { padding: 14px; flex: 1 1 260px; }
+}
+
+/* ──────────────────────────────────────────────────
+   RESPONSIVE — Mobile (≤767px)
+   ────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  body { font-size: 11px; }
+  .topnav { height: 44px; gap: 6px; padding: 0 8px; overflow-x: auto; }
+  .topnav-brand { font-size: 14px; }
+  .topnav-link { font-size: 10px; padding: 4px 7px; }
+  .search-bar { display: none; }
+  .main-content { padding: 0 6px; }
+  .stripscroll { padding: 24px 6px 20px 6px; }
+  .cube-container { gap: 4px; padding: 2px; }
+  .cube-scene { width: 84px; height: 84px; }
+  .cube-face { width: 84px; height: 84px; }
+  .cube-rt { width: 15px; height: 84px; transform: rotateY(90deg) translateZ(69px); }
+  .cube-lt { width: 15px; height: 84px; transform: rotateY(-90deg) translateZ(15px); }
+  .cube-ft { width: 84px; height: 15px; transform: rotateX(90deg) translateZ(69px); }
+  .cube-face-front { width: 84px; height: 84px; transform: translateZ(8px); }
+  .cube-face-front .block-num { font-size: 14px; }
+  .cube-face-front .block-author { font-size: 8px; }
+  .cube-face-front .block-size { font-size: 10px; }
+  .cube-face-front .block-lines { font-size: 8px; }
+  .cube-face-right { width: 15px; height: 84px; transform: rotateY(90deg) translateZ(77px); }
+  .cube-face-left { width: 15px; height: 84px; transform: rotateY(-90deg) translateZ(8px); }
+  .cube-face-top { width: 84px; height: 15px; transform: rotateX(90deg) translateZ(8px); }
+  .cube-face-top .block-lines { display: none; }
+  .block-miner { display: none; }
+  .dash-row { flex-direction: column; gap: 12px; padding: 16px 6px 40px 6px; }
+  .dash-card { flex: 1 1 auto; max-width: none; padding: 16px 14px; }
+  .cube-scroll { overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+  .cube-scroll::-webkit-scrollbar { height: 4px; }
+  .big-num { font-size: 32px; }
+  .branch-btn .branch-name { display: none; }
+}
+
+/* ──────────────────────────────────────────────────
+   RESPONSIVE — Small phone (≤379px)
+   ────────────────────────────────────────────────── */
+@media (max-width: 379px) {
+  .cube-scene { width: 72px; height: 72px; }
+  .cube-face { width: 72px; height: 72px; }
+  .cube-rt { width: 13px; height: 72px; transform: rotateY(90deg) translateZ(59px); }
+  .cube-lt { width: 13px; height: 72px; transform: rotateY(-90deg) translateZ(13px); }
+  .cube-ft { width: 72px; height: 13px; transform: rotateX(90deg) translateZ(59px); }
+  .cube-face-front { width: 72px; height: 72px; transform: translateZ(7px); }
+  .cube-face-front .block-num { font-size: 12px; }
+  .cube-face-front .block-size { font-size: 9px; }
+  .cube-face-right { width: 13px; height: 72px; transform: rotateY(90deg) translateZ(66px); }
+  .cube-face-left { width: 13px; height: 72px; transform: rotateY(-90deg) translateZ(7px); }
+  .cube-face-top { width: 72px; height: 13px; transform: rotateX(90deg) translateZ(7px); }
+  .dash-card { padding: 12px 10px; }
+  .big-num { font-size: 28px; }
+}
+
+/* ──────────────────────────────────────────────────
+   RESPONSIVE — Landscape mobile (short height)
+   ────────────────────────────────────────────────── */
+@media (max-height: 500px) and (max-width: 1024px) {
+  .topnav { height: 38px; }
+  .stripscroll { padding: 12px 6px 16px 6px; }
+  .cube-scene { width: 64px; height: 64px; }
+  .cube-face-front { width: 64px; height: 64px; }
+  .dash-row { padding: 8px 6px 20px 6px; gap: 8px; }
+  .dash-card { padding: 10px 12px; }
+}/* ROWCSS:END */
 </style>
 </head>
 <body>
