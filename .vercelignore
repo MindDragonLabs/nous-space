@@ -1,0 +1,17 @@
+__pycache__
+.refresh.lock
+.server.log
+.server.err
+state.json
+node_modules
+.env.local
+.env*.local
+.fetch-hash
+.deploy-hash
+fetch_state.py
+build.py
+refresh_data.py
+nous_space_refresh.sh
+gen_favicon.py
+IMPLEMENTATION-NOTES.md
+search.test.mjs

@@ -1,0 +1,7 @@
+# Nous Space
+
+The canonical model guide for this site is llms.txt:
+
+https://nous.minddragonlabs.com/llms.txt
+
+Views: dashboard, issues (#issues), pull requests (#prs), contributors (#contributors), ecosystem search (#search), and info (#info). Data is refreshed from GitHub every 5 minutes by a script.

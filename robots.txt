@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://nous.minddragonlabs.com/sitemap.xml

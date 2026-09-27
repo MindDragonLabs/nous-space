@@ -1,0 +1,20 @@
+# Nous Space
+
+> Live maintainer dashboard for the Nous Research Hermes Agent repository. Data is fetched from GitHub by a local script every 5 minutes. No model writes the page.
+
+The public site is one HTML document. Each section is a view on that document.
+
+## Views
+
+- [Dashboard](https://nous.minddragonlabs.com/): Green strip is open pull requests the maintainer is involved in, ranked by merge likelihood. Blue strip is pull requests merged to main by or authored by the maintainer. Below that: backlog, releases, merge rate, and the last-hour merge wire.
+- [Issues](https://nous.minddragonlabs.com/#issues): Search of the 100 most recently updated open issues in NousResearch/hermes-agent. Filters cover age, labels, and unassigned issues.
+- [Pull requests](https://nous.minddragonlabs.com/#prs): Search of the 50 most recently updated open pull requests, grouped into needs review, approved, changes requested, and draft. Rows include CI.
+- [Contributors](https://nous.minddragonlabs.com/#contributors): Top contributors with all-time commits, commits this week, recent reviews, and a new-contributor mark.
+- [Search](https://nous.minddragonlabs.com/#search): Search across Nous Research Hermes repositories, issues, pull requests, releases, and people. Field prefixes: `author:`, `label:`, `repo:`, `is:`, `kind:`, and `#number`.
+- [Info](https://nous.minddragonlabs.com/#info): How the green and blue strips are scoped, the repository link, and the last refresh time.
+
+## Source
+
+- Repository: https://github.com/NousResearch/hermes-agent
+- Maintainer lane: teknium1
+- Machine-readable index of the same views: https://nous.minddragonlabs.com/llms.txt

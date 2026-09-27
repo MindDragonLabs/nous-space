@@ -1,4 +1,10 @@
 .vercel
+.env.local
+.env*.local
+node_modules
 .server.err
 .server.log
 state.json
+.refresh.lock
+.deploy-hash
+.env*.local
