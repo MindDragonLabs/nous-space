@@ -1,0 +1,3 @@
+{
+  "ignoreCommand": "if git log -1 --pretty=%an | grep -q nous-pr-bot; then exit 0; fi; if echo \"$VERCEL_GIT_COMMIT_MESSAGE\" | grep -qF '[skip vercel]'; then exit 0; fi; exit 1"
+}
