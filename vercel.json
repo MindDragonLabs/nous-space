@@ -1,3 +1,13 @@
 {
-  "ignoreCommand": "if git log -1 --pretty=%an | grep -q nous-pr-bot; then exit 0; fi; if echo \"$VERCEL_GIT_COMMIT_MESSAGE\" | grep -qF '[skip vercel]'; then exit 0; fi; exit 1"
+  "ignoreCommand": "if git log -1 --pretty=%B | grep -qF '[skip vercel]'; then exit 0; fi; exit 1",
+  "rewrites": [
+    {
+      "source": "/api/v1/:path*",
+      "destination": "https://nous-api.lucky-haze-8d2a.workers.dev/api/v1/:path*"
+    },
+    {
+      "source": "/api",
+      "destination": "https://nous-api.lucky-haze-8d2a.workers.dev/api/v1/"
+    }
+  ]
 }
