@@ -37,6 +37,10 @@ PRS_START = "<!-- PRS:START -->"
 PRS_END = "<!-- PRS:END -->"
 CONTRIBUTORS_START = "<!-- CONTRIBUTORS:START -->"
 CONTRIBUTORS_END = "<!-- CONTRIBUTORS:END -->"
+PRARCHIVE_START = "<!-- PRARCHIVE:START -->"
+PRARCHIVE_END = "<!-- PRARCHIVE:END -->"
+ECOSYSTEM_START = "<!-- ECOSYSTEM:START -->"
+ECOSYSTEM_END = "<!-- ECOSYSTEM:END -->"
 QUALITY_START = "<!-- QUALITY:START -->"
 QUALITY_END = "<!-- QUALITY:END -->"
 APPDATA_START = "<!-- APPDATA:START -->"
@@ -703,6 +707,294 @@ def quality_panel(state: dict) -> str:
     </section>'''
 
 
+def ecosystem_panel(state: dict) -> str:
+    """05 / ECOSYSTEM — plugin catalog + optional skills, searchable.
+
+    Data is embedded once as a JSON script tag; the client renders, filters,
+    and paginates. Works for humans (cards, filters, search box) and agents
+    (the same data ships as /ecosystem.json — see the JSON mirror writer).
+    """
+    eco = _as_dict(state.get("catalog"))
+    plugins = _as_list(eco.get("plugins"))
+    skills = _as_list(eco.get("skills"))
+    generated = esc(str(eco.get("generated") or ""))
+
+    payload = json.dumps({
+        "plugins": [
+            {
+                "name": str(p.get("name") or ""),
+                "repo": str(p.get("repo") or ""),
+                "sha": str(p.get("sha") or "")[:12],
+                "description": str(p.get("description") or ""),
+                "maintainer": str(p.get("maintainer") or ""),
+                "tier": str(p.get("tier") or ""),
+                "category": str(p.get("category") or ""),
+                "docs_url": str(p.get("docs_url") or ""),
+                "capabilities": [str(c) for c in _as_list(p.get("capabilities"))],
+            } for p in plugins if isinstance(p, dict)
+        ],
+        "skills": [
+            {
+                "slug": str(s.get("slug") or ""),
+                "category": str(s.get("category") or ""),
+                "name": str(s.get("name") or ""),
+                "description": str(s.get("description") or ""),
+                "github_url": str(s.get("github_url") or ""),
+            } for s in skills if isinstance(s, dict)
+        ],
+    }, separators=(",", ":"))
+
+    return f'''    <section class="ledger-section full-width" id="ecosystem">
+      <div class="ledger-heading">
+        <div><span class="ledger-kicker">05 / ECOSYSTEM</span>
+        <h2><i class="hgi hgi-stroke hgi-grid"></i> Plugins &amp; Skills</h2></div>
+        <span class="card-count">{len(plugins)} plugins · {len(skills)} skills · catalog {generated[:10]}</span>
+      </div>
+      <div class="eco-controls">
+        <input id="eco-search" class="search-input" type="search"
+               placeholder="Search plugins and skills — name, description, maintainer, category…" aria-label="Search ecosystem">
+        <div class="eco-tabs" role="tablist">
+          <button class="eco-tab is-on" id="eco-tab-plugins" role="tab" aria-selected="true">Plugins ({len(plugins)})</button>
+          <button class="eco-tab" id="eco-tab-skills" role="tab" aria-selected="false">Skills ({len(skills)})</button>
+        </div>
+        <div class="chips" id="eco-categories"></div>
+      </div>
+      <div id="eco-list" class="eco-list" aria-live="polite"></div>
+      <div class="eco-pager" id="eco-pager"></div>
+      <p class="eco-note">Source: <a href="https://github.com/NousResearch/hermes-agent/tree/main/plugin-catalog" target="_blank" rel="noopener">plugin-catalog</a> (SHA-pinned, maintainer-merged) and <a href="https://github.com/NousResearch/hermes-agent/tree/main/optional-skills" target="_blank" rel="noopener">optional-skills</a>. Machine mirror: <a href="/ecosystem.json">/ecosystem.json</a></p>
+    </section>
+    <script id="eco-data" type="application/json">{payload}</script>
+    <script>
+(function() {{
+  var node = document.getElementById('eco-data');
+  if (!node) return;
+  var data;
+  try {{ data = JSON.parse(node.textContent); }} catch (e) {{ return; }}
+  var plugins = data.plugins || [];
+  var skills = data.skills || [];
+  var PER = 24;
+  var state = {{ mode: 'plugins', page: 0, query: '', cat: '' }};
+
+  var list = document.getElementById('eco-list');
+  var pager = document.getElementById('eco-pager');
+  var search = document.getElementById('eco-search');
+  var cats = document.getElementById('eco-categories');
+  if (!list) return;
+
+  function esc(s) {{
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {{
+      return {{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}}[c];
+    }});
+  }}
+
+  function rows() {{ return state.mode === 'plugins' ? plugins : skills; }}
+
+  function categories() {{
+    var seen = {{}};
+    rows().forEach(function(r) {{
+      var c = r.category || r.tier || '';
+      if (c) seen[c] = (seen[c] || 0) + 1;
+    }});
+    return Object.keys(seen).sort().map(function(k) {{ return [k, seen[k]]; }});
+  }}
+
+  function filtered() {{
+    var q = state.query.toLowerCase().trim();
+    return rows().filter(function(r) {{
+      if (state.cat && (r.category || r.tier) !== state.cat) return false;
+      if (!q) return true;
+      var hay = [r.name, r.slug, r.description, r.maintainer, r.category,
+                 r.tier, r.repo].join(' ').toLowerCase();
+      return hay.indexOf(q) !== -1;
+    }});
+  }}
+
+  function renderCats() {{
+    if (!cats) return;
+    var items = categories();
+    var html = ['<button class="chip' + (state.cat ? '' : ' is-on') +
+                '" data-cat="">' + 'all' + '</button>'];
+    items.forEach(function(pair) {{
+      var on = state.cat === pair[0] ? ' is-on' : '';
+      html.push('<button class="chip' + on + '" data-cat="' + esc(pair[0]) + '">' +
+                esc(pair[0]) + ' <span class="bar-count">' + pair[1] + '</span></button>');
+    }});
+    cats.innerHTML = html.join('');
+  }}
+
+  function render() {{
+    renderCats();
+    var rowsF = filtered();
+    var pages = Math.max(1, Math.ceil(rowsF.length / PER));
+    if (state.page >= pages) state.page = 0;
+    var slice = rowsF.slice(state.page * PER, state.page * PER + PER);
+    var html = slice.map(function(r) {{
+      if (state.mode === 'plugins') {{
+        var link = r.repo || r.docs_url || '#';
+        return '<div class="eco-card" data-search="' + esc((r.name+' '+r.description+' '+r.maintainer+' '+r.category+' '+r.tier).toLowerCase()) + '">' +
+          '<a class="eco-title" href="' + esc(link) + '" target="_blank" rel="noopener">' + esc(r.name) + '</a>' +
+          '<p class="eco-desc">' + esc((r.description || '').slice(0, 160)) + '</p>' +
+          '<p class="eco-meta"><span class="eco-chip">' + esc(r.tier || 'community') + '</span>' +
+          (r.category ? '<span class="eco-chip">' + esc(r.category) + '</span>' : '') +
+          (r.maintainer ? '<span class="eco-by">by ' + esc(r.maintainer) + '</span>' : '') + '</p></div>';
+      }}
+      return '<div class="eco-card">' +
+        '<a class="eco-title" href="' + esc(r.github_url || '#') + '" target="_blank" rel="noopener">' + esc(r.name) + '</a>' +
+        '<p class="eco-desc">' + esc((r.description || '').slice(0, 160)) + '</p>' +
+        '<p class="eco-meta"><span class="eco-chip">' + esc(r.category) + '</span></p></div>';
+    }});
+    list.innerHTML = html.length ? html.join('')
+      : '<p class="eco-note">No matches.</p>';
+
+    var pH = [];
+    for (var i = 0; i < pages && pages > 1; i++) {{
+      pH.push('<button class="eco-page' + (i === state.page ? ' is-on' : '') +
+              '" data-page="' + i + '">' + (i + 1) + '</button>');
+    }}
+    pager.innerHTML = pages > 1 ? pH.join('') : '';
+  }}
+
+  document.addEventListener('click', function(e) {{
+    var t = e.target.closest ? e.target.closest('button') : null;
+    if (!t) return;
+    if (t.id === 'eco-tab-plugins' || t.id === 'eco-tab-skills') {{
+      state.mode = t.id === 'eco-tab-plugins' ? 'plugins' : 'skills';
+      state.page = 0; state.cat = '';
+      var p = document.getElementById('eco-tab-plugins');
+      var s = document.getElementById('eco-tab-skills');
+      p.className = 'eco-tab' + (state.mode === 'plugins' ? ' is-on' : '');
+      s.className = 'eco-tab' + (state.mode === 'skills' ? ' is-on' : '');
+      p.setAttribute('aria-selected', state.mode === 'plugins');
+      s.setAttribute('aria-selected', state.mode === 'skills');
+      render(); return;
+    }}
+    if (t.hasAttribute('data-cat')) {{
+      state.cat = t.getAttribute('data-cat'); state.page = 0;
+      render(); return;
+    }}
+    if (t.hasAttribute('data-page')) {{
+      state.page = parseInt(t.getAttribute('data-page'), 10) || 0;
+      render();
+      var top = document.getElementById('ecosystem');
+      if (top && top.scrollIntoView) top.scrollIntoView();
+    }}
+  }});
+
+  if (search) {{
+    var timer = null;
+    search.addEventListener('input', function() {{
+      clearTimeout(timer);
+      timer = setTimeout(function() {{
+        state.query = search.value; state.page = 0; render();
+      }}, 150);
+    }});
+  }}
+
+  render();
+}})();
+    </script>'''
+
+
+def prarchive_panel(state: dict) -> str:
+    """06 / ARCHIVE — last 1,000 merged PRs, 100 per page.
+
+    Data ships as one static file (/prs_archive.json, ~145 KB) built by
+    prs_archive_build.py from the backfill corpus; the client slices pages.
+    Older-than-1,000 = API territory. Dual-browsing: same JSON serves agents.
+    """
+    arch = {}
+    try:
+        arch = json.loads((ROOT / "prs_archive.json").read_text(encoding="utf-8"))
+    except Exception:
+        arch = {"total": 0, "pages": 1, "per_page": 100, "prs": []}
+    total = arch.get("total") or 0
+    pages = arch.get("pages") or 1
+    per = arch.get("per_page") or 100
+    generated = esc(str(state.get("generated") or "")[:10])
+
+    prs_json = json.dumps(arch.get("prs") or [], separators=(",", ":"))
+
+    return f'''    <section class="ledger-section full-width" id="prarchive">
+      <div class="ledger-heading">
+        <div><span class="ledger-kicker">06 / ARCHIVE</span>
+        <h2><i class="hgi hgi-stroke hgi-history"></i> PR Archive</h2></div>
+        <span class="card-count">{total:,} PRs · {per}/page · data {generated}</span>
+      </div>
+      <div class="eco-controls">
+        <input id="prarch-search" class="search-input" type="search"
+               placeholder="Search archived PRs — number, title, author…" aria-label="Search PR archive">
+      </div>
+      <div id="prarch-list" class="prs-list" aria-live="polite"></div>
+      <div class="eco-pager" id="prarch-pager"></div>
+      <p class="eco-note">Most recent {total:,} merged/open PRs. Older PRs: the <a href="/prs_archive.json">/prs_archive.json</a> mirror and the forthcoming API.</p>
+    </section>
+    <script id="prarch-data" type="application/json">{prs_json}</script>
+    <script>
+(function() {{
+      var PER = {per};
+(function() {{
+  var node = document.getElementById('prarch-data');
+  if (!node) return;
+  var prs;
+  try {{ prs = JSON.parse(node.textContent); }} catch (e) {{ return; }}
+  var page = 0, query = '';
+  var list = document.getElementById('prarch-list');
+  var pager = document.getElementById('prarch-pager');
+  var search = document.getElementById('prarch-search');
+  if (!list) return;
+
+  function esc(s) {{
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {{
+      return {{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}}[c];
+    }});
+  }}
+
+  function filtered() {{
+    var q = query.toLowerCase().trim();
+    if (!q) return prs;
+    return prs.filter(function(r) {{
+      return ('#'+r.n+' '+r.t+' '+r.a).toLowerCase().indexOf(q) !== -1;
+    }});
+  }}
+
+  function render() {{
+    var f = filtered();
+    var pages = Math.max(1, Math.ceil(f.length / PER));
+    if (page >= pages) page = 0;
+    var slice = f.slice(page*PER, page*PER+PER);
+    list.innerHTML = slice.length ? slice.map(function(r) {{
+      return '<div class="prs-row"><a class="prs-main" href="https://github.com/NousResearch/hermes-agent/pull/'+r.n+'" target="_blank" rel="noopener">' +
+        '<span class="prs-num">#'+r.n+'</span><span class="prs-title">'+esc(r.t)+'</span>' +
+        '<span class="prs-status '+(r.s==='open'?'prs-open':'prs-approved')+'">'+r.s+'</span>' +
+        '<span class="prs-author">'+esc(r.a)+'</span><span class="prs-time">'+esc(r.m)+'</span></a></div>';
+    }}).join('') : '<p class="eco-note">No matches.</p>';
+    var pH = [];
+    for (var i=0;i<pages && pages>1;i++) {{
+      pH.push('<button class="eco-page'+(i===page?' is-on':'')+'" data-page="'+i+'">'+(i+1)+'</button>');
+    }}
+    pager.innerHTML = pages>1 ? pH.join('') : '';
+  }}
+
+  document.addEventListener('click', function(e) {{
+    var t = e.target.closest ? e.target.closest('button[data-page]') : null;
+    if (!t) return;
+    page = parseInt(t.getAttribute('data-page'),10)||0;
+    render();
+    var top = document.getElementById('prarchive');
+    if (top && top.scrollIntoView) top.scrollIntoView();
+  }});
+  if (search) {{
+    var timer=null;
+    search.addEventListener('input', function() {{
+      clearTimeout(timer);
+      timer=setTimeout(function(){{ query=search.value; page=0; render(); }},150);
+    }});
+  }}
+  render();
+}})();
+    </script>'''
+
+
 def _as_dict(value) -> dict:
     return value if isinstance(value, dict) else {}
 
@@ -767,6 +1059,10 @@ def render_panels(state: dict) -> str:
   <!-- PRS:END -->
   <!-- CONTRIBUTORS:START -->
   <!-- CONTRIBUTORS:END -->
+  <!-- PRARCHIVE:START -->
+  <!-- PRARCHIVE:END -->
+  <!-- ECOSYSTEM:START -->
+  <!-- ECOSYSTEM:END -->
   <!-- QUALITY:START -->
   <!-- QUALITY:END -->
   </div>'''
@@ -793,6 +1089,8 @@ def main() -> int:
     for start, end in ((ISSUES_START, ISSUES_END),
                        (PRS_START, PRS_END),
                        (CONTRIBUTORS_START, CONTRIBUTORS_END),
+                       (PRARCHIVE_START, PRARCHIVE_END),
+                       (ECOSYSTEM_START, ECOSYSTEM_END),
                        (QUALITY_START, QUALITY_END)):
         page = re.sub(re.escape(start) + r".*?" + re.escape(end),
                       start + end, page, flags=re.S)
@@ -847,6 +1145,33 @@ def main() -> int:
         qj = page.find(QUALITY_END, qi)
         if qj != -1:
             page = page[:qi] + "\n" + quality_panel(state) + "\n  " + page[qj:]
+
+    # ecosystem (same optional-marker pattern)
+    if ECOSYSTEM_START in page and ECOSYSTEM_END in page:
+        ei = page.index(ECOSYSTEM_START) + len(ECOSYSTEM_START)
+        ej = page.find(ECOSYSTEM_END, ei)
+        if ej != -1:
+            page = page[:ei] + "\n" + ecosystem_panel(state) + "\n  " + page[ej:]
+
+    # PR archive (same optional-marker pattern)
+    if PRARCHIVE_START in page and PRARCHIVE_END in page:
+        pi = page.index(PRARCHIVE_START) + len(PRARCHIVE_START)
+        pj = page.find(PRARCHIVE_END, pi)
+        if pj != -1:
+            page = page[:pi] + "\n" + prarchive_panel(state) + "\n  " + page[pj:]
+
+    # JSON mirrors for agents: /ecosystem.json (+ /quality.json) — the
+    # machine-readable twins of the HTML views (dual-browsing, PLAN.md item 3)
+    eco_mirror = ROOT / "ecosystem.json"
+    eco_payload = json.dumps(state.get("catalog") or {}, separators=(",", ":"))
+    eco_tmp = eco_mirror.with_suffix(".json.tmp")
+    eco_tmp.write_text(eco_payload, encoding="utf-8")
+    eco_tmp.replace(eco_mirror)
+    q_mirror = ROOT / "quality.json"
+    q_tmp = q_mirror.with_suffix(".json.tmp")
+    q_tmp.write_text(json.dumps(state.get("quality") or {}, separators=(",", ":")),
+                     encoding="utf-8")
+    q_tmp.replace(q_mirror)
 
     # client catalog; markers are optional until index.html includes them
     if APPDATA_START in page and APPDATA_END in page:

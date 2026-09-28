@@ -1008,6 +1008,29 @@ NOUS_HOME = pathlib.Path.home() / ".hermes" / "profiles" / "nous-pr-bot" / "scri
 NOUS_CORPUS = (pathlib.Path.home() / "Nous-Fleet" / "reviews" / "continuous"
                / "hermes-quality-program" / "corpus-trends.md")
 NOUS_MERGE_STATE = NOUS_HOME / "merge_state"
+ECO_FILE = ROOT / "merge_state" / "ecosystem" / "ecosystem.json"
+
+
+def ecosystem_catalog() -> dict:
+    """Plugin catalog + optional skills from the local ingest cache.
+
+    Populated by ecosystem_ingest.py (daily, ~500 raw fetches). Missing or
+    stale file yields empty lists — the site renders an empty section, not
+    a failed build.
+    """
+    out = {"generated": "", "plugins": [], "skills": []}
+    try:
+        data = json.loads(ECO_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return out
+    plugins = data.get("plugins")
+    if isinstance(plugins, list):
+        out["plugins"] = [p for p in plugins if isinstance(p, dict)]
+    skills = data.get("skills")
+    if isinstance(skills, list):
+        out["skills"] = [s for s in skills if isinstance(s, dict)]
+    out["generated"] = data.get("generated") or ""
+    return out
 
 
 def _read_json(path: pathlib.Path, fallback):
@@ -1308,6 +1331,7 @@ def main() -> int:
     fresh = got["fresh"] if isinstance(got["fresh"], list) else (prev.get("fresh") or [])
     releases = section("releases") or {}
     quality = quality_program(lane_open=pend_count)
+    eco = ecosystem_catalog()
     state = {
         "generated": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "repo": REPO,
@@ -1316,6 +1340,7 @@ def main() -> int:
         "open_in_maintainer_lane": pend_count,
         "merged_scanned": merged_scanned,
         "quality": quality,
+        "catalog": eco,
         "pending": pending,
         "merged": merged,
         "backlog": section("backlog") or {},
