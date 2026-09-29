@@ -805,6 +805,16 @@ def prs_stats() -> dict:
             if total_closed or got_closed:
                 kept["total_closed"] = total_closed
             return kept
+    # Search totals can fail independently of `gh pr list`; a 0 from a failed
+    # search query must never zero the header over a live list of PRs.
+    if recent and not got_open:
+        prev = _previous_state().get("pull_requests") or {}
+        if isinstance(prev, dict) and prev.get("total_open"):
+            result["total_open"] = prev.get("total_open")
+    if recent and not got_closed:
+        prev = _previous_state().get("pull_requests") or {}
+        if isinstance(prev, dict) and prev.get("total_closed"):
+            result["total_closed"] = prev.get("total_closed")
     return result
 
 
