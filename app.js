@@ -1,10 +1,15 @@
 (function () {
   "use strict";
 
-  var VIEWS = ["dashboard", "issues", "prs", "contributors", "search", "info"];
+  var VIEWS = ["dashboard", "issues", "prs", "contributors", "search", "ecosystem", "triage", "docs", "info"];
   var RELOAD_MS = 5 * 60 * 1000;
   var DATA = {};
   var built = Object.create(null);
+  // Views whose code loads on demand (deferred, not on the first-paint path).
+  var LAZY = { search: "unified.js", ecosystem: "explorer.js" };
+  var viewHooks = Object.create(null);
+  var catalogReady = false;
+  var catalogWaiters = [];
 
   function loadData() {
     var node = document.getElementById("nous-data");
@@ -138,7 +143,12 @@
       panel.hidden = panel.getAttribute("data-view-panel") !== view;
     });
     document.querySelectorAll("[data-view]").forEach(function (btn) {
-      btn.classList.toggle("active", normalizeView(btn.getAttribute("data-view")) === view);
+      var on = normalizeView(btn.getAttribute("data-view")) === view;
+      btn.classList.toggle("active", on);
+      if (btn.classList.contains("nav-icon")) {
+        if (on) btn.setAttribute("aria-current", "page");
+        else btn.removeAttribute("aria-current");
+      }
     });
     var titles = {
       dashboard: "NOUS SPACE — Hermes Agent Maintainer Dashboard",
@@ -146,6 +156,9 @@
       prs: "Pull requests — Nous Space",
       contributors: "Contributors — Nous Space",
       search: "Search the Hermes ecosystem — Nous Space",
+      ecosystem: "Ecosystem explorer — Nous Space",
+      triage: "Awaiting first review — Nous Space",
+      docs: "API docs — Nous Space",
       info: "About this dashboard — Nous Space"
     };
     var descriptions = {
@@ -153,25 +166,48 @@
       issues: "Search the most recently updated open issues in NousResearch/hermes-agent.",
       prs: "Review queues for the most recently updated open Hermes Agent pull requests.",
       contributors: "Hermes Agent contributors ranked by commits, with this week and recent reviews.",
-      search: "Search Nous Research Hermes repositories, issues, pull requests, releases, and people.",
-      info: "How the Nous Space green and blue strips are scoped, and when the page refreshes."
+      search: "One search across Hermes pull requests, issues, the free ecosystem catalog, and the quality corpus.",
+      ecosystem: "Faceted explorer over the free Hermes ecosystem: plugins, skills, mods, MCP servers, and tools.",
+      triage: "Maintainer-lane pull requests open more than 30 days with no review decision yet.",
+      docs: "Nous Space API v1: endpoints, the 6-hour public window, API keys, attribution, and a curl builder.",
+      info: "How the Nous Space strips are scoped, where every dataset comes from, and how fresh it is."
     };
     document.title = titles[view] || titles.dashboard;
     var desc = document.getElementById("meta-desc");
     if (desc) desc.setAttribute("content", descriptions[view] || descriptions.dashboard);
     ensureRendered(view);
+    if (viewHooks[view] && viewHooks[view].show) viewHooks[view].show(viewPanel(view));
   }
 
   function ensureRendered(view) {
     if (view === "dashboard" || built[view]) return;
     var panel = viewPanel(view);
     if (!panel) return;
+    if (LAZY[view] && !viewHooks[view]) {
+      built[view] = true;
+      panel.setAttribute("aria-busy", "true");
+      loadScript(LAZY[view]).then(function () {
+        panel.removeAttribute("aria-busy");
+        var hook = viewHooks[view];
+        if (!hook) return;
+        hook.render(panel);
+        if (viewFromHash() === view && hook.show) hook.show(panel);
+      }).catch(function () {
+        panel.removeAttribute("aria-busy");
+        var note = el("p", "tab-note");
+        note.textContent = "This view could not load. Reload the page to try again.";
+        panel.appendChild(note);
+      });
+      return;
+    }
     if (!panel.querySelector(".tab-page")) {
       if (view === "issues") renderIssues(panel);
       else if (view === "prs") renderPrs(panel);
       else if (view === "contributors") renderContribs(panel);
-      else if (view === "search") renderSearch(panel);
+      else if (view === "triage") renderTriage(panel);
+      else if (view === "docs") bindCurlBuilder();
       else if (view === "info") renderInfo(panel);
+      else if (viewHooks[view]) viewHooks[view].render(panel);
     }
     built[view] = true;
   }
@@ -180,6 +216,7 @@
     var btn = document.createElement("button");
     btn.type = "button";
     btn.className = "chip" + (on ? " is-on" : "");
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
     btn.textContent = label;
     return btn;
   }
@@ -298,6 +335,10 @@
     link.href = doc.url || "#";
     link.target = "_blank";
     link.rel = "noopener";
+    if (doc.kind === "pr" || doc.kind === "issue") {
+      link.setAttribute("data-drawer", registerDoc(doc));
+      link.setAttribute("aria-haspopup", "dialog");
+    }
     article.appendChild(link);
     return { article: article, link: link };
   }
@@ -386,18 +427,6 @@
     return hit.article;
   }
 
-  function searchHit(doc, query) {
-    var hit = linkedHit(doc);
-    addText(hit.link, doc.kind);
-    addText(hit.link, doc.repo);
-    var title = document.createElement("span");
-    title.innerHTML = highlight(doc.title || "", query);
-    hit.link.appendChild(title);
-    addText(hit.link, doc.author);
-    addText(hit.link, doc.ago || doc.updated_at || "");
-    return hit.article;
-  }
-
   function renderIssues(panel) {
     var items = asList(DATA.issues);
     var page = el("div", "tab-page");
@@ -407,13 +436,18 @@
     counts.textContent = formatCount(countOf(DATA.issues, "total_open")) + " open / " +
       formatCount(countOf(DATA.issues, "total_closed")) + " closed";
     var note = el("p", "tab-note");
-    note.textContent = "searching the " + scannedCount(DATA.issues, items) + " most recently updated open issues";
+    note.textContent = catalogReady
+      ? "searching the " + scannedCount(DATA.issues, items) + " most recently updated open issues · click a row for details"
+      : "showing the top " + items.length + " from the page snapshot — loading the full list…";
     var input = document.createElement("input");
     input.id = "issue-q";
     input.type = "search";
     input.placeholder = "Search issues";
+    input.setAttribute("aria-label", "Search issues");
     var filters = el("div");
     filters.setAttribute("data-chip-group", "filter");
+    filters.setAttribute("role", "group");
+    filters.setAttribute("aria-label", "Filter issues");
     [
       ["All", "all", ""],
       ["<1d", "age", "1"],
@@ -435,6 +469,8 @@
     });
     var sorts = el("div");
     sorts.setAttribute("data-chip-group", "sort");
+    sorts.setAttribute("role", "group");
+    sorts.setAttribute("aria-label", "Sort issues");
     [["Newest", "newest"], ["Oldest", "oldest"], ["Most commented", "comments"]].forEach(function (spec, index) {
       var btn = chip(spec[0], index === 0);
       btn.setAttribute("data-sort", spec[1]);
@@ -442,6 +478,7 @@
     });
     var list = el("div", "hit-list");
     list.id = "issue-hits";
+    list.setAttribute("aria-live", "polite");
     page.append(heading, counts, note, input, filters, sorts, list);
     panel.appendChild(page);
     input.addEventListener("input", paintIssues);
@@ -480,18 +517,23 @@
     counts.textContent = formatCount(countOf(DATA.pull_requests, "total_open")) + " open · " +
       formatCount(countOf(DATA.pull_requests, "total_closed")) + " closed";
     var note = el("p", "tab-note");
-    note.textContent = "queues from the " + scannedCount(DATA.pull_requests, items) +
-      " most recently updated open pull requests";
+    note.textContent = catalogReady
+      ? "queues from the " + scannedCount(DATA.pull_requests, items) +
+        " most recently updated open pull requests · click a row for details"
+      : "showing the top " + items.length + " from the page snapshot — loading the full list…";
     var input = document.createElement("input");
     input.id = "pr-q";
     input.type = "search";
     input.placeholder = "Search pull requests";
+    input.setAttribute("aria-label", "Search pull requests");
     var queues = { all: items.length, "needs-review": 0, approved: 0, changes: 0, draft: 0 };
     items.forEach(function (pr) {
       if (queues[pr.queue] != null) queues[pr.queue] += 1;
     });
     var filters = el("div");
     filters.setAttribute("data-chip-group", "queue");
+    filters.setAttribute("role", "group");
+    filters.setAttribute("aria-label", "Review queue");
     [
       ["All", "all"],
       ["Needs review", "needs-review"],
@@ -537,8 +579,11 @@
     input.id = "contrib-q";
     input.type = "search";
     input.placeholder = "Search contributors";
+    input.setAttribute("aria-label", "Search contributors");
     var filters = el("div");
     filters.setAttribute("data-chip-group", "filter");
+    filters.setAttribute("role", "group");
+    filters.setAttribute("aria-label", "Filter contributors");
     var all = chip("All", true);
     all.setAttribute("data-filter", "all");
     var newer = chip("New", false);
@@ -580,92 +625,71 @@
     }));
   }
 
-  function ecosystemDocs() {
-    var docs = [];
-    var seen = new Set();
-    function push(doc) {
-      if (!doc || typeof doc !== "object") return;
-      var url = doc.url ? String(doc.url) : "";
-      if (url) {
-        if (seen.has(url)) return;
-        seen.add(url);
-      }
-      docs.push(doc);
-    }
-    (Array.isArray(DATA.ecosystem) ? DATA.ecosystem : []).forEach(function (item) {
-      push(Object.assign({}, item, { ts: toTs(item.ts != null && item.ts !== "" ? item.ts : item.updated_at) }));
-    });
-    people().forEach(function (person) { push(contribDoc(person)); });
-    asList(DATA.issues).forEach(function (issue) { push(issueDoc(issue)); });
-    asList(DATA.pull_requests).forEach(function (pr) { push(prDoc(pr)); });
-    return docs;
-  }
-
-  function renderSearch(panel) {
-    var page = el("div", "tab-page");
-    var heading = el("h2");
-    heading.textContent = "Search";
-    var input = document.createElement("input");
-    input.id = "search-q";
-    input.type = "search";
-    input.placeholder = "Search the Hermes ecosystem";
-    var eco = document.getElementById("eco-q");
-    if (eco) input.value = eco.value;
-    var meta = el("p", "result-meta");
-    meta.id = "search-meta";
-    var list = el("div", "hit-list");
-    list.id = "search-hits";
-    page.append(heading, input, meta, list);
-    panel.appendChild(page);
-    input.addEventListener("input", function () {
-      var ecoInput = document.getElementById("eco-q");
-      if (ecoInput && ecoInput.value !== input.value) ecoInput.value = input.value;
-      paintSearch();
-    });
-    paintSearch();
-  }
-
-  function paintSearch() {
-    var input = document.getElementById("search-q");
-    var list = document.getElementById("search-hits");
-    var meta = document.getElementById("search-meta");
-    var api = window.NousSearch;
-    if (!input || !list || !meta || !api) return;
-    if (queryIsBlank(input.value)) {
-      meta.textContent = "Search repos, issues, pull requests, discussions, releases, and people across Nous Research Hermes.";
-      list.replaceChildren();
-      return;
-    }
-    var found = api.searchDocs(ecosystemDocs(), input.value, 40);
-    meta.textContent = found.total + (found.total === 1 ? " match" : " matches");
-    list.replaceChildren.apply(list, found.hits.map(function (hit) { return searchHit(hit.doc, input.value); }));
-  }
-
   function renderInfo(panel) {
     var page = el("div", "tab-page");
+    page.setAttribute("aria-labelledby", "info-h");
+    page.className = "tab-page info-copy";
     var heading = el("h2");
+    heading.id = "info-h";
     heading.textContent = "Info";
-    var green = el("p");
-    green.textContent = "The green strip shows open pull requests the maintainer is involved in, ranked by merge likelihood.";
-    var blue = el("p");
-    blue.textContent = "The blue strip shows pull requests merged to main by or authored by the maintainer.";
-    var linkRow = el("p");
+    page.appendChild(heading);
+
+    function para(text) {
+      var p = el("p");
+      p.textContent = text;
+      page.appendChild(p);
+      return p;
+    }
+    function linkPara(before, href, label, after) {
+      var p = el("p");
+      p.textContent = before;
+      var a = document.createElement("a");
+      a.href = href;
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.textContent = label;
+      p.appendChild(a);
+      if (after) p.appendChild(document.createTextNode(after));
+      page.appendChild(p);
+      return p;
+    }
+
+    para("Nous Space is a read-only community observatory for the Hermes Agent repository. It tracks what the maintainer lane is shipping, what is merging, and how the broader Hermes ecosystem is growing.");
+    para("The green strip shows open pull requests the maintainer is involved in, ranked by merge likelihood. The blue strip shows pull requests merged to main by or authored by the maintainer.");
+    para("The factors behind the green order are listed under the strip (\u201cHow the green strip is ordered\u201d).");
+
+    var sub = el("h3");
+    sub.textContent = "Data";
+    page.appendChild(sub);
+    para("Everything here comes from public GitHub data collected by an automated, strictly read-only watch lane: a full pull-request backfill (over 96,000 PRs), an issues backfill in progress, a live maintainer watch, and a merge corpus that feeds the quality program. The watcher never comments, reviews, or reacts on GitHub.");
+    para("The free ecosystem catalog indexes skills, plugins, mods, and other community add-ons. Free and open tools only — paid offerings are catalogued later, separately.");
+
+    var sub2 = el("h3");
+    sub2.textContent = "Freshness";
+    page.appendChild(sub2);
+    para("This page ships a small build-time snapshot. On load it asks the live API (/api/v1/overview) for newer numbers. Every panel carries a stamp: \u201cAPI <time>\u201d when the live API refreshed it, \u201csnapshot <time>\u201d when it shows build-time data.");
+
     var repoUrl = DATA.repo_url || (DATA.repo ? "https://github.com/" + DATA.repo : "");
     if (repoUrl) {
-      var link = document.createElement("a");
-      link.href = repoUrl;
-      link.target = "_blank";
-      link.rel = "noopener";
-      link.textContent = DATA.repo || repoUrl;
-      linkRow.appendChild(link);
+      linkPara("Repository: ", repoUrl, DATA.repo || repoUrl);
     }
+    linkPara("Machine-readable API: ", "https://nous.minddragonlabs.com/api", "api/v1", " — free, attribution required (X-Nous-Attribution). See the API docs view.");
+    var feeds = el("p");
+    feeds.appendChild(document.createTextNode("Notable merges feed: "));
+    [["/feed.json", "JSON Feed"], ["/feed.xml", "Atom"], ["#docs", "API docs"], ["#provenance", "Provenance & coverage"]].forEach(function (pair, idx) {
+      if (idx) feeds.appendChild(document.createTextNode(" · "));
+      var a = document.createElement("a");
+      a.href = pair[0];
+      a.textContent = pair[1];
+      feeds.appendChild(a);
+    });
+    page.appendChild(feeds);
+
     var stamp = el("p");
     stamp.id = "freshness-detail";
-    stamp.textContent = DATA.generated ? String(DATA.generated) : "";
-    var refresh = el("p");
-    refresh.textContent = "refreshes every 5 minutes";
-    page.append(heading, green, blue, linkRow, stamp, refresh);
-    panel.appendChild(page);
+    stamp.textContent = DATA.generated ? "Snapshot built: " + String(DATA.generated) : "";
+    page.appendChild(stamp);
+    panel.insertBefore(page, panel.firstChild);
   }
 
   function bindEco() {
@@ -673,20 +697,16 @@
     var eco = document.getElementById("eco-q");
     if (eco) {
       eco.addEventListener("input", function () {
-        var search = document.getElementById("search-q");
-        if (search && search.value !== eco.value) search.value = eco.value;
-        if (viewFromHash() === "search") paintSearch();
+        if (viewFromHash() === "search" && window.NousUnified) window.NousUnified.setQuery(eco.value);
       });
     }
     if (!form) return;
     form.addEventListener("submit", function (event) {
       event.preventDefault();
-      var ecoInput = document.getElementById("eco-q");
-      var value = ecoInput ? ecoInput.value : "";
-      showView("search", false);
-      var search = document.getElementById("search-q");
-      if (search && search.value !== value) search.value = value;
-      paintSearch();
+      var value = eco ? eco.value.trim() : "";
+      var next = "#search" + (value ? "?q=" + encodeURIComponent(value) : "");
+      if (location.hash === next) showView("search", true);
+      else location.hash = next;
     });
   }
 
@@ -758,9 +778,707 @@
     }, RELOAD_MS);
   }
 
+  // ── loading: deferred scripts + versioned data shards ─────────────────────
+
+  var scriptPromises = Object.create(null);
+  var jsonPromises = Object.create(null);
+
+  function loadScript(src) {
+    if (scriptPromises[src]) return scriptPromises[src];
+    scriptPromises[src] = new Promise(function (resolve, reject) {
+      var node = document.createElement("script");
+      node.src = src + (DATA.v ? "?v=" + encodeURIComponent(DATA.v) : "");
+      node.async = true;
+      node.onload = function () { resolve(); };
+      node.onerror = function () { delete scriptPromises[src]; reject(new Error(src)); };
+      document.head.appendChild(node);
+    });
+    return scriptPromises[src];
+  }
+
+  function loadJSON(path) {
+    if (jsonPromises[path]) return jsonPromises[path];
+    var url = path + (DATA.v ? "?v=" + encodeURIComponent(DATA.v) : "");
+    function get() {
+      return fetch(url).then(function (response) {
+        if (!response.ok) throw new Error(path + " " + response.status);
+        return response.json();
+      });
+    }
+    // one retry: static hosts occasionally reset a burst of parallel requests
+    jsonPromises[path] = get().catch(function () {
+      return new Promise(function (resolve) { setTimeout(resolve, 500); }).then(get);
+    }).catch(function (err) {
+      delete jsonPromises[path];
+      throw err;
+    });
+    return jsonPromises[path];
+  }
+
+  function whenCatalog(cb) {
+    if (catalogReady) cb();
+    else catalogWaiters.push(cb);
+  }
+
+  // The embedded island is a tiny summary (counts + top rows). The full
+  // working set arrives from data/catalog.json; views rebuild when it lands.
+  function loadCatalog() {
+    loadJSON("data/catalog.json").then(function (full) {
+      if (!full || typeof full !== "object") return;
+      var keep = { v: DATA.v, api: DATA.api, eco_counts: DATA.eco_counts };
+      DATA = Object.assign({}, full, keep);
+      catalogReady = true;
+      rebuildViews(["issues", "prs", "contributors", "triage"]);
+      var waiters = catalogWaiters.splice(0);
+      waiters.forEach(function (cb) { try { cb(); } catch (err) { /* keep going */ } });
+    }).catch(function () {
+      catalogReady = true;
+      DATA.catalogFailed = true;
+      rebuildViews(["triage"]);
+      catalogWaiters.splice(0).forEach(function (cb) { try { cb(); } catch (err) { /* keep going */ } });
+    });
+  }
+
+  function rebuildViews(views) {
+    var current = viewFromHash();
+    views.forEach(function (view) {
+      if (!built[view]) return;
+      var panel = viewPanel(view);
+      if (!panel) return;
+      var input = panel.querySelector("input[type=search]");
+      var value = input ? input.value : "";
+      var page = panel.querySelector(".tab-page");
+      if (page) page.remove();
+      built[view] = false;
+      if (view === current) {
+        ensureRendered(view);
+        var again = panel.querySelector("input[type=search]");
+        if (again && value) {
+          again.value = value;
+          again.dispatchEvent(new Event("input"));
+        }
+      }
+    });
+  }
+
+  // ── live data island: /api/v1/overview over the build-time snapshot ──────
+
+  var API_ORIGIN = "https://nous.minddragonlabs.com";
+  var LIVE = { state: "pending", apiTime: "", fetchedAt: 0 };
+
+  function apiRequest(path) {
+    // Same-origin on the production host (Vercel rewrites /api/v1 to the
+    // worker) so the attribution header can be sent. Elsewhere use a simple
+    // CORS GET: the worker does not answer preflight, so no custom headers.
+    var sameOrigin = location.hostname === "nous.minddragonlabs.com";
+    var url = (sameOrigin ? "" : API_ORIGIN) + "/api/v1" + path;
+    var opts = sameOrigin ? { headers: { "X-Nous-Attribution": "nous-space-web" } } : {};
+    var ctl = typeof AbortController === "function" ? new AbortController() : null;
+    if (ctl) {
+      opts.signal = ctl.signal;
+      setTimeout(function () { ctl.abort(); }, 8000);
+    }
+    return fetch(url, opts);
+  }
+
+  function pathGet(obj, path) {
+    return String(path).split(".").reduce(function (acc, key) {
+      return acc && typeof acc === "object" ? acc[key] : undefined;
+    }, obj);
+  }
+
+  function clock(ts) {
+    var d = new Date(ts);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+
+  function paintStamps() {
+    document.querySelectorAll(".fresh-stamp[data-built]").forEach(function (node) {
+      var built = node.getAttribute("data-built");
+      var api = node.hasAttribute("data-api-panel");
+      var apiNewer = LIVE.state === "api" && api;
+      node.classList.toggle("is-api", apiNewer);
+      node.classList.toggle("is-stale", LIVE.state === "failed" && api);
+      if (apiNewer) {
+        node.textContent = "API " + clock(LIVE.fetchedAt);
+        node.title = "Refreshed in your browser from /api/v1/overview (API data " + LIVE.apiTime + ")";
+      } else {
+        node.textContent = "snapshot " + clock(built);
+        node.title = "Build-time snapshot " + built +
+          (api && LIVE.state === "failed" ? " — live API unreachable, showing the snapshot" : "") +
+          (api && LIVE.state === "older" ? " — the live API (" + LIVE.apiTime + ") is older than this snapshot" : "");
+      }
+    });
+    var pill = document.getElementById("live-state");
+    if (!pill) return;
+    pill.classList.toggle("is-api", LIVE.state === "api");
+    pill.classList.toggle("is-snapshot", LIVE.state !== "api" && LIVE.state !== "pending");
+    if (LIVE.state === "api") pill.textContent = "live · API " + clock(LIVE.fetchedAt);
+    else if (LIVE.state === "pending") pill.textContent = "checking API…";
+    else pill.textContent = "snapshot " + clock(DATA.generated || "");
+    pill.title = LIVE.state === "api"
+      ? "Numbers on API-backed panels were refreshed from /api/v1/overview at " + clock(LIVE.fetchedAt)
+      : LIVE.state === "older"
+        ? "The live API data (" + LIVE.apiTime + ") is older than this page's snapshot, so the snapshot is shown"
+        : "Showing the build-time snapshot (" + (DATA.generated || "") + ")";
+  }
+
+  function applyOverview(overview) {
+    var changed = 0;
+    document.querySelectorAll("[data-api]").forEach(function (node) {
+      var value = pathGet(overview, node.getAttribute("data-api"));
+      if (value == null || value === "") return;
+      var text = typeof value === "number" ? value.toLocaleString() : String(value);
+      if (node.textContent.trim() !== text) {
+        node.textContent = text;
+        node.classList.remove("data-updated");
+        void node.offsetWidth;
+        node.classList.add("data-updated");
+        changed += 1;
+      }
+    });
+    if (overview.ecosystem && typeof overview.ecosystem === "object") {
+      DATA.eco_counts = Object.assign({}, DATA.eco_counts || {}, overview.ecosystem);
+    }
+    return changed;
+  }
+
+  function fetchOverview() {
+    LIVE.state = "pending";
+    paintStamps();
+    apiRequest("/overview").then(function (response) {
+      if (!response.ok) throw new Error(String(response.status));
+      return response.json();
+    }).then(function (overview) {
+      LIVE.apiTime = String(overview.generated || "");
+      LIVE.fetchedAt = Date.now();
+      var apiTs = toTs(overview.generated);
+      var snapTs = toTs(DATA.generated);
+      // Never let an older API payload overwrite a newer build snapshot.
+      if (apiTs && snapTs && apiTs < snapTs) {
+        LIVE.state = "older";
+      } else {
+        LIVE.state = "api";
+        LIVE.overview = overview;
+        applyOverview(overview);
+      }
+      paintStamps();
+    }).catch(function () {
+      LIVE.state = "failed";
+      paintStamps();
+    });
+  }
+
+  // ── lazy detail drawer ───────────────────────────────────────────────────
+
+  var docRegistry = new Map();
+  var docSeq = 0;
+  var drawerOpener = null;
+  var drawerToken = 0;
+  var PUBLIC_WINDOW_MS = 6 * 3600 * 1000;
+
+  // Rows carry data-drawer="<key>"; the key maps back to the row's doc.
+  function registerDoc(doc) {
+    docSeq += 1;
+    docRegistry.set(docSeq, doc);
+    if (docRegistry.size > 8000) {
+      var cut = docSeq - 6000;
+      docRegistry.forEach(function (_doc, key) { if (key < cut) docRegistry.delete(key); });
+    }
+    return String(docSeq);
+  }
+
+  function lookupDoc(key) {
+    return docRegistry.get(Number(key)) || null;
+  }
+
+  function latestTs(doc) {
+    var best = 0;
+    ["merged_at", "updated_at", "created_at", "ts"].forEach(function (key) {
+      var t = toTs(doc[key]);
+      if (t > best) best = t;
+    });
+    return best;
+  }
+
+  function dl(rows) {
+    return "<dl>" + rows.filter(function (row) { return row[1] !== "" && row[1] != null; }).map(function (row) {
+      return "<dt>" + escapeHtml(row[0]) + "</dt><dd>" + (row[2] ? row[1] : escapeHtml(row[1])) + "</dd>";
+    }).join("") + "</dl>";
+  }
+
+  function drawerMeta(doc) {
+    var labels = Array.isArray(doc.labels) ? doc.labels.filter(Boolean) : [];
+    var labelHtml = labels.length
+      ? '<span class="drawer-labels">' + labels.map(function (name) {
+        return '<span class="badge">' + escapeHtml(name) + "</span>";
+      }).join("") + "</span>"
+      : "";
+    var state = doc.state || "";
+    if (doc.kind === "pr" && doc.draft) state = "draft";
+    var review = doc.review ? String(doc.review).toLowerCase().replace(/_/g, " ") : "";
+    var ci = doc.ci_total ? (doc.ci_ok || 0) + "/" + doc.ci_total + (doc.ci ? " " + doc.ci : "") : "";
+    var diff = doc.additions != null || doc.deletions != null
+      ? "+" + (Number(doc.additions) || 0) + " −" + (Number(doc.deletions) || 0) : "";
+    return dl([
+      ["type", doc.kind === "issue" ? "issue" : "pull request"],
+      ["state", state],
+      ["author", doc.author || ""],
+      ["labels", labelHtml, true],
+      ["review", review],
+      ["checks", ci],
+      ["diff", diff],
+      ["created", doc.created_at ? String(doc.created_at).replace("T", " ").slice(0, 16) : ""],
+      ["updated", doc.updated_at ? String(doc.updated_at).replace("T", " ").slice(0, 16) : ""],
+      ["merged", doc.merged_at ? String(doc.merged_at).replace("T", " ").slice(0, 16) : (doc.date && state === "merged" ? doc.date : "")]
+    ]) + (doc.url ? '<p><a href="' + escapeHtml(doc.url) + '" target="_blank" rel="noopener">Open on GitHub ↗</a></p>' : "");
+  }
+
+  function drawerNote(text) {
+    return '<p class="drawer-note">' + escapeHtml(text) + "</p>";
+  }
+
+  function loadDrawerBody(doc, token) {
+    var slot = document.getElementById("drawer-full");
+    if (!slot) return;
+    if (doc.kind !== "pr") {
+      slot.innerHTML = drawerNote("The API serves pull-request records only. Read the full issue on GitHub.");
+      return;
+    }
+    var ts = latestTs(doc);
+    if (!ts || Date.now() - ts > PUBLIC_WINDOW_MS) {
+      slot.innerHTML = drawerNote("Full body requires an API key: this record is older than the 6-hour public window. Metadata above; full text on GitHub.");
+      return;
+    }
+    slot.innerHTML = '<p class="hn-meta">Loading the full body from the API…</p>';
+    apiRequest("/prs/" + encodeURIComponent(doc.number)).then(function (response) {
+      if (token !== drawerToken) return null;
+      if (response.status === 401 || response.status === 403) {
+        slot.innerHTML = drawerNote("Full body requires an API key. Read it on GitHub.");
+        return null;
+      }
+      if (!response.ok) {
+        slot.innerHTML = drawerNote("The API has no public record for #" + doc.number + " yet (HTTP " + response.status + "). Full body requires an API key once the record leaves the 6-hour window. Read it on GitHub.");
+        return null;
+      }
+      return response.json();
+    }).then(function (payload) {
+      if (!payload || token !== drawerToken) return;
+      var rec = payload.pr || payload.item || payload.record || payload;
+      var body = rec.body || rec.summary || "";
+      slot.innerHTML = body
+        ? '<h3 class="sr-only">Body</h3><div class="disc-body">' + renderMarkdown(String(body)) + "</div>"
+        : drawerNote("The API record has no body text.");
+    }).catch(function () {
+      if (token !== drawerToken) return;
+      slot.innerHTML = drawerNote("The API is unreachable right now. Read it on GitHub.");
+    });
+  }
+
+  function openDrawer(doc, opener) {
+    var drawer = document.getElementById("drawer");
+    var back = document.getElementById("drawer-backdrop");
+    var body = document.getElementById("drawer-body");
+    var title = document.getElementById("drawer-title");
+    if (!drawer || !doc) return;
+    drawerToken += 1;
+    drawerOpener = opener || document.activeElement;
+    title.textContent = (doc.number != null && doc.number !== "" ? "#" + doc.number + " " : "") + (doc.title || "");
+    body.innerHTML = drawerMeta(doc) + '<div id="drawer-full"></div>';
+    drawer.hidden = false;
+    back.hidden = false;
+    document.body.style.overflow = "hidden";
+    var close = document.getElementById("drawer-close");
+    if (close) close.focus();
+    loadDrawerBody(doc, drawerToken);
+  }
+
+  function closeDrawer() {
+    var drawer = document.getElementById("drawer");
+    if (!drawer || drawer.hidden) return;
+    drawerToken += 1;
+    drawer.hidden = true;
+    document.getElementById("drawer-backdrop").hidden = true;
+    document.body.style.overflow = "";
+    if (drawerOpener && document.contains(drawerOpener) && drawerOpener.focus) drawerOpener.focus();
+    drawerOpener = null;
+  }
+
+  function trapDrawerFocus(event) {
+    var drawer = document.getElementById("drawer");
+    if (!drawer || drawer.hidden) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeDrawer();
+      return;
+    }
+    if (event.key !== "Tab") return;
+    var nodes = Array.prototype.filter.call(
+      drawer.querySelectorAll('a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])'),
+      function (node) { return node.offsetParent !== null || node === document.activeElement; }
+    );
+    if (!nodes.length) return;
+    var first = nodes[0];
+    var last = nodes[nodes.length - 1];
+    if (!drawer.contains(document.activeElement)) {
+      event.preventDefault();
+      first.focus();
+    } else if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
+  function plainClick(event) {
+    return event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
+  }
+
+  // ── 06 / ARCHIVE panel (data/archive.json, loaded when scrolled near) ─────
+
+  function initArchive() {
+    var section = document.getElementById("prarchive");
+    var list = document.getElementById("prarch-list");
+    if (!section || !list) return;
+    var started = false;
+    function start() {
+      if (started) return;
+      started = true;
+      loadJSON("data/archive.json").then(function (arch) {
+        mountArchive(section, Array.isArray(arch && arch.prs) ? arch.prs : []);
+      }).catch(function () {
+        list.innerHTML = '<p class="eco-note">The archive could not load. The mirror is at <a href="/prs_archive.json">/prs_archive.json</a>.</p>';
+      });
+    }
+    if ("IntersectionObserver" in window) {
+      var io = new IntersectionObserver(function (entries) {
+        if (entries.some(function (entry) { return entry.isIntersecting; })) {
+          io.disconnect();
+          start();
+        }
+      }, { rootMargin: "600px" });
+      io.observe(section);
+    } else {
+      start();
+    }
+  }
+
+  function archiveDoc(row) {
+    var repo = DATA.repo || "NousResearch/hermes-agent";
+    return {
+      kind: "pr", number: row.n, title: row.t || "", author: row.a || "",
+      state: row.s || "", date: row.m || "", merged_at: row.s === "merged" ? row.m || "" : "",
+      labels: [], url: "https://github.com/" + repo + "/pull/" + row.n
+    };
+  }
+
+  function mountArchive(section, prs) {
+    var PER = Number(section.getAttribute("data-per")) || 100;
+    var page = 0;
+    var query = "";
+    var list = document.getElementById("prarch-list");
+    var pager = document.getElementById("prarch-pager");
+    var search = document.getElementById("prarch-search");
+    function filtered() {
+      var q = query.toLowerCase().trim();
+      if (!q) return prs;
+      return prs.filter(function (r) {
+        return ("#" + r.n + " " + r.t + " " + r.a).toLowerCase().indexOf(q) !== -1;
+      });
+    }
+    function render() {
+      var rows = filtered();
+      var pages = Math.max(1, Math.ceil(rows.length / PER));
+      if (page >= pages) page = 0;
+      var slice = rows.slice(page * PER, page * PER + PER);
+      list.innerHTML = slice.length ? slice.map(function (r) {
+        var doc = archiveDoc(r);
+        return '<div class="prs-row"><a class="prs-main" href="' + escapeHtml(doc.url) + '" target="_blank" rel="noopener" data-drawer="' +
+          registerDoc(doc) + '" aria-haspopup="dialog">' +
+          '<span class="prs-num">#' + Number(r.n) + '</span><span class="prs-title">' + escapeHtml(r.t) + "</span>" +
+          '<span class="prs-status ' + (r.s === "open" ? "prs-open" : "prs-approved") + '">' + escapeHtml(r.s) + "</span>" +
+          '<span class="prs-author">' + escapeHtml(r.a) + '</span><span class="prs-time">' + escapeHtml(r.m) + "</span></a></div>";
+      }).join("") : '<p class="eco-note">No matches.</p>';
+      var buttons = [];
+      for (var i = 0; i < pages && pages > 1; i++) {
+        buttons.push('<button type="button" class="eco-page' + (i === page ? " is-on" : "") + '" data-arch-page="' + i +
+          '" aria-label="Archive page ' + (i + 1) + '"' + (i === page ? ' aria-current="page"' : "") + ">" + (i + 1) + "</button>");
+      }
+      pager.innerHTML = buttons.join("");
+    }
+    pager.addEventListener("click", function (event) {
+      var btn = event.target.closest("button[data-arch-page]");
+      if (!btn) return;
+      page = Number(btn.getAttribute("data-arch-page")) || 0;
+      render();
+      if (section.scrollIntoView) section.scrollIntoView();
+    });
+    if (search) {
+      var timer = null;
+      search.addEventListener("input", function () {
+        clearTimeout(timer);
+        timer = setTimeout(function () { query = search.value; page = 0; render(); }, 150);
+      });
+    }
+    render();
+  }
+
+  // ── awaiting first review (triage) ───────────────────────────────────────
+
+  function hashParams() {
+    var raw = String(location.hash || "");
+    var at = raw.indexOf("?");
+    return new URLSearchParams(at === -1 ? "" : raw.slice(at + 1));
+  }
+
+  var TRIAGE_LANES = [
+    ["maintainer", "Maintainer lane"],
+    ["authored", "Authored by the maintainer"],
+    ["involving", "Involving the maintainer"],
+    ["recent", "Recently updated (all authors)"]
+  ];
+
+  function laneSource() {
+    var byNum = new Map();
+    var stale = DATA.lane_stale && Array.isArray(DATA.lane_stale.rows) ? DATA.lane_stale.rows : [];
+    stale.concat(Array.isArray(DATA.lane_open) ? DATA.lane_open : []).forEach(function (pr) {
+      if (pr && pr.number != null) byNum.set(pr.number, pr);
+    });
+    return Array.from(byNum.values());
+  }
+
+  function triageCoverage(lane) {
+    var totals = (DATA.lane_stale && DATA.lane_stale.totals) || {};
+    var rows = (DATA.lane_stale && DATA.lane_stale.rows) || [];
+    var maintainer = DATA.maintainer || "";
+    function part(scope, label) {
+      if (totals[scope] == null) return "";
+      var have = rows.filter(function (r) { return (r.author === maintainer) === (scope === "authored"); }).length;
+      return label + ": " + (have < totals[scope]
+        ? have.toLocaleString() + " most recently updated of " + Number(totals[scope]).toLocaleString()
+        : "all " + Number(totals[scope]).toLocaleString());
+    }
+    if (lane === "recent") return "Coverage: the 50 most recently updated open PRs (all authors).";
+    var bits = [];
+    if (lane !== "involving") bits.push(part("authored", "authored by the maintainer"));
+    if (lane !== "authored") bits.push(part("involving", "involving the maintainer"));
+    bits = bits.filter(Boolean);
+    return bits.length ? "Coverage (older than 30 days, no review): " + bits.join(" · ") + "." : "";
+  }
+
+  function triageRows(lane, days) {
+    var maintainer = DATA.maintainer || "";
+    var source;
+    if (lane === "recent") source = asList(DATA.pull_requests);
+    else source = laneSource();
+    if (lane === "authored") source = source.filter(function (pr) { return pr.author === maintainer; });
+    if (lane === "involving") source = source.filter(function (pr) { return pr.author !== maintainer; });
+    var cutoff = Date.now() - days * 86400000;
+    return source.filter(function (pr) {
+      var created = toTs(pr.created_at);
+      var review = String(pr.review || "").toUpperCase();
+      return created && created <= cutoff && !pr.draft && review !== "APPROVED" && review !== "CHANGES_REQUESTED";
+    }).sort(function (a, b) { return toTs(a.created_at) - toTs(b.created_at); });
+  }
+
+  function renderTriage(panel) {
+    var params = hashParams();
+    var lane = params.get("lane") || "maintainer";
+    if (!TRIAGE_LANES.some(function (pair) { return pair[0] === lane; })) lane = "maintainer";
+    var days = Math.max(1, Math.min(365, Number(params.get("days")) || 30));
+    var page = el("div", "tab-page");
+    var heading = el("h2");
+    heading.textContent = "Awaiting first review";
+    var intro = el("p", "tab-note");
+    intro.textContent = "Open pull requests older than " + days + " days with no review decision recorded yet. Drafts are excluded. Ages are computed in your browser from each PR's creation time, so this list does not go stale between builds.";
+    var lanes = el("div", "chips");
+    lanes.setAttribute("role", "group");
+    lanes.setAttribute("aria-label", "Lane");
+    TRIAGE_LANES.forEach(function (pair) {
+      var a = document.createElement("a");
+      a.className = "chip" + (pair[0] === lane ? " is-on" : "");
+      a.href = "#triage?lane=" + pair[0] + "&days=" + days;
+      a.textContent = pair[1];
+      if (pair[0] === lane) a.setAttribute("aria-current", "true");
+      lanes.appendChild(a);
+    });
+    var ages = el("div", "chips");
+    ages.setAttribute("role", "group");
+    ages.setAttribute("aria-label", "Minimum age");
+    [30, 60, 90].forEach(function (d) {
+      var a = document.createElement("a");
+      a.className = "chip" + (d === days ? " is-on" : "");
+      a.href = "#triage?lane=" + lane + "&days=" + d;
+      a.textContent = ">" + d + " days";
+      if (d === days) a.setAttribute("aria-current", "true");
+      ages.appendChild(a);
+    });
+    var list = el("div", "hit-list");
+    list.setAttribute("aria-live", "polite");
+    page.append(heading, intro, lanes, ages, list);
+    panel.appendChild(page);
+
+    if (!catalogReady) {
+      var wait = el("p", "tab-note");
+      wait.textContent = "Loading the lane…";
+      list.appendChild(wait);
+      return;
+    }
+    var haveLane = lane === "recent" || laneSource().length > 0;
+    if (lane !== "recent" && !(DATA.lane_stale && DATA.lane_stale.totals)) {
+      var older = el("p", "triage-meta");
+      older.textContent = "Older lane PRs arrive with the next data refresh; until then only the 30 newest lane PRs are visible, so this list may be empty.";
+      list.appendChild(older);
+    }
+    var rows = triageRows(lane, days);
+    var meta = el("p", "triage-meta");
+    meta.textContent = !haveLane
+      ? "The lane list arrives with the next data refresh (it needs PR creation times). Try “Recently updated” meanwhile."
+      : rows.length + (rows.length === 1 ? " pull request" : " pull requests") + " · oldest first · data " + (DATA.generated || "");
+    list.appendChild(meta);
+    var cov = triageCoverage(lane);
+    if (cov && haveLane) {
+      var covNode = el("p", "triage-meta");
+      covNode.textContent = cov;
+      list.appendChild(covNode);
+    }
+    rows.forEach(function (pr) {
+      var doc = prDoc(pr);
+      var hit = linkedHit(doc);
+      addText(hit.link, "#" + pr.number);
+      addText(hit.link, pr.title);
+      addText(hit.link, "open " + Math.floor((Date.now() - toTs(pr.created_at)) / 86400000) + " days");
+      addText(hit.link, "no review decision yet");
+      list.appendChild(hit.article);
+    });
+    if (haveLane && !rows.length) {
+      var none = el("p", "tab-note");
+      none.textContent = "Nothing in this lane has waited that long.";
+      list.appendChild(none);
+    }
+  }
+
+  viewHooks.triage = {
+    show: function (panel) {
+      var key = String(location.hash || "");
+      if (panel && panel.getAttribute("data-hash") !== key) {
+        panel.setAttribute("data-hash", key);
+        var page = panel.querySelector(".tab-page");
+        if (page) {
+          page.remove();
+          renderTriage(panel);
+        }
+      }
+    }
+  };
+
+  // ── API docs: curl builder ───────────────────────────────────────────────
+
+  function shellQuote(value) {
+    return "'" + String(value).replace(/'/g, "'\\''") + "'";
+  }
+
+  function bindCurlBuilder() {
+    var form = document.getElementById("curl-builder");
+    if (!form || form.getAttribute("data-bound")) return;
+    form.setAttribute("data-bound", "1");
+    var endpoint = document.getElementById("cb-endpoint");
+    var paramWrap = document.getElementById("cb-param-wrap");
+    var paramLabel = document.getElementById("cb-param-label");
+    var param = document.getElementById("cb-param");
+    var attr = document.getElementById("cb-attr");
+    var key = document.getElementById("cb-key");
+    var out = document.getElementById("cb-out");
+    var copied = document.getElementById("cb-copied");
+    var defaults = { number: "130141", q: "gateway", page: "1" };
+    function paint() {
+      var option = endpoint.options[endpoint.selectedIndex];
+      var name = option ? option.getAttribute("data-param") : "";
+      paramWrap.hidden = !name;
+      if (name && paramWrap.getAttribute("data-for") !== name) {
+        paramWrap.setAttribute("data-for", name);
+        paramLabel.textContent = name === "number" ? "PR number" : name === "q" ? "Query (q)" : "Page";
+        param.value = defaults[name] || "";
+      }
+      var path = endpoint.value;
+      var value = param.value.trim();
+      if (name === "number") path = path.replace("{number}", encodeURIComponent(value || defaults.number));
+      else if (name && value) path += "?" + name + "=" + encodeURIComponent(value);
+      var parts = ["curl -sS", "-H " + shellQuote("X-Nous-Attribution: " + (attr.value.trim() || "my-app"))];
+      if (key.checked) parts.push('-H "X-Nous-Api-Key: $NOUS_API_KEY"');
+      parts.push(shellQuote("https://nous.minddragonlabs.com/api/v1" + path));
+      out.textContent = parts.join(" ");
+      copied.textContent = "";
+    }
+    form.addEventListener("input", paint);
+    form.addEventListener("change", paint);
+    form.addEventListener("submit", function (event) { event.preventDefault(); });
+    document.getElementById("cb-copy").addEventListener("click", function () {
+      var text = out.textContent;
+      var done = function () { copied.textContent = "Copied."; };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function () { selectText(out); copied.textContent = "Selected — press Ctrl/Cmd+C."; });
+      } else {
+        selectText(out);
+        copied.textContent = "Selected — press Ctrl/Cmd+C.";
+      }
+    });
+    paint();
+  }
+
+  function selectText(node) {
+    var range = document.createRange();
+    range.selectNodeContents(node);
+    var sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
+  window.NousApp = {
+    data: function () { return DATA; },
+    catalogReady: function () { return catalogReady; },
+    whenCatalog: whenCatalog,
+    loadJSON: loadJSON,
+    loadScript: loadScript,
+    registerView: function (name, hook) { viewHooks[name] = hook; },
+    openDrawer: openDrawer,
+    registerDoc: registerDoc,
+    escapeHtml: escapeHtml,
+    highlight: highlight,
+    issueDoc: issueDoc,
+    prDoc: prDoc,
+    contribDoc: contribDoc,
+    asList: asList,
+    toTs: toTs,
+    hashParams: hashParams,
+    queryIsBlank: queryIsBlank
+  };
+
   function boot() {
     DATA = loadData();
     document.addEventListener("click", function (event) {
+      if (event.target.closest(".skip-link")) {
+        event.preventDefault();
+        var main = document.getElementById("main");
+        if (main) main.focus();
+        return;
+      }
+      if (event.target.closest("#drawer-close") || event.target.id === "drawer-backdrop") {
+        closeDrawer();
+        return;
+      }
+      var opener = event.target.closest("[data-drawer]");
+      if (opener && plainClick(event)) {
+        var doc = lookupDoc(opener.getAttribute("data-drawer"));
+        if (doc) {
+          event.preventDefault();
+          openDrawer(doc, opener);
+          return;
+        }
+      }
       var nav = event.target.closest("[data-view]");
       if (nav) {
         event.preventDefault();
@@ -780,21 +1498,43 @@
       if (!button) return;
       var group = button.closest("[data-chip-group]");
       if (!group) return;
-      group.querySelectorAll("button.chip").forEach(function (node) { node.classList.remove("is-on"); });
+      group.querySelectorAll("button.chip").forEach(function (node) {
+        node.classList.remove("is-on");
+        node.setAttribute("aria-pressed", "false");
+      });
       button.classList.add("is-on");
+      button.setAttribute("aria-pressed", "true");
       var view = viewFromHash();
       if (view === "issues") paintIssues();
       else if (view === "prs") paintPrs();
       else if (view === "contributors") paintContribs();
     });
-    window.addEventListener("hashchange", function () { showView(viewFromHash(), true); });
+    document.addEventListener("keydown", trapDrawerFocus);
+    window.addEventListener("hashchange", function () {
+      if (location.hash === "#main") {
+        var main = document.getElementById("main");
+        if (main) main.focus();
+        return;
+      }
+      if (location.hash === "#provenance") {
+        showView("info", true);
+        var prov = document.getElementById("provenance");
+        if (prov && prov.scrollIntoView) prov.scrollIntoView();
+        return;
+      }
+      showView(viewFromHash(), true);
+    });
     bindEco();
     paintFreshness();
+    paintStamps();
     setInterval(paintFreshness, 30000);
     syncNavHeight();
     window.addEventListener("resize", syncNavHeight);
     scheduleReload();
-    showView(viewFromHash(), true);
+    showView(location.hash === "#provenance" ? "info" : viewFromHash(), true);
+    loadCatalog();
+    fetchOverview();
+    initArchive();
     bindNews();
     var storyMatch = String(location.hash || "").match(/^#story\/(pr|issue)\/(\d+)$/);
     if (storyMatch) {
@@ -867,26 +1607,70 @@
     }
   }
 
+  var newsAll = null;
+  var newsLoadingAll = false;
+
+  function newsKey(item) {
+    return (item.kind === "issue" ? "issue" : "pr") + ":" + item.number;
+  }
+
+  function mergeNews(head) {
+    if (!newsAll) return head;
+    var seen = Object.create(null);
+    var out = [];
+    head.concat(newsAll).forEach(function (item) {
+      var key = newsKey(item);
+      if (seen[key]) return;
+      seen[key] = true;
+      out.push(item);
+    });
+    return out.slice(0, 2500);
+  }
+
+  function pollNews(force) {
+    var disc = document.getElementById("hn-discussion");
+    if (!force && disc && !disc.hidden) return;
+    fetch("data/news-head.json?t=" + Date.now(), { cache: "no-store" }).then(function (response) {
+      if (!response.ok) return null;
+      return response.json();
+    }).then(function (payload) {
+      if (!payload || !Array.isArray(payload.items) || !payload.items.length) return;
+      if (payload.generated) {
+        DATA.generated = payload.generated;
+        paintFreshness();
+      }
+      var items = mergeNews(payload.items);
+      var newest = items[0];
+      if (seenNews[newsKey(newest)] && items.length === document.querySelectorAll("#hn-scroll .hn-row").length) return;
+      paintNews(items);
+    }).catch(function () {});
+  }
+
+  function loadAllNews() {
+    if (newsAll || newsLoadingAll) return;
+    newsLoadingAll = true;
+    fetch("/news.json", { cache: "no-cache" }).then(function (response) {
+      if (!response.ok) throw new Error("news");
+      return response.json();
+    }).then(function (payload) {
+      if (!payload || !Array.isArray(payload.items)) return;
+      newsAll = payload.items;
+      paintNews(newsAll);
+    }).catch(function () {
+      newsLoadingAll = false;
+    });
+  }
+
   function bindNews() {
     rememberNews();
-    setInterval(function () {
-      var disc = document.getElementById("hn-discussion");
-      if (disc && !disc.hidden) return;
-      fetch("/news.json?t=" + Date.now(), { cache: "no-store" }).then(function (response) {
-        if (!response.ok) return null;
-        return response.json();
-      }).then(function (payload) {
-        if (!payload || !Array.isArray(payload.items) || !payload.items.length) return;
-        if (payload.generated) {
-          DATA.generated = payload.generated;
-          paintFreshness();
-        }
-        var newest = payload.items[0];
-        var key = (newest.kind === "issue" ? "issue" : "pr") + ":" + newest.number;
-        if (seenNews[key] && payload.items.length === document.querySelectorAll("#hn-scroll .hn-row").length) return;
-        paintNews(payload.items);
-      }).catch(function () {});
-    }, 45000);
+    var scroll = document.getElementById("hn-scroll");
+    if (scroll) {
+      scroll.addEventListener("scroll", function () {
+        if (scroll.scrollTop + scroll.clientHeight > scroll.scrollHeight - 600) loadAllNews();
+      }, { passive: true });
+    }
+    setTimeout(function () { pollNews(false); }, 1500);
+    setInterval(function () { pollNews(false); }, 45000);
   }
 
   function renderGithubHtml(html) {

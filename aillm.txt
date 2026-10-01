@@ -1,0 +1,37 @@
+# Nous Space — AI/LLM use policy (aillm.txt)
+
+This is the AI-facing acceptable-use summary for nous.minddragonlabs.com.
+The canonical policy file is /llms.txt — this file mirrors it.
+
+## PUBLIC (no key needed, free)
+
+- All HTML views: dashboard, issues, PRs, contributors, search, ecosystem
+  explorer, awaiting first review, API docs, info (with provenance).
+- `/api` (index), `/api/v1/overview`, `/api/v1/corpus/stats` (counts only),
+  `/api/v1/ecosystem/{plugins|skills|mods|mcp|tools}` (current free-only
+  catalog), `/api/v1/usage`, `/api/v1/auth/check`.
+- `/api/v1/prs`, `/api/v1/prs/{number}` and `/api/v1/search?q=` limited to
+  PR records from the LAST 6 HOURS.
+- `/feed.json`, `/feed.xml` (latest 20 notable merges; item id = PR number).
+
+## PRIVATE (API key required)
+
+- Everything historical beyond the 6-hour public window: full PR archive,
+  watch/merge event history, quality-corpus history.
+- Call with header `X-Nous-Api-Key: <key>`. Without it, historical requests
+  get HTTP 401 with a JSON explanation.
+
+## Rules
+
+1. Send `X-Nous-Attribution: <app name>` on API calls (required).
+2. Use the JSON API for bulk data, not HTML scraping.
+3. Data is collected by a read-only GitHub lane; it is community observation,
+   not official maintainer statements. Never present it as official.
+4. Poll at most once per minute (limit: 60 requests/minute); data refreshes
+   hourly and is edge-cached up to 5 minutes.
+5. The ecosystem catalog contains FREE items only by policy; paid offerings
+   are catalogued separately later.
+
+## Contact
+
+Site operator: MindDragonLabs. API keys are issued on request.

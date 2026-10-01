@@ -16,8 +16,11 @@ from __future__ import annotations
 import datetime as dt
 import html
 import json
+import os
 import pathlib
 import re
+import subprocess
+import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent
 STATE = ROOT / "state.json"
@@ -48,7 +51,9 @@ APPDATA_END = "<!-- APPDATA:END -->"
 CSS_START = "/* ROWCSS:START */"
 CSS_END = "/* ROWCSS:END */"
 N_PER_SIDE = 5
-N_MERGED_SHOW = 30  # enough blocks to overflow any viewport width
+N_MERGED_SHOW = 30
+NEWS_HTML_ROWS = 60  # rest of the 48h wire loads from news.json
+NEWS_HEAD_ROWS = 150  # data/news-head.json — what the live poll fetches  # enough blocks to overflow any viewport width
 TITLE_MAX = 96
 
 # trailing "(#12345, salvage #67890)" cross-references drop for display
@@ -135,13 +140,25 @@ def render_row(state: dict) -> str:
     merged = state["merged"][:N_MERGED_SHOW]
     greens = "\n".join(cube(p, "p-green") for p in pending)
     blues = "\n".join(merged_cell(x) for x in merged)
-    return f"""  <div class="stripscroll" id="blockstrip">
+    return f"""  <div class="stripscroll" id="blockstrip" tabindex="0" role="region"
+       aria-label="Pull request strip: green blocks are open pull requests the maintainer is involved in; blue blocks are merged. Use arrow keys to scroll.">
     <div class="strip">
       {greens}
-      <div class="split"></div>
+      <div class="split" aria-hidden="true"></div>
       {blues}
     </div>
   </div>
+  <details class="strip-note">
+    <summary>How the green strip is ordered</summary>
+    <p>Green blocks are open pull requests the maintainer is involved in. Their order considers these factors:</p>
+    <ul>
+      <li>CI check results (tests)</li>
+      <li>review state — approved, changes requested, or none yet</li>
+      <li>merge conflicts</li>
+      <li>draft status</li>
+    </ul>
+    <p>Diff size is shown on each block but does not change the order. This is a reading aid, not a forecast.</p>
+  </details>
   <script>
 // Drag-to-scroll (mempool.space behaviour)
 (function(){{
@@ -217,16 +234,16 @@ def backlog_panel(state: dict) -> str:
     watch_tracked = counts.get("watch_tracked") or q.get("tracked_open") or 0
     maintainer = state.get("maintainer") or "the maintainer"
 
-    def lane_row(label: str, value, dim: str) -> str:
+    def lane_row(label: str, value, dim: str, api: str) -> str:
         return (f'        <div class="stat-row">\n'
                 f'          <span class="stat-label">{esc(label)}</span>\n'
-                f'          <span class="stat-val">{value:,}</span>\n'
+                f'          <span class="stat-val" data-api="{api}">{value:,}</span>\n'
                 f'          <span class="stat-dim">{esc(dim)}</span>\n'
                 f'        </div>')
 
     lane_html = "\n".join([
-        lane_row("watch", watch_tracked, "whole maintainer team"),
-        lane_row("lane", lane_open, f"involving {maintainer}"),
+        lane_row("watch", watch_tracked, "whole maintainer team", "lane.watch_tracked"),
+        lane_row("lane", lane_open, f"involving {maintainer}", "lane.lane_open"),
     ])
 
     # ── line chart: new PRs per day over last 7 days ──
@@ -234,7 +251,7 @@ def backlog_panel(state: dict) -> str:
     chart_svg = _daily_line_chart(daily) if daily else ""
 
     return f"""    <div class="dash-card left">
-      <h3><i class="hgi hgi-stroke hgi-inbox"></i> PR Backlog</h3>
+      <h3><i class="hgi hgi-stroke hgi-inbox" aria-hidden="true"></i> PR Backlog {fresh_stamp(state, "backlog", api=True)}</h3>
       <div class="big-num">{total:,}</div>
       <div class="big-sub">open PRs in the repo</div>
       <div class="section-label">lane counts</div>
@@ -276,7 +293,7 @@ def _daily_line_chart(daily: list[dict]) -> str:
         y = h - 2
         labels += f'<text x="{x:.1f}" y="{y:.0f}" class="chart-label">{short}</text>'
 
-    return f"""<svg class="line-chart" viewBox="0 0 {w} {h}" width="{w}" height="{h}">
+    return f"""<svg class="line-chart" viewBox="0 0 {w} {h}" width="{w}" height="{h}" role="img" aria-label="New pull requests per day, last {n} days: {', '.join(str(c) for c in counts)}">
   <polygon points="{area_pts}" fill="url(#fade)"/>
   <defs><linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
     <stop offset="0%" stop-color="var(--nous-amber)" stop-opacity="0.25"/>
@@ -329,7 +346,7 @@ def merge_rate_panel(state: dict) -> str:
           </div>"""
 
     return f"""    <div class="dash-card third">
-      <h3><i class="hgi hgi-stroke hgi-activity-01"></i> PR Velocity</h3>
+      <h3><i class="hgi hgi-stroke hgi-activity-01" aria-hidden="true"></i> PR Velocity {fresh_stamp(state, "velocity")}</h3>
 {rows}
       <div class="section-label">merge speed by area</div>
       <div class="velo-list">
@@ -369,7 +386,7 @@ def releases_panel(state: dict) -> str:
     cal_html = _release_calendar(calendar)
 
     return f"""    <div class="dash-card right">
-      <h3><i class="hgi hgi-stroke hgi-rocket-01"></i> Release Velocity</h3>
+      <h3><i class="hgi hgi-stroke hgi-rocket-01" aria-hidden="true"></i> Release Velocity {fresh_stamp(state, "releases")}</h3>
       {latest_html}
       {cadence_html}
       <div class="section-label">releases — last 30 days</div>
@@ -422,7 +439,9 @@ def _story_ts(value: str) -> float:
 def news_stories(state: dict) -> list[dict]:
     """Home feed: opened or merged in the last 48 hours. Nothing weeks old."""
     maintainer = state.get("maintainer") or ""
-    now = dt.datetime.now(dt.timezone.utc)
+    # Anchor the 48h window on the data time, not wall-clock, so rebuilding
+    # the same state.json is byte-identical (idempotent builds).
+    now = dt.datetime.fromtimestamp(_story_ts(state.get("generated") or "") or 0, dt.timezone.utc)
     cutoff = now.timestamp() - 48 * 3600
     now_ts = now.timestamp()
     found: dict[tuple, dict] = {}
@@ -475,9 +494,11 @@ def newsletter_html(state: dict) -> str:
     stories = news_stories(state)
     if not stories:
         return ""
-    rows = "\n".join(_hn_row(rank, story) for rank, story in enumerate(stories, 1))
-    return f'''  <section class="hn" id="news" data-repo="{esc(repo)}" aria-label="New pull requests">
-    <div class="hn-head"><h2>New</h2><span>opened or merged in the last 48 hours</span></div>
+    # Only the first rows ship in HTML (fast first paint); app.js fills the
+    # rest from /news.json right after load.
+    rows = "\n".join(_hn_row(rank, story) for rank, story in enumerate(stories[:NEWS_HTML_ROWS], 1))
+    return f'''  <section class="hn" id="news" data-repo="{esc(repo)}" data-total="{len(stories)}" aria-label="New pull requests">
+    <div class="hn-head"><h2>New</h2><span>opened or merged in the last 48 hours {fresh_stamp(state, "news")}</span></div>
     <div class="hn-scroll" id="hn-scroll">
 {rows}
     </div>
@@ -679,11 +700,11 @@ def quality_panel(state: dict) -> str:
     track_note = esc(str(counts.get("watch_definition") or "whole maintainer team"))
     lane_note = esc(str(counts.get("lane_definition") or ""))
 
-    return f'''    <section class="ledger-section full-width" id="quality">
+    return f'''    <section class="ledger-section full-width" id="quality" aria-label="Maintainer program">
       <div class="ledger-heading">
         <div><span class="ledger-kicker">04 / QUALITY</span>
-        <h2><i class="hgi hgi-stroke hgi-verified"></i> Maintainer Program</h2></div>
-        <span class="card-count">{q.get("tracked_open", 0)} tracked · {q.get("removed_total", 0)} resolved · corpus {corpus.get("live_total", 0)}</span>
+        <h2><i class="hgi hgi-stroke hgi-verified" aria-hidden="true"></i> Maintainer Program</h2></div>
+        <span class="card-count"><span data-api="quality.tracked_open">{q.get("tracked_open", 0)}</span> tracked · <span data-api="quality.removed_total">{q.get("removed_total", 0)}</span> resolved · corpus <span data-api="quality.corpus.live_total">{corpus.get("live_total", 0)}</span> {fresh_stamp(state, "quality", api=True)}</span>
       </div>
 
       <div class="section-label">lane scope — two definitions, never mixed</div>
@@ -707,292 +728,664 @@ def quality_panel(state: dict) -> str:
     </section>'''
 
 
-def ecosystem_panel(state: dict) -> str:
-    """05 / ECOSYSTEM — plugin catalog + optional skills, searchable.
+ECO_CATEGORIES = ("plugins", "skills", "mods", "mcp", "tools")
 
-    Data is embedded once as a JSON script tag; the client renders, filters,
-    and paginates. Works for humans (cards, filters, search box) and agents
-    (the same data ships as /ecosystem.json — see the JSON mirror writer).
+
+def fresh_stamp(state: dict, panel: str, api: bool = False) -> str:
+    """Small per-panel freshness stamp. app.js rewrites it to local time and,
+    for API-backed panels, to the live API time when the fetch succeeds."""
+    built = str(state.get("generated") or "")
+    label = f"snapshot {built[11:16]}Z" if len(built) >= 16 else "snapshot"
+    api_attr = ' data-api-panel="1"' if api else ""
+    return (f'<span class="fresh-stamp" data-fresh="{esc(panel)}" data-built="{esc(built)}"{api_attr} '
+            f'title="Build-time snapshot {esc(built)}">{esc(label)}</span>')
+
+
+def ecosystem_panel(state: dict) -> str:
+    """05 / ECOSYSTEM — dashboard entry point into the faceted explorer view.
+
+    The 1,113-item catalog no longer ships inside index.html; the explorer
+    (#ecosystem view, explorer.js) loads per-category shards from data/.
     """
     eco = _as_dict(state.get("catalog"))
-    plugins = _as_list(eco.get("plugins"))
-    skills = _as_list(eco.get("skills"))
     generated = esc(str(eco.get("generated") or ""))
-
-    payload = json.dumps({
-        "plugins": [
-            {
-                "name": str(p.get("name") or ""),
-                "repo": str(p.get("repo") or ""),
-                "sha": str(p.get("sha") or "")[:12],
-                "description": str(p.get("description") or ""),
-                "maintainer": str(p.get("maintainer") or ""),
-                "tier": str(p.get("tier") or ""),
-                "category": str(p.get("category") or ""),
-                "docs_url": str(p.get("docs_url") or ""),
-                "capabilities": [str(c) for c in _as_list(p.get("capabilities"))],
-            } for p in plugins if isinstance(p, dict)
-        ],
-        "skills": [
-            {
-                "slug": str(s.get("slug") or ""),
-                "category": str(s.get("category") or ""),
-                "name": str(s.get("name") or ""),
-                "description": str(s.get("description") or ""),
-                "github_url": str(s.get("github_url") or ""),
-            } for s in skills if isinstance(s, dict)
-        ],
-    }, separators=(",", ":"))
-
-    return f'''    <section class="ledger-section full-width" id="ecosystem">
+    total = sum(len(_as_list(eco.get(c))) for c in ECO_CATEGORIES)
+    links = "\n".join(
+        f'        <a class="eco-cat-link" href="#ecosystem?cat={c}"><span class="eco-cat-n" '
+        f'data-api="ecosystem.{c}">{len(_as_list(eco.get(c))):,}</span> <span>{c}</span></a>'
+        for c in ECO_CATEGORIES)
+    return f'''    <section class="ledger-section full-width" id="ecosystem-panel" aria-labelledby="eco-h">
       <div class="ledger-heading">
         <div><span class="ledger-kicker">05 / ECOSYSTEM</span>
-        <h2><i class="hgi hgi-stroke hgi-grid"></i> Plugins &amp; Skills</h2></div>
-        <span class="card-count">{len(plugins)} plugins · {len(skills)} skills · catalog {generated[:10]}</span>
+        <h2 id="eco-h"><i class="hgi hgi-stroke hgi-grid" aria-hidden="true"></i> Ecosystem explorer</h2></div>
+        <span class="card-count">{total:,} free items · catalog {generated[:10]} {fresh_stamp(state, "ecosystem", api=True)}</span>
       </div>
-      <div class="eco-controls">
-        <input id="eco-search" class="search-input" type="search"
-               placeholder="Search plugins and skills — name, description, maintainer, category…" aria-label="Search ecosystem">
-        <div class="eco-tabs" role="tablist">
-          <button class="eco-tab is-on" id="eco-tab-plugins" role="tab" aria-selected="true">Plugins ({len(plugins)})</button>
-          <button class="eco-tab" id="eco-tab-skills" role="tab" aria-selected="false">Skills ({len(skills)})</button>
-        </div>
-        <div class="chips" id="eco-categories"></div>
+      <div class="eco-cat-grid">
+{links}
       </div>
-      <div id="eco-list" class="eco-list" aria-live="polite"></div>
-      <div class="eco-pager" id="eco-pager"></div>
-      <p class="eco-note">Source: <a href="https://github.com/NousResearch/hermes-agent/tree/main/plugin-catalog" target="_blank" rel="noopener">plugin-catalog</a> (SHA-pinned, maintainer-merged) and <a href="https://github.com/NousResearch/hermes-agent/tree/main/optional-skills" target="_blank" rel="noopener">optional-skills</a>. Machine mirror: <a href="/ecosystem.json">/ecosystem.json</a></p>
-    </section>
-    <script id="eco-data" type="application/json">{payload}</script>
-    <script>
-(function() {{
-  var node = document.getElementById('eco-data');
-  if (!node) return;
-  var data;
-  try {{ data = JSON.parse(node.textContent); }} catch (e) {{ return; }}
-  var plugins = data.plugins || [];
-  var skills = data.skills || [];
-  var PER = 24;
-  var state = {{ mode: 'plugins', page: 0, query: '', cat: '' }};
-
-  var list = document.getElementById('eco-list');
-  var pager = document.getElementById('eco-pager');
-  var search = document.getElementById('eco-search');
-  var cats = document.getElementById('eco-categories');
-  if (!list) return;
-
-  function esc(s) {{
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {{
-      return {{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}}[c];
-    }});
-  }}
-
-  function rows() {{ return state.mode === 'plugins' ? plugins : skills; }}
-
-  function categories() {{
-    var seen = {{}};
-    rows().forEach(function(r) {{
-      var c = r.category || r.tier || '';
-      if (c) seen[c] = (seen[c] || 0) + 1;
-    }});
-    return Object.keys(seen).sort().map(function(k) {{ return [k, seen[k]]; }});
-  }}
-
-  function filtered() {{
-    var q = state.query.toLowerCase().trim();
-    return rows().filter(function(r) {{
-      if (state.cat && (r.category || r.tier) !== state.cat) return false;
-      if (!q) return true;
-      var hay = [r.name, r.slug, r.description, r.maintainer, r.category,
-                 r.tier, r.repo].join(' ').toLowerCase();
-      return hay.indexOf(q) !== -1;
-    }});
-  }}
-
-  function renderCats() {{
-    if (!cats) return;
-    var items = categories();
-    var html = ['<button class="chip' + (state.cat ? '' : ' is-on') +
-                '" data-cat="">' + 'all' + '</button>'];
-    items.forEach(function(pair) {{
-      var on = state.cat === pair[0] ? ' is-on' : '';
-      html.push('<button class="chip' + on + '" data-cat="' + esc(pair[0]) + '">' +
-                esc(pair[0]) + ' <span class="bar-count">' + pair[1] + '</span></button>');
-    }});
-    cats.innerHTML = html.join('');
-  }}
-
-  function render() {{
-    renderCats();
-    var rowsF = filtered();
-    var pages = Math.max(1, Math.ceil(rowsF.length / PER));
-    if (state.page >= pages) state.page = 0;
-    var slice = rowsF.slice(state.page * PER, state.page * PER + PER);
-    var html = slice.map(function(r) {{
-      if (state.mode === 'plugins') {{
-        var link = r.repo || r.docs_url || '#';
-        return '<div class="eco-card" data-search="' + esc((r.name+' '+r.description+' '+r.maintainer+' '+r.category+' '+r.tier).toLowerCase()) + '">' +
-          '<a class="eco-title" href="' + esc(link) + '" target="_blank" rel="noopener">' + esc(r.name) + '</a>' +
-          '<p class="eco-desc">' + esc((r.description || '').slice(0, 160)) + '</p>' +
-          '<p class="eco-meta"><span class="eco-chip">' + esc(r.tier || 'community') + '</span>' +
-          (r.category ? '<span class="eco-chip">' + esc(r.category) + '</span>' : '') +
-          (r.maintainer ? '<span class="eco-by">by ' + esc(r.maintainer) + '</span>' : '') + '</p></div>';
-      }}
-      return '<div class="eco-card">' +
-        '<a class="eco-title" href="' + esc(r.github_url || '#') + '" target="_blank" rel="noopener">' + esc(r.name) + '</a>' +
-        '<p class="eco-desc">' + esc((r.description || '').slice(0, 160)) + '</p>' +
-        '<p class="eco-meta"><span class="eco-chip">' + esc(r.category) + '</span></p></div>';
-    }});
-    list.innerHTML = html.length ? html.join('')
-      : '<p class="eco-note">No matches.</p>';
-
-    var pH = [];
-    for (var i = 0; i < pages && pages > 1; i++) {{
-      pH.push('<button class="eco-page' + (i === state.page ? ' is-on' : '') +
-              '" data-page="' + i + '">' + (i + 1) + '</button>');
-    }}
-    pager.innerHTML = pages > 1 ? pH.join('') : '';
-  }}
-
-  document.addEventListener('click', function(e) {{
-    var t = e.target.closest ? e.target.closest('button') : null;
-    if (!t) return;
-    if (t.id === 'eco-tab-plugins' || t.id === 'eco-tab-skills') {{
-      state.mode = t.id === 'eco-tab-plugins' ? 'plugins' : 'skills';
-      state.page = 0; state.cat = '';
-      var p = document.getElementById('eco-tab-plugins');
-      var s = document.getElementById('eco-tab-skills');
-      p.className = 'eco-tab' + (state.mode === 'plugins' ? ' is-on' : '');
-      s.className = 'eco-tab' + (state.mode === 'skills' ? ' is-on' : '');
-      p.setAttribute('aria-selected', state.mode === 'plugins');
-      s.setAttribute('aria-selected', state.mode === 'skills');
-      render(); return;
-    }}
-    if (t.hasAttribute('data-cat')) {{
-      state.cat = t.getAttribute('data-cat'); state.page = 0;
-      render(); return;
-    }}
-    if (t.hasAttribute('data-page')) {{
-      state.page = parseInt(t.getAttribute('data-page'), 10) || 0;
-      render();
-      var top = document.getElementById('ecosystem');
-      if (top && top.scrollIntoView) top.scrollIntoView();
-    }}
-  }});
-
-  if (search) {{
-    var timer = null;
-    search.addEventListener('input', function() {{
-      clearTimeout(timer);
-      timer = setTimeout(function() {{
-        state.query = search.value; state.page = 0; render();
-      }}, 150);
-    }});
-  }}
-
-  render();
-}})();
-    </script>'''
+      <p class="eco-note"><a href="#ecosystem">Open the explorer</a> — filter by category and license, sort by stars, and see health flags. Free items only, by policy. Machine mirror: <a href="/ecosystem.json">/ecosystem.json</a></p>
+    </section>'''
 
 
 def prarchive_panel(state: dict) -> str:
-    """06 / ARCHIVE — last 1,000 merged PRs, 100 per page.
-
-    Data ships as one static file (/prs_archive.json, ~145 KB) built by
-    prs_archive_build.py from the backfill corpus; the client slices pages.
-    Older-than-1,000 = API territory. Dual-browsing: same JSON serves agents.
-    """
-    arch = {}
-    try:
-        arch = json.loads((ROOT / "prs_archive.json").read_text(encoding="utf-8"))
-    except Exception:
-        arch = {"total": 0, "pages": 1, "per_page": 100, "prs": []}
+    """06 / ARCHIVE — last 1,000 PRs, 100 per page, loaded from data/archive.json."""
+    arch = _read_archive()
     total = arch.get("total") or 0
-    pages = arch.get("pages") or 1
     per = arch.get("per_page") or 100
-    generated = esc(str(state.get("generated") or "")[:10])
-
-    prs_json = json.dumps(arch.get("prs") or [], separators=(",", ":"))
-
-    return f'''    <section class="ledger-section full-width" id="prarchive">
+    generated = esc(str(arch.get("generated") or "")[:10])
+    return f'''    <section class="ledger-section full-width" id="prarchive" aria-labelledby="prarch-h" data-per="{int(per)}">
       <div class="ledger-heading">
         <div><span class="ledger-kicker">06 / ARCHIVE</span>
-        <h2><i class="hgi hgi-stroke hgi-history"></i> PR Archive</h2></div>
-        <span class="card-count">{total:,} PRs · {per}/page · data {generated}</span>
+        <h2 id="prarch-h"><i class="hgi hgi-stroke hgi-history" aria-hidden="true"></i> PR Archive</h2></div>
+        <span class="card-count">{total:,} PRs · {per}/page · data {generated} {fresh_stamp(state, "archive")}</span>
       </div>
       <div class="eco-controls">
+        <label class="sr-only" for="prarch-search">Search archived PRs</label>
         <input id="prarch-search" class="search-input" type="search"
-               placeholder="Search archived PRs — number, title, author…" aria-label="Search PR archive">
+               placeholder="Search archived PRs — number, title, author…">
       </div>
-      <div id="prarch-list" class="prs-list" aria-live="polite"></div>
-      <div class="eco-pager" id="prarch-pager"></div>
-      <p class="eco-note">Most recent {total:,} merged/open PRs. Older PRs: the <a href="/prs_archive.json">/prs_archive.json</a> mirror and the forthcoming API.</p>
-    </section>
-    <script id="prarch-data" type="application/json">{prs_json}</script>
-    <script>
-(function() {{
-      var PER = {per};
-(function() {{
-  var node = document.getElementById('prarch-data');
-  if (!node) return;
-  var prs;
-  try {{ prs = JSON.parse(node.textContent); }} catch (e) {{ return; }}
-  var page = 0, query = '';
-  var list = document.getElementById('prarch-list');
-  var pager = document.getElementById('prarch-pager');
-  var search = document.getElementById('prarch-search');
-  if (!list) return;
+      <div id="prarch-list" class="prs-list" aria-live="polite"><p class="eco-note">Loading the archive…</p></div>
+      <div class="eco-pager" id="prarch-pager" role="group" aria-label="Archive pages"></div>
+      <p class="eco-note">Most recent {total:,} archived PRs. Click a row for details. Older records: the API with a key — see <a href="#docs">API docs</a>. Mirror: <a href="/prs_archive.json">/prs_archive.json</a></p>
+    </section>'''
 
-  function esc(s) {{
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {{
-      return {{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}}[c];
-    }});
-  }}
 
-  function filtered() {{
-    var q = query.toLowerCase().trim();
-    if (!q) return prs;
-    return prs.filter(function(r) {{
-      return ('#'+r.n+' '+r.t+' '+r.a).toLowerCase().indexOf(q) !== -1;
-    }});
-  }}
+def _read_archive() -> dict:
+    try:
+        arch = json.loads((ROOT / "prs_archive.json").read_text(encoding="utf-8"))
+        if isinstance(arch, dict):
+            return arch
+    except Exception:
+        pass
+    return {"total": 0, "pages": 1, "per_page": 100, "prs": []}
 
-  function render() {{
-    var f = filtered();
-    var pages = Math.max(1, Math.ceil(f.length / PER));
-    if (page >= pages) page = 0;
-    var slice = f.slice(page*PER, page*PER+PER);
-    list.innerHTML = slice.length ? slice.map(function(r) {{
-      return '<div class="prs-row"><a class="prs-main" href="https://github.com/NousResearch/hermes-agent/pull/'+r.n+'" target="_blank" rel="noopener">' +
-        '<span class="prs-num">#'+r.n+'</span><span class="prs-title">'+esc(r.t)+'</span>' +
-        '<span class="prs-status '+(r.s==='open'?'prs-open':'prs-approved')+'">'+r.s+'</span>' +
-        '<span class="prs-author">'+esc(r.a)+'</span><span class="prs-time">'+esc(r.m)+'</span></a></div>';
-    }}).join('') : '<p class="eco-note">No matches.</p>';
-    var pH = [];
-    for (var i=0;i<pages && pages>1;i++) {{
-      pH.push('<button class="eco-page'+(i===page?' is-on':'')+'" data-page="'+i+'">'+(i+1)+'</button>');
-    }}
-    pager.innerHTML = pages>1 ? pH.join('') : '';
-  }}
 
-  document.addEventListener('click', function(e) {{
-    var t = e.target.closest ? e.target.closest('button[data-page]') : null;
-    if (!t) return;
-    page = parseInt(t.getAttribute('data-page'),10)||0;
-    render();
-    var top = document.getElementById('prarchive');
-    if (top && top.scrollIntoView) top.scrollIntoView();
-  }});
-  if (search) {{
-    var timer=null;
-    search.addEventListener('input', function() {{
-      clearTimeout(timer);
-      timer=setTimeout(function(){{ query=search.value; page=0; render(); }},150);
-    }});
-  }}
-  render();
-}})();
-    </script>'''
+# ── trends: velocity sparklines + retention cohorts (build-time inline SVG) ──
+
+def _week_start(day: dt.date) -> dt.date:
+    return day - dt.timedelta(days=day.weekday())
+
+
+def _parse_day(value) -> dt.date | None:
+    try:
+        return dt.date.fromisoformat(str(value)[:10])
+    except (TypeError, ValueError):
+        return None
+
+
+def _search_href(**params) -> str:
+    from urllib.parse import quote
+    parts = [f"{k}={quote(str(v), safe='')}" for k, v in params.items() if v not in (None, "")]
+    return "#search?" + "&".join(parts)
+
+
+def merge_history(state: dict, previous: dict) -> dict:
+    """Accumulate per-day merge counts and backlog snapshots across builds.
+
+    Keyed by data date (never wall-clock), so re-running a build with the
+    same state.json produces byte-identical output.
+    """
+    merges = dict(_as_dict(previous.get("merges")))
+    for day, count in _as_dict(_as_dict(state.get("merge_rate")).get("day_counts")).items():
+        if _parse_day(day) and isinstance(count, (int, float)):
+            merges[str(day)[:10]] = int(count)
+    backlog = dict(_as_dict(previous.get("backlog")))
+    gen_day = _parse_day(state.get("generated"))
+    total_open = _as_dict(state.get("backlog")).get("total_open")
+    if gen_day and isinstance(total_open, int):
+        backlog[gen_day.isoformat()] = total_open
+    return {
+        "note": "Accumulated by build.py from state.json on each build: merges/day "
+                "(GitHub search, all authors) and backlog total per build day.",
+        "merges": dict(sorted(merges.items())),
+        "backlog": dict(sorted(backlog.items())),
+    }
+
+
+def archive_merges(state: dict, arch: dict) -> dict[int, tuple[dt.date, str]]:
+    """Browsable merged PRs: archive rows + the live blue-strip rows."""
+    out: dict[int, tuple[dt.date, str]] = {}
+    for row in _as_list(arch.get("prs")):
+        if not isinstance(row, dict) or row.get("s") != "merged":
+            continue
+        day = _parse_day(row.get("m"))
+        if day and row.get("n"):
+            out[int(row["n"])] = (day, str(row.get("a") or ""))
+    for row in _as_list(state.get("merged")):
+        if not isinstance(row, dict):
+            continue
+        day = _parse_day(row.get("merged_at"))
+        if day and row.get("number"):
+            out[int(row["number"])] = (day, str(row.get("author") or ""))
+    return out
+
+
+def compute_insights(state: dict, history: dict, arch: dict) -> dict:
+    gen_day = _parse_day(state.get("generated")) or dt.date(1970, 1, 1)
+    browsable = archive_merges(state, arch)
+    merges = {_parse_day(k): v for k, v in _as_dict(history.get("merges")).items()}
+
+    # merges/week — last 16 weeks ending with the data week
+    last_week = _week_start(gen_day)
+    weeks = []
+    for i in range(15, -1, -1):
+        start = last_week - dt.timedelta(weeks=i)
+        days = [start + dt.timedelta(days=d) for d in range(7)]
+        elapsed = [d for d in days if d <= gen_day]
+        covered = [d for d in elapsed if d in merges]
+        merged = sum(merges[d] for d in covered)
+        rec = sum(1 for day, _a in browsable.values() if start <= day < start + dt.timedelta(days=7))
+        weeks.append({
+            "week": start.isoformat(),
+            "merged": merged,
+            "browsable": rec,
+            "days_covered": len(covered),
+            "days_elapsed": len(elapsed),
+            "in_progress": len(elapsed) < 7,
+            "count_gap": len(covered) < len(elapsed),
+            "archive_partial": rec < merged,
+        })
+
+    # backlog trend — last 30 days of build-day snapshots
+    backlog = {_parse_day(k): v for k, v in _as_dict(history.get("backlog")).items()}
+    points = []
+    for i in range(29, -1, -1):
+        day = gen_day - dt.timedelta(days=i)
+        points.append({"date": day.isoformat(), "open": backlog.get(day)})
+
+    # retention cohorts from the archive (first merge month within the archive)
+    by_author: dict[str, list[dt.date]] = {}
+    for day, author in browsable.values():
+        if author:
+            by_author.setdefault(author, []).append(day)
+    cohorts: dict[str, dict] = {}
+    for author, days in by_author.items():
+        days.sort()
+        month = days[0].strftime("%Y-%m")
+        c = cohorts.setdefault(month, {"month": month, "firsts": 0, "returned": 0, "authors": []})
+        c["firsts"] += 1
+        c["authors"].append(author)
+        if any(d > days[0] for d in days[1:]):
+            c["returned"] += 1
+    cohort_rows = []
+    for month in sorted(cohorts):
+        c = cohorts[month]
+        c["authors"].sort(key=str.lower)
+        c["share"] = round(c["returned"] / c["firsts"], 3) if c["firsts"] else 0
+        cohort_rows.append(c)
+
+    return {
+        "generated": state.get("generated") or "",
+        "weeks": weeks,
+        "backlog": points,
+        "cohorts": cohort_rows,
+        "cohort_definition": ("Cohort = authors whose first merge in the browsable archive falls in "
+                              "that month; returned = merged again on a later day within the archive."),
+        "browsable_merges": len(browsable),
+    }
+
+
+def _fmt_week(iso: str) -> str:
+    day = _parse_day(iso)
+    return f"{day.strftime('%b')} {day.day}" if day else iso
+
+
+def velocity_svg(ins: dict) -> str:
+    weeks = ins["weeks"]
+    peak = max([w["merged"] for w in weeks] + [1])
+    w, h, pad_b, pad_t = 480, 120, 22, 10
+    bw = w / len(weeks)
+    gh = h - pad_b - pad_t
+    bars = []
+    for i, wk in enumerate(weeks):
+        x = i * bw + 2
+        full = gh * wk["merged"] / peak
+        part = gh * min(wk["browsable"], wk["merged"]) / peak if wk["merged"] else 0
+        y = pad_t + gh - full
+        end = (_parse_day(wk["week"]) + dt.timedelta(days=6)).isoformat()
+        href = _search_href(lane="prs", state="merged", **{"from": wk["week"], "to": end})
+        notes = []
+        if wk["in_progress"]:
+            notes.append("week in progress")
+        if wk["count_gap"]:
+            notes.append(f"counts for {wk['days_covered']} of {wk['days_elapsed']} days")
+        if wk["archive_partial"]:
+            notes.append(f"{wk['browsable']:,} of {wk['merged']:,} browsable in the archive")
+        if not wk["days_covered"]:
+            notes = [f"{wk['browsable']:,} browsable in the archive"] if wk["browsable"] else []
+            head = f"Week of {_fmt_week(wk['week'])}: no merge counts recorded (gap)"
+        else:
+            head = f"Week of {_fmt_week(wk['week'])}: {wk['merged']:,} merged"
+        label = head + (" — " + "; ".join(notes) if notes else "") + ". Open in search."
+        cls = "vb" + (" vb-gap" if wk["count_gap"] or not wk["merged"] else "")
+        marker = ""
+        if wk["archive_partial"]:
+            marker = (f'<rect class="gap-mark" x="{x:.1f}" y="{h - pad_b + 3}" width="{bw - 4:.1f}" '
+                      f'height="3"/>')
+        if not wk["merged"]:
+            y, full = pad_t + gh - 2, 2
+        bars.append(
+            f'<a href="{esc(href)}" aria-label="{esc(label)}"><title>{esc(label)}</title>'
+            f'<rect class="vb-hit" x="{x - 2:.1f}" y="{pad_t}" width="{bw:.1f}" height="{h - pad_t:.1f}"/>'
+            f'<rect class="{cls}" x="{x:.1f}" y="{y:.1f}" width="{bw - 4:.1f}" height="{full:.1f}"/>'
+            f'<rect class="vb-rec" x="{x:.1f}" y="{pad_t + gh - part:.1f}" width="{bw - 4:.1f}" height="{part:.1f}"/>'
+            f'{marker}</a>')
+    first, last = weeks[0]["week"], weeks[-1]["week"]
+    return (f'<svg class="spark" viewBox="0 0 {w} {h}" role="group" aria-label="Merges per week, '
+            f'{esc(_fmt_week(first))} to {esc(_fmt_week(last))}">'
+            + "".join(bars)
+            + f'<text class="chart-label" x="0" y="{h - 2}">{esc(_fmt_week(first))}</text>'
+            + f'<text class="chart-label" x="{w}" y="{h - 2}" text-anchor="end">{esc(_fmt_week(last))}</text>'
+            + f'<text class="chart-label" x="0" y="{pad_t - 1}">{peak:,}/wk</text></svg>')
+
+
+def backlog_svg(ins: dict) -> str:
+    pts = ins["backlog"]
+    vals = [p["open"] for p in pts if isinstance(p["open"], int)]
+    w, h, pad_b, pad_t = 480, 90, 22, 10
+    gh = h - pad_b - pad_t
+    if not vals:
+        return '<p class="eco-note">No backlog snapshots recorded yet.</p>'
+    lo, hi = min(vals), max(vals)
+    span = (hi - lo) or 1
+    step = w / (len(pts) - 1 or 1)
+    marks, line, seg = [], [], []
+    for i, p in enumerate(pts):
+        x = i * step
+        day = _parse_day(p["date"])
+        start = _week_start(day)
+        href = _search_href(lane="prs", **{"from": start.isoformat(),
+                                           "to": (start + dt.timedelta(days=6)).isoformat()})
+        if not isinstance(p["open"], int):
+            if seg:
+                line.append(seg)
+                seg = []
+            label = f"{_fmt_week(p['date'])}: no snapshot recorded (gap). Open that week in search."
+            marks.append(f'<a href="{esc(href)}" aria-label="{esc(label)}"><title>{esc(label)}</title>'
+                         f'<rect class="vb-hit" x="{x - step / 2:.1f}" y="{pad_t}" width="{step:.1f}" height="{h - pad_t:.1f}"/>'
+                         f'<rect class="gap-mark" x="{x - 1.5:.1f}" y="{h - pad_b + 3}" width="3" height="3"/></a>')
+            continue
+        y = pad_t + gh - gh * (p["open"] - lo) / span if hi != lo else pad_t + gh / 2
+        seg.append(f"{x:.1f},{y:.1f}")
+        label = f"{_fmt_week(p['date'])}: {p['open']:,} open PRs in the backlog panel. Open that week in search."
+        marks.append(f'<a href="{esc(href)}" aria-label="{esc(label)}"><title>{esc(label)}</title>'
+                     f'<rect class="vb-hit" x="{x - step / 2:.1f}" y="{pad_t}" width="{step:.1f}" height="{h - pad_t:.1f}"/>'
+                     f'<circle class="bp" cx="{x:.1f}" cy="{y:.1f}" r="3"/></a>')
+    if seg:
+        line.append(seg)
+    polys = "".join(f'<polyline class="bl" points="{" ".join(s)}"/>' for s in line if len(s) > 1)
+    return (f'<svg class="spark" viewBox="-4 0 {w + 8} {h}" role="group" aria-label="Backlog trend, last 30 days">'
+            + polys + "".join(marks)
+            + f'<text class="chart-label" x="0" y="{h - 2}">{esc(_fmt_week(pts[0]["date"]))}</text>'
+            + f'<text class="chart-label" x="{w}" y="{h - 2}" text-anchor="end">{esc(_fmt_week(pts[-1]["date"]))}</text>'
+            + f'<text class="chart-label" x="0" y="{pad_t - 1}">{hi:,} max</text></svg>')
+
+
+def cohort_svg(ins: dict) -> str:
+    rows = ins["cohorts"]
+    if not rows:
+        return '<p class="eco-note">No merged PRs in the archive yet.</p>'
+    w, h, pad_b, pad_t = 480, 110, 22, 12
+    gh = h - pad_b - pad_t
+    bw = min(80, w / len(rows))
+    out = []
+    for i, c in enumerate(rows):
+        x = i * bw + 4
+        bar = gh * c["share"]
+        href = _search_href(lane="prs", state="merged", cohort=c["month"])
+        pct = round(c["share"] * 100)
+        label = (f"{c['month']} cohort: {c['returned']} of {c['firsts']} first-time authors "
+                 f"merged again ({pct}%). Open the cohort in search.")
+        out.append(f'<a href="{esc(href)}" aria-label="{esc(label)}"><title>{esc(label)}</title>'
+                   f'<rect class="vb-hit" x="{x - 4:.1f}" y="0" width="{bw:.1f}" height="{h}"/>'
+                   f'<rect class="cb-bg" x="{x:.1f}" y="{pad_t}" width="{bw - 8:.1f}" height="{gh}"/>'
+                   f'<rect class="cb" x="{x:.1f}" y="{pad_t + gh - bar:.1f}" width="{bw - 8:.1f}" height="{bar:.1f}"/>'
+                   f'<text class="chart-label" x="{x + (bw - 8) / 2:.1f}" y="{pad_t + gh - bar - 2:.1f}" text-anchor="middle">{pct}%</text>'
+                   f'<text class="chart-label" x="{x + (bw - 8) / 2:.1f}" y="{h - 2}" text-anchor="middle">{esc(c["month"])} · {c["firsts"]}</text></a>')
+    return (f'<svg class="spark" viewBox="0 0 {w} {h}" role="group" aria-label="Contributor retention by first-merge month">'
+            + "".join(out) + "</svg>")
+
+
+def trends_panel(state: dict, ins: dict) -> str:
+    return f'''    <section class="ledger-section full-width" id="trends" aria-labelledby="trends-h">
+      <div class="ledger-heading">
+        <div><span class="ledger-kicker">07 / TRENDS</span>
+        <h2 id="trends-h"><i class="hgi hgi-stroke hgi-chart-line-data-01" aria-hidden="true"></i> Velocity &amp; retention</h2></div>
+        <span class="card-count">{fresh_stamp(state, "trends")}</span>
+      </div>
+      <div class="trend-grid">
+        <figure class="trend">
+          <figcaption>Merges per week — all authors</figcaption>
+          {velocity_svg(ins)}
+          <p class="chart-legend"><span class="lg lg-bar"></span> merged (GitHub search counts) <span class="lg lg-rec"></span> browsable in the archive <span class="lg lg-gap"></span> archive covers only part of that week. Dashed bars: counts missing for some days. Click a bar to search that week.</p>
+        </figure>
+        <figure class="trend">
+          <figcaption>PR backlog — one snapshot per build day</figcaption>
+          {backlog_svg(ins)}
+          <p class="chart-legend"><span class="lg lg-gap"></span> no snapshot that day. The trend fills in as daily builds accumulate. Click a point to search that week.</p>
+        </figure>
+        <figure class="trend">
+          <figcaption>Contributor retention — share of first-time authors who merged again</figcaption>
+          {cohort_svg(ins)}
+          <p class="chart-legend">{esc(ins["cohort_definition"])} Later cohorts have had less time to return. Click a bar to search the cohort.</p>
+        </figure>
+      </div>
+    </section>'''
+
+
+# ── API docs (build-time HTML; curl builder is wired by app.js) ─────────────
+
+API_BASE = "https://nous.minddragonlabs.com/api/v1"
+API_ENDPOINTS = [
+    # (path, param, summary, public behaviour, keyed behaviour)
+    ("/overview", "", "Current counts and lane state: watch/lane counts, quality summary, ecosystem counts.",
+     "Full current snapshot.", "Same."),
+    ("/prs", "page", "Pull-request records, 100 per page.",
+     "Only records from the last 6 hours (often an empty list).", "Full history with X-Nous-Api-Key."),
+    ("/prs/{number}", "number", "One pull-request record.",
+     "Only when the record is inside the 6-hour window; otherwise an error (observed: 404).",
+     "Any archived PR with X-Nous-Api-Key."),
+    ("/corpus/stats", "", "Quality-corpus counts (live, curated, last batch, test discipline).",
+     "Counts only.", "Labels, fix patterns and lessons with X-Nous-Api-Key."),
+    ("/ecosystem/plugins", "", "Free-only ecosystem catalog: plugins.", "Current catalog.", "Same."),
+    ("/ecosystem/skills", "", "Free-only ecosystem catalog: skills.", "Current catalog.", "Same."),
+    ("/ecosystem/mods", "", "Free-only ecosystem catalog: mods.", "Current catalog.", "Same."),
+    ("/ecosystem/mcp", "", "Free-only ecosystem catalog: MCP servers.", "Current catalog.", "Same."),
+    ("/ecosystem/tools", "", "Free-only ecosystem catalog: tools.", "Current catalog.", "Same."),
+    ("/search", "q", "Search the ecosystem catalog and PR records.",
+     "Ecosystem matches + PRs from the last 6 hours (prs_history_truncated: true).",
+     "PR history included with X-Nous-Api-Key."),
+    ("/usage", "", "Plan, rate limit (60 requests/minute) and monthly call credit.", "Free plan.", "Your key's plan."),
+    ("/auth/check", "", "Validate a key. Returns {\"tier\", \"valid\"}.",
+     "{\"tier\":\"public\",\"valid\":false}", "{\"valid\":true} for a valid key."),
+]
+
+
+def docs_html() -> str:
+    rows = []
+    options = []
+    for path, param, summary, public, keyed in API_ENDPOINTS:
+        rows.append(f'''        <tr><th scope="row"><code>GET {esc(path)}</code></th><td>{esc(summary)}</td><td>{esc(public)}</td><td>{esc(keyed)}</td></tr>''')
+        options.append(f'<option value="{esc(path)}" data-param="{esc(param)}">{esc(path)}</option>')
+    return f'''  <div class="doc-page" id="api-docs">
+    <h2 id="docs-h">API docs</h2>
+    <p>Base URL: <code>{API_BASE}</code>. JSON over HTTPS, GET only. The index lives at <a href="https://nous.minddragonlabs.com/api"><code>/api</code></a>.</p>
+    <h3>Access tiers</h3>
+    <ul class="doc-list">
+      <li><strong>Public (no key, free):</strong> current state plus records from the <strong>last 6 hours</strong>. Responses say <code>"tier":"public","public_window_hours":6</code>.</li>
+      <li><strong>Historical (key):</strong> send <code>X-Nous-Api-Key: &lt;key&gt;</code> for records older than 6 hours. Keys are issued by the site operator.</li>
+      <li><strong>Attribution:</strong> send <code>X-Nous-Attribution: &lt;your app name&gt;</code> on every call. It is required by policy. Every response also carries an <code>X-Nous-Attribution</code> header with the data credit — keep it with the data.</li>
+      <li><strong>Limits:</strong> 60 requests/minute; poll at most once a minute. Data refreshes hourly and is edge-cached up to 5 minutes.</li>
+      <li><strong>Browsers:</strong> GET responses allow any origin, but CORS preflight (OPTIONS) is not supported. Cross-origin browser code cannot send custom headers, so call from a server or CLI.</li>
+    </ul>
+    <h3>Endpoints</h3>
+    <div class="table-wrap"><table class="doc-table">
+      <caption class="sr-only">API v1 endpoints</caption>
+      <thead><tr><th scope="col">Endpoint</th><th scope="col">What</th><th scope="col">Public tier</th><th scope="col">With key</th></tr></thead>
+      <tbody>
+{chr(10).join(rows)}
+      </tbody>
+    </table></div>
+    <h3 id="curl-h">curl builder</h3>
+    <form class="curl-builder" id="curl-builder" aria-labelledby="curl-h">
+      <label>Endpoint <select id="cb-endpoint">{"".join(options)}</select></label>
+      <label id="cb-param-wrap" hidden><span id="cb-param-label">Parameter</span> <input id="cb-param" type="text" autocomplete="off"></label>
+      <label>Attribution <input id="cb-attr" type="text" value="my-app" autocomplete="off"></label>
+      <label class="cb-check"><input id="cb-key" type="checkbox"> include API key (reads <code>$NOUS_API_KEY</code>)</label>
+      <pre class="curl-out" id="cb-out" tabindex="0" aria-live="polite">curl -sS -H 'X-Nous-Attribution: my-app' '{API_BASE}/overview'</pre>
+      <button type="button" class="chip" id="cb-copy">Copy</button> <span class="hn-meta" id="cb-copied" role="status"></span>
+    </form>
+    <p class="eco-note">Errors return JSON: unknown paths give <code>404 {{"error":"not_found"}}</code>. Policy: <a href="/llms.txt">/llms.txt</a> · <a href="/aillm.txt">/aillm.txt</a>.</p>
+  </div>'''
+
+
+# ── provenance (build-time; can not go stale) ───────────────────────────────
+
+SHARD_BUDGET = 350 * 1024
+
+
+def provenance(state: dict, db_meta: dict, link_summary: dict, sizes: list[tuple[str, int, int]],
+               issues_lane: dict) -> dict:
+    q = _as_dict(state.get("quality"))
+    corpus = _as_dict(q.get("corpus"))
+    counts = _as_dict(q.get("counts"))
+    eco = _as_dict(state.get("catalog"))
+    issues = _as_dict(state.get("issues"))
+    eco_counts = {c: len(_as_list(eco.get(c))) for c in ECO_CATEGORIES}
+    issue_total = (issues.get("total_open") or 0) + (issues.get("total_closed") or 0)
+    return {
+        "generated": state.get("generated") or "",
+        "datasets": [
+            {"name": "Pull requests", "source": "GitHub REST/GraphQL via gh CLI, read-only backfill",
+             "coverage": f"{db_meta.get('prs', 0):,} PRs indexed — complete backfill",
+             "status": "complete", "indexed_at": db_meta.get("built_at", ""),
+             "gaps": "Browsable on this site: the 1,000-PR archive plus live lists. Full records "
+                     "older than 6 hours require an API key."},
+            {"name": "Issues", "source": "GitHub via gh CLI, read-only backfill",
+             "coverage": f"{issues_lane.get('indexed', 0):,} of {issue_total:,} issues indexed — backfill in progress",
+             "status": "partial", "indexed_at": db_meta.get("built_at", ""),
+             "gaps": "Older issues not yet backfilled; the 100 most recently updated open issues are always live."},
+            {"name": "Ecosystem catalog", "source": "plugin-catalog, optional-skills and GitHub topic search",
+             "coverage": f"{sum(eco_counts.values()):,} items — " + ", ".join(f"{v:,} {k}" for k, v in eco_counts.items()),
+             "status": "complete (free-only)", "indexed_at": eco.get("generated") or "",
+             "gaps": "Free items only, by policy; paid offerings are not listed. Link health: "
+                     + (f"{link_summary.get('checked', 0):,} checked, {link_summary.get('dead', 0):,} dead, "
+                        f"{link_summary.get('unknown', 0):,} unknown"
+                        if link_summary.get("checked") else "not checked yet") + "."},
+            {"name": "Quality corpus", "source": "Maintainer quality program (local)",
+             "coverage": f"{corpus.get('live_total', 0):,} entries live · {corpus.get('curated_total', 0):,} curated",
+             "status": "counts public", "indexed_at": q.get("generated") or "",
+             "gaps": "Only counts and document titles are public; content requires an API key."},
+            {"name": "Watch lane", "source": "nous-pr-bot watch ledger (read-only)",
+             "coverage": f"{counts.get('watch_tracked', q.get('tracked_open', 0)):,} open PRs tracked · "
+                         f"{q.get('removed_total', 0):,} resolved",
+             "status": "read-only", "indexed_at": q.get("generated") or "",
+             "gaps": "Never comments, reviews or reacts on GitHub. Scope: " + str(counts.get("watch_definition") or "")},
+            {"name": "Live dashboard state", "source": "fetch_state.py (gh CLI)",
+             "coverage": "strips, backlog, releases, merge rate, recent issues/PRs, contributors",
+             "status": "snapshot", "indexed_at": state.get("generated") or "",
+             "gaps": "Panels backed by /api/v1/overview update in the browser when the API is newer."},
+        ],
+        "budget": {"per_shard_bytes": SHARD_BUDGET,
+                   "rule": "Each JSON shard loaded by the page should stay under 350 KB raw. "
+                           "scripts/perf_gate.py prints the table at the end of every build and warns "
+                           "(never fails) when a shard is over budget."},
+        "shards": [{"path": p, "bytes": raw, "gzip": gz} for p, raw, gz in sizes],
+    }
+
+
+def provenance_html(prov: dict) -> str:
+    rows = "\n".join(
+        f'''        <tr><th scope="row">{esc(d["name"])}</th><td>{esc(d["coverage"])}</td><td><span class="badge badge-{esc(d["status"].split()[0])}">{esc(d["status"])}</span></td><td>{esc(d["source"])}</td><td>{esc(d["gaps"])}</td><td>{esc(str(d["indexed_at"])[:16].replace("T", " "))}</td></tr>'''
+        for d in prov["datasets"])
+    shards = "\n".join(
+        f'        <tr><th scope="row"><a href="/{esc(s["path"])}">{esc(s["path"])}</a></th><td>{s["bytes"] / 1024:,.1f} KB</td><td>{s["gzip"] / 1024:,.1f} KB</td><td>{"over budget" if s["bytes"] > prov["budget"]["per_shard_bytes"] else "ok"}</td></tr>'
+        for s in prov["shards"])
+    return f'''  <section class="doc-page" id="provenance" aria-labelledby="prov-h">
+    <h2 id="prov-h">Provenance &amp; coverage</h2>
+    <p class="tab-note">Generated by build.py from build metadata on {esc(str(prov["generated"]))}. Machine copy: <a href="/data/provenance.json">/data/provenance.json</a>.</p>
+    <div class="table-wrap"><table class="doc-table">
+      <caption class="sr-only">Datasets, coverage and gaps</caption>
+      <thead><tr><th scope="col">Dataset</th><th scope="col">Coverage</th><th scope="col">Status</th><th scope="col">Source</th><th scope="col">Gaps</th><th scope="col">As of (UTC)</th></tr></thead>
+      <tbody>
+{rows}
+      </tbody>
+    </table></div>
+    <h3>Payload budget</h3>
+    <p>{esc(prov["budget"]["rule"])}</p>
+    <div class="table-wrap"><table class="doc-table">
+      <caption class="sr-only">Data shard sizes</caption>
+      <thead><tr><th scope="col">Shard</th><th scope="col">Raw</th><th scope="col">Gzip</th><th scope="col">Budget</th></tr></thead>
+      <tbody>
+{shards}
+      </tbody>
+    </table></div>
+    <h3>Feeds</h3>
+    <p>Notable merges (latest 20, item id = PR number): <a href="/feed.json">/feed.json</a> (JSON Feed) · <a href="/feed.xml">/feed.xml</a> (Atom).</p>
+  </section>'''
+
+
+# ── feed (JSON Feed 1.1 + Atom) ─────────────────────────────────────────────
+
+SITE = "https://nous.minddragonlabs.com"
+
+
+def feed_items(state: dict, arch: dict, limit: int = 20) -> list[dict]:
+    repo = state.get("repo") or "NousResearch/hermes-agent"
+    rows: dict[int, dict] = {}
+    for row in _as_list(arch.get("prs")):
+        if isinstance(row, dict) and row.get("s") == "merged" and _parse_day(row.get("m")):
+            n = int(row["n"])
+            rows[n] = {"number": n, "title": display_title(row.get("t") or ""), "author": row.get("a") or "",
+                       "date": f"{str(row['m'])[:10]}T00:00:00Z", "summary": ""}
+    for row in _as_list(state.get("merged")):
+        if isinstance(row, dict) and row.get("number") and row.get("merged_at"):
+            n = int(row["number"])
+            rows[n] = {"number": n, "title": display_title(row.get("title") or ""),
+                       "author": row.get("author") or "", "date": row["merged_at"],
+                       "summary": str(row.get("summary") or "")}
+    items = sorted(rows.values(), key=lambda r: (r["date"], r["number"]), reverse=True)[:limit]
+    for it in items:
+        it["url"] = f"https://github.com/{repo}/pull/{it['number']}"
+    return items
+
+
+def feed_json(items: list[dict]) -> str:
+    return json.dumps({
+        "version": "https://jsonfeed.org/version/1.1",
+        "title": "Nous Space — notable merges",
+        "home_page_url": SITE + "/",
+        "feed_url": SITE + "/feed.json",
+        "description": "Latest merged pull requests in NousResearch/hermes-agent, from the Nous Space archive. "
+                       "Community observation, not official Nous Research statements.",
+        "language": "en",
+        "items": [{
+            "id": str(it["number"]),
+            "url": it["url"],
+            "title": f"#{it['number']} {it['title']}",
+            "content_text": it["summary"] or it["title"],
+            "date_published": it["date"],
+            "authors": [{"name": it["author"], "url": f"https://github.com/{it['author']}"}] if it["author"] else [],
+        } for it in items],
+    }, indent=1, ensure_ascii=False) + "\n"
+
+
+def feed_atom(items: list[dict]) -> str:
+    from xml.sax.saxutils import escape as xesc
+    updated = items[0]["date"] if items else "1970-01-01T00:00:00Z"
+    entries = []
+    for it in items:
+        author = f"<author><name>{xesc(it['author'])}</name></author>" if it["author"] else ""
+        entries.append(
+            f"  <entry>\n    <id>urn:nous-space:pr:{it['number']}</id>\n"
+            f"    <title>{xesc('#' + str(it['number']) + ' ' + it['title'])}</title>\n"
+            f"    <link rel=\"alternate\" href=\"{xesc(it['url'])}\"/>\n"
+            f"    <updated>{xesc(it['date'])}</updated>\n    {author}\n"
+            f"    <summary>{xesc(it['summary'] or it['title'])}</summary>\n  </entry>")
+    return ('<?xml version="1.0" encoding="utf-8"?>\n'
+            '<feed xmlns="http://www.w3.org/2005/Atom">\n'
+            '  <id>urn:nous-space:feed:merges</id>\n'
+            '  <title>Nous Space — notable merges</title>\n'
+            f'  <link rel="self" href="{SITE}/feed.xml"/>\n'
+            f'  <link rel="alternate" href="{SITE}/"/>\n'
+            f'  <updated>{updated}</updated>\n'
+            '  <author><name>Nous Space</name></author>\n'
+            + "\n".join(entries) + "\n</feed>\n")
+
+
+# ── data shards ─────────────────────────────────────────────────────────────
+
+def _db_meta_and_issues() -> tuple[dict, list | None]:
+    """Read counts + the issues lane from nous-index.db (local, optional)."""
+    db_path = ROOT / "nous-index.db"
+    if not db_path.exists():
+        return {}, None
+    import sqlite3
+    try:
+        con = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+        meta = dict(con.execute("SELECT k, v FROM meta").fetchall())
+        counts = json.loads(meta.get("counts") or "{}")
+        counts["built_at"] = meta.get("built_at") or ""
+        rows = con.execute("SELECT number, title, author, labels, state FROM issues").fetchall()
+        counts["doc_names"] = sorted(str(r[0]) for r in con.execute("SELECT name FROM docs").fetchall())
+        con.close()
+    except Exception as exc:  # never fail the build on the optional index
+        print(f"note: nous-index.db unreadable ({exc}); keeping previous lanes")
+        return {}, None
+    issues = []
+    for number, title, author, labels, st in rows:
+        try:
+            n = int(number)
+        except (TypeError, ValueError):
+            continue
+        issues.append([n, " ".join(str(title or "").split())[:200], str(author or ""),
+                       "o" if str(st).lower() == "open" else "c",
+                       [x for x in str(labels or "").split(",") if x][:6]])
+    issues.sort(key=lambda r: -r[0])
+    return counts, issues
+
+
+def eco_shard(state: dict, cat: str, links: dict) -> dict:
+    eco = _as_dict(state.get("catalog"))
+    items = []
+    for it in _as_list(eco.get(cat)):
+        if not isinstance(it, dict):
+            continue
+        url = it.get("url") or it.get("repo") or it.get("github_url") or it.get("docs_url") or ""
+        desc = " ".join(str(it.get("description") or "").split())
+        stars = it.get("stars") if isinstance(it.get("stars"), int) else None
+        src = it.get("source") or ("catalog" if it.get("tier") or it.get("sha") else
+                                   "optional-skills" if it.get("slug") else "")
+        flags = []
+        if it.get("archived") is True:
+            flags.append("archived")
+        if not desc:
+            flags.append("no-description")
+        if src == "github" and stars == 0:
+            flags.append("no-stars")
+        link = _as_dict(links.get(url)).get("status") if url else None
+        if link == "dead":
+            flags.append("dead-link")
+        sub = str(it.get("category") or "")
+        items.append({
+            "n": str(it.get("name") or it.get("slug") or ""),
+            "u": url,
+            "d": desc[:280] + ("…" if len(desc) > 280 else ""),
+            "s": stars,
+            "l": str(it.get("license") or ("" if src == "github" else "catalog")),
+            "f": it.get("free") is True,
+            "src": src,
+            "sub": sub if sub != cat else "",
+            "t": str(it.get("tier") or ""),
+            "m": str(it.get("maintainer") or ""),
+            "fl": flags,
+            "lk": link or "",
+        })
+    return {"category": cat, "generated": eco.get("generated") or "", "total": len(items), "items": items}
+
+
+def catalog_payload(state: dict) -> dict:
+    data = appdata_catalog(state)
+    data["lane_open"] = _as_list(state.get("lane_open"))
+    data["lane_stale"] = _as_dict(state.get("lane_stale"))
+    data["pending"] = _as_list(state.get("pending"))
+    data["merged"] = [{k: v for k, v in row.items() if k not in ("body", "images")}
+                      for row in _as_list(state.get("merged")) if isinstance(row, dict)]
+    return data
+
+
+def snapshot_island(state: dict, version: str) -> dict:
+    """TINY embedded fallback: counts + top rows only. Full lists live in data/."""
+    cat = appdata_catalog(state)
+    for key in ("issues", "pull_requests"):
+        cat[key] = dict(cat[key], items=cat[key]["items"][:10], partial=True)
+    cat["contributors"] = {"items": cat["contributors"]["items"][:10], "partial": True}
+    cat["ecosystem"] = []
+    eco = _as_dict(state.get("catalog"))
+    cat["eco_counts"] = {c: len(_as_list(eco.get(c))) for c in ECO_CATEGORIES}
+    cat["v"] = version
+    cat["api"] = {"base": API_BASE, "window_hours": 6}
+    return cat
 
 
 def _as_dict(value) -> dict:
@@ -1037,8 +1430,8 @@ def appdata_catalog(state: dict) -> dict:
     }
 
 
-def appdata_html(state: dict) -> str:
-    raw = json.dumps(appdata_catalog(state), separators=(",", ":")).replace("<", r"\u003c")
+def appdata_html(state: dict, version: str = "") -> str:
+    raw = json.dumps(snapshot_island(state, version), separators=(",", ":")).replace("<", r"\u003c")
     return f'<script id="nous-data" type="application/json">{raw}</script>'
 
 
@@ -1063,6 +1456,8 @@ def render_panels(state: dict) -> str:
   <!-- PRARCHIVE:END -->
   <!-- ECOSYSTEM:START -->
   <!-- ECOSYSTEM:END -->
+  <!-- TRENDS:START -->
+  <!-- TRENDS:END -->
   <!-- QUALITY:START -->
   <!-- QUALITY:END -->
   </div>'''
@@ -1070,9 +1465,145 @@ def render_panels(state: dict) -> str:
 
 # ── main ────────────────────────────────────────────────────────────────────
 
+TRENDS_START = "<!-- TRENDS:START -->"
+TRENDS_END = "<!-- TRENDS:END -->"
+DOCS_START = "<!-- DOCS:START -->"
+DOCS_END = "<!-- DOCS:END -->"
+PROV_START = "<!-- PROVENANCE:START -->"
+PROV_END = "<!-- PROVENANCE:END -->"
+DATA_DIR = ROOT / "data"
+
+
+def _dump(obj) -> str:
+    return json.dumps(obj, separators=(",", ":"), ensure_ascii=False)
+
+
+def write_if_changed(path: pathlib.Path, text: str, changed: list[str]) -> None:
+    """Atomic write, skipped when the bytes are identical (idempotent builds)."""
+    try:
+        if path.read_text(encoding="utf-8") == text:
+            return
+    except (FileNotFoundError, UnicodeDecodeError):
+        pass
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    tmp.replace(path)
+    changed.append(str(path.relative_to(ROOT)))
+
+
+def _read_json(path: pathlib.Path, fallback):
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return fallback
+
+
+def _fill(page: str, start: str, end: str, body: str, required: bool = False) -> str:
+    if start not in page or end not in page:
+        if required:
+            raise SystemExit(f"ERROR: marker {start} missing from index.html")
+        return page
+    i = page.index(start) + len(start)
+    j = page.find(end, i)
+    if j == -1:
+        return page
+    return page[:i] + "\n" + body + "\n  " + page[j:]
+
+
+def _perf_gate():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("perf_gate", ROOT / "scripts" / "perf_gate.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def build_data(state: dict, changed: list[str]) -> dict:
+    """Emit data/*.json shards. Returns what the HTML render needs."""
+    if os.environ.get("NOUS_LINK_CHECK") == "1":
+        # opt-in: refresh the 72h link cache first. Flag-only, never fails the build.
+        try:
+            subprocess.run([sys.executable, str(ROOT / "scripts" / "link_check.py"), "--max", "150"],
+                           timeout=150, check=False)
+        except Exception as exc:  # noqa: BLE001
+            print(f"note: link check skipped ({exc})")
+    arch = _read_archive()
+    db_meta, db_issues = _db_meta_and_issues()
+    links =_as_dict(_read_json(ROOT / "link_check.json", {}).get("results"))
+    issues_state = _as_dict(state.get("issues"))
+    issue_total = (issues_state.get("total_open") or 0) + (issues_state.get("total_closed") or 0)
+
+    # db-derived values fall back to the previous build when the local index is absent
+    prev_prov = _read_json(DATA_DIR / "provenance.json", {})
+    if not db_meta:
+        db_meta = _as_dict(prev_prov.get("db_meta"))
+
+    history = merge_history(state, _read_json(DATA_DIR / "history.json", {}))
+    insights = compute_insights(state, history, arch)
+    shards: dict[str, str] = {
+        "data/history.json": _dump(history),
+        "data/insights.json": _dump(insights),
+        "data/catalog.json": _dump(catalog_payload(state)).replace("<", "\\u003c"),
+        "data/archive.json": _dump(arch),
+    }
+    for cat in ECO_CATEGORIES:
+        shards[f"data/eco-{cat}.json"] = _dump(eco_shard(state, cat, links))
+
+    if db_issues is not None:
+        issues_lane = {"generated": db_meta.get("built_at", ""), "indexed": len(db_issues),
+                       "total": issue_total, "complete": False,
+                       "note": "Issues backfill in progress; titles, labels and state only.",
+                       "items": db_issues}
+    else:
+        issues_lane = _read_json(DATA_DIR / "search-issues.json",
+                                 {"indexed": 0, "total": issue_total, "complete": False, "items": []})
+        issues_lane["total"] = issue_total
+    shards["data/search-issues.json"] = _dump(issues_lane)
+
+    q = _as_dict(state.get("quality"))
+    corpus = _as_dict(q.get("corpus"))
+    shards["data/corpus.json"] = _dump({
+        "generated": q.get("generated") or "",
+        "live_total": corpus.get("live_total", 0),
+        "curated_total": corpus.get("curated_total", 0),
+        "last_batch": corpus.get("batch", 0),
+        "docs": db_meta.get("doc_names") or ["CHARTER.md", "RUBRIC.md", "corpus-trends.md"],
+        "public": "titles and counts only",
+        "note": "Corpus content (labels, fix patterns, lessons) requires an API key.",
+    })
+
+    results = list(links.values())
+    link_summary = {
+        "checked": len(results),
+        "dead": sum(1 for r in results if _as_dict(r).get("status") == "dead"),
+        "unknown": sum(1 for r in results if _as_dict(r).get("status") == "unknown"),
+    }
+
+    for rel, text in shards.items():
+        write_if_changed(ROOT / rel, text, changed)
+
+    gate = _perf_gate()
+    sizes = [gate.measure(ROOT / rel) for rel in sorted(shards)]
+    sizes = [(rel, raw, gz) for rel, (raw, gz) in zip(sorted(shards), sizes)]
+    prov = provenance(state, db_meta, link_summary, sizes, issues_lane)
+    prov["db_meta"] = {k: v for k, v in db_meta.items() if k != "doc_names"}
+    write_if_changed(DATA_DIR / "provenance.json", _dump(prov), changed)
+
+    import hashlib
+    digest = hashlib.sha256("".join(shards[k] for k in sorted(shards)).encode()).hexdigest()[:12]
+
+    items = feed_items(state, arch)
+    write_if_changed(ROOT / "feed.json", feed_json(items), changed)
+    write_if_changed(ROOT / "feed.xml", feed_atom(items), changed)
+    return {"insights": insights, "prov": prov, "version": digest}
+
+
 def main() -> int:
     state = json.loads(STATE.read_text(encoding="utf-8"))
-    page = INDEX.read_text(encoding="utf-8")
+    original = INDEX.read_text(encoding="utf-8")
+    page = original
+    changed: list[str] = []
 
     # Remove stale newsletter/ticker bodies that used to live after PANELS.
     # The current render places both sections inside the lower deck.
@@ -1091,6 +1622,7 @@ def main() -> int:
                        (CONTRIBUTORS_START, CONTRIBUTORS_END),
                        (PRARCHIVE_START, PRARCHIVE_END),
                        (ECOSYSTEM_START, ECOSYSTEM_END),
+                       (TRENDS_START, TRENDS_END),
                        (QUALITY_START, QUALITY_END)):
         page = re.sub(re.escape(start) + r".*?" + re.escape(end),
                       start + end, page, flags=re.S)
@@ -1099,108 +1631,62 @@ def main() -> int:
         if marker not in page:
             raise SystemExit(f"ERROR: marker {marker} missing from index.html")
 
+    built = build_data(state, changed)
+
     # re-inline row.css
     ci = page.index(CSS_START) + len(CSS_START)
     cj = page.index(CSS_END)
     page = page[:ci] + "\n" + (ROOT / "row.css").read_text(encoding="utf-8") + page[cj:]
 
-    # block row
-    ri = page.index(START) + len(START)
-    rj = page.index(END)
-    page = page[:ri] + "\n" + render_row(state) + "\n  " + page[rj:]
-
-    # below-row panels
-    pi = page.index(PANELS_START) + len(PANELS_START)
-    pj = page.index(PANELS_END)
-    page = page[:pi] + "\n" + render_panels(state) + "\n  " + page[pj:]
-
-    # newsletter
-    ni = page.index(NEWSLETTER_START) + len(NEWSLETTER_START)
-    nj = page.index(NEWSLETTER_END)
-    page = page[:ni] + "\n" + newsletter_html(state) + "\n  " + page[nj:]
-
-    # news ticker
-    ti = page.index(TICKER_START) + len(TICKER_START)
-    tj = page.index(TICKER_END)
-    page = page[:ti] + "\n" + ticker_html(state) + "\n  " + page[tj:]
-
-    # issues
-    ii = page.index(ISSUES_START) + len(ISSUES_START)
-    ij = page.index(ISSUES_END)
-    page = page[:ii] + "\n" + issues_panel(state) + "\n  " + page[ij:]
-
-    # PRs
-    pi = page.index(PRS_START) + len(PRS_START)
-    pj = page.index(PRS_END)
-    page = page[:pi] + "\n" + prs_panel(state) + "\n  " + page[pj:]
-
-    # contributors
-    cti = page.index(CONTRIBUTORS_START) + len(CONTRIBUTORS_START)
-    ctj = page.index(CONTRIBUTORS_END)
-    page = page[:cti] + "\n" + contributors_panel(state) + "\n  " + page[ctj:]
-
-    # quality program (markers optional so a hand-trimmed page still builds)
-    if QUALITY_START in page and QUALITY_END in page:
-        qi = page.index(QUALITY_START) + len(QUALITY_START)
-        qj = page.find(QUALITY_END, qi)
-        if qj != -1:
-            page = page[:qi] + "\n" + quality_panel(state) + "\n  " + page[qj:]
-
-    # ecosystem (same optional-marker pattern)
-    if ECOSYSTEM_START in page and ECOSYSTEM_END in page:
-        ei = page.index(ECOSYSTEM_START) + len(ECOSYSTEM_START)
-        ej = page.find(ECOSYSTEM_END, ei)
-        if ej != -1:
-            page = page[:ei] + "\n" + ecosystem_panel(state) + "\n  " + page[ej:]
-
-    # PR archive (same optional-marker pattern)
-    if PRARCHIVE_START in page and PRARCHIVE_END in page:
-        pi = page.index(PRARCHIVE_START) + len(PRARCHIVE_START)
-        pj = page.find(PRARCHIVE_END, pi)
-        if pj != -1:
-            page = page[:pi] + "\n" + prarchive_panel(state) + "\n  " + page[pj:]
+    page = _fill(page, START, END, render_row(state), required=True)
+    page = _fill(page, PANELS_START, PANELS_END, render_panels(state), required=True)
+    page = _fill(page, NEWSLETTER_START, NEWSLETTER_END, newsletter_html(state), required=True)
+    page = _fill(page, TICKER_START, TICKER_END, ticker_html(state), required=True)
+    page = _fill(page, ISSUES_START, ISSUES_END, issues_panel(state), required=True)
+    page = _fill(page, PRS_START, PRS_END, prs_panel(state), required=True)
+    page = _fill(page, CONTRIBUTORS_START, CONTRIBUTORS_END, contributors_panel(state), required=True)
+    page = _fill(page, QUALITY_START, QUALITY_END, quality_panel(state))
+    page = _fill(page, ECOSYSTEM_START, ECOSYSTEM_END, ecosystem_panel(state))
+    page = _fill(page, PRARCHIVE_START, PRARCHIVE_END, prarchive_panel(state))
+    page = _fill(page, TRENDS_START, TRENDS_END, trends_panel(state, built["insights"]))
+    page = _fill(page, DOCS_START, DOCS_END, docs_html())
+    page = _fill(page, PROV_START, PROV_END, provenance_html(built["prov"]))
+    page = _fill(page, APPDATA_START, APPDATA_END, appdata_html(state, built["version"]))
 
     # JSON mirrors for agents: /ecosystem.json (+ /quality.json) — the
     # machine-readable twins of the HTML views (dual-browsing, PLAN.md item 3)
-    eco_mirror = ROOT / "ecosystem.json"
-    eco_payload = json.dumps(state.get("catalog") or {}, separators=(",", ":"))
-    eco_tmp = eco_mirror.with_suffix(".json.tmp")
-    eco_tmp.write_text(eco_payload, encoding="utf-8")
-    eco_tmp.replace(eco_mirror)
-    q_mirror = ROOT / "quality.json"
-    q_tmp = q_mirror.with_suffix(".json.tmp")
-    q_tmp.write_text(json.dumps(state.get("quality") or {}, separators=(",", ":")),
-                     encoding="utf-8")
-    q_tmp.replace(q_mirror)
-
-    # client catalog; markers are optional until index.html includes them
-    if APPDATA_START in page and APPDATA_END in page:
-        ai = page.index(APPDATA_START) + len(APPDATA_START)
-        aj = page.find(APPDATA_END, ai)
-        if aj != -1:
-            page = page[:ai] + "\n" + appdata_html(state) + "\n  " + page[aj:]
-
-    news_path = ROOT / "news.json"
-    news_tmp = news_path.with_suffix(".json.tmp")
-    news_tmp.write_text(json.dumps({
+    write_if_changed(ROOT / "ecosystem.json", _dump_ascii(state.get("catalog") or {}), changed)
+    write_if_changed(ROOT / "quality.json", _dump_ascii(state.get("quality") or {}), changed)
+    stories = news_stories(state)
+    news_meta = {
         "generated": state.get("generated") or "",
         "repo": state.get("repo") or "NousResearch/hermes-agent",
         "maintainer": state.get("maintainer") or "",
-        "items": news_stories(state),
-    }, separators=(",", ":")), encoding="utf-8")
-    news_tmp.replace(news_path)
+    }
+    write_if_changed(ROOT / "news.json", _dump_ascii(dict(news_meta, items=stories)), changed)
+    # small head shard for the 45s poll; the full 48h wire loads on scroll
+    write_if_changed(DATA_DIR / "news-head.json",
+                     _dump_ascii(dict(news_meta, total=len(stories), items=stories[:NEWS_HEAD_ROWS])), changed)
 
-    if page == INDEX.read_text(encoding="utf-8"):
-        print("index.html unchanged")
+    if page != original:
+        write_if_changed(INDEX, page, changed)
+
+    gate = _perf_gate()
+    gate.report(ROOT)
+
+    if not changed:
+        print("build: unchanged — index.html and all data artifacts identical (idempotent)")
         return 0
-
-    index_tmp = INDEX.with_suffix(".html.tmp")
-    index_tmp.write_text(page, encoding="utf-8")
-    index_tmp.replace(INDEX)
     pend = ", ".join(f"#{p['number']}" for p in state["pending"][:N_PER_SIDE])
     merg = ", ".join(f"#{x['number']}" for x in state["merged"][:N_PER_SIDE])
-    print(f"index.html rendered — green: {pend} | blue: {merg}")
+    print(f"build: wrote {len(changed)} file(s): {', '.join(changed)}")
+    print(f"index.html — green: {pend} | blue: {merg}")
     return 0
+
+
+def _dump_ascii(obj) -> str:
+    # matches the historical mirror format (json.dumps default ASCII escapes)
+    return json.dumps(obj, separators=(",", ":"))
 
 
 if __name__ == "__main__":

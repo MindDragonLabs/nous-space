@@ -15,3 +15,5 @@ nous_space_refresh.sh
 gen_favicon.py
 IMPLEMENTATION-NOTES.md
 search.test.mjs
+scripts
+link_check.json

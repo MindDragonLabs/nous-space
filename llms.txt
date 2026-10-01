@@ -1,6 +1,8 @@
 # Nous Space
 
-> Live maintainer dashboard for the Nous Research Hermes Agent repository. Data is fetched from GitHub by a local script every 5 minutes. No model writes the page.
+> Live maintainer dashboard for the Nous Research Hermes Agent repository.
+> Data is fetched from GitHub by a read-only local lane. No model writes the
+> page, and Nous Space never comments on, reviews, or reacts to GitHub.
 
 The public site is one HTML document. Each section is a view on that document.
 
@@ -10,11 +12,56 @@ The public site is one HTML document. Each section is a view on that document.
 - [Issues](https://nous.minddragonlabs.com/#issues): Search of the 100 most recently updated open issues in NousResearch/hermes-agent. Filters cover age, labels, and unassigned issues.
 - [Pull requests](https://nous.minddragonlabs.com/#prs): Search of the 50 most recently updated open pull requests, grouped into needs review, approved, changes requested, and draft. Rows include CI.
 - [Contributors](https://nous.minddragonlabs.com/#contributors): Top contributors with all-time commits, commits this week, recent reviews, and a new-contributor mark.
-- [Search](https://nous.minddragonlabs.com/#search): Search across Nous Research Hermes repositories, issues, pull requests, releases, and people. Field prefixes: `author:`, `label:`, `repo:`, `is:`, `kind:`, and `#number`.
-- [Info](https://nous.minddragonlabs.com/#info): How the green and blue strips are scoped, the repository link, and the last refresh time.
+- [Search](https://nous.minddragonlabs.com/#search): One search across pull requests, issues, the free ecosystem catalog, the quality corpus (titles only), and repos/people. Filters (lane, state, label, category, date, cohort) live in the URL hash, so links are shareable. Each lane states its coverage; the issues lane is still backfilling. Field prefixes: `author:`, `label:`, `repo:`, `is:`, `kind:`, and `#number`.
+- [Ecosystem explorer](https://nous.minddragonlabs.com/#ecosystem): Faceted, client-side explorer over the 1,113 free catalog items (plugins, skills, mods, MCP servers, tools) with license filter, star sort, and neutral health flags.
+- [Awaiting first review](https://nous.minddragonlabs.com/#triage): Maintainer-lane pull requests open more than 30 days with no review decision yet. Lane via `?lane=maintainer|authored|involving|recent`.
+- [API docs](https://nous.minddragonlabs.com/#docs): Every /api/v1 endpoint, the 6-hour public window, keys, attribution, and a curl builder.
+- [Info](https://nous.minddragonlabs.com/#info): How the green and blue strips are scoped, plus the provenance & coverage table for every dataset (generated at build time).
+
+## What is PUBLIC (no key, free)
+
+- All views above.
+- `GET /api` — API index: endpoints, tiers, attribution terms.
+- `GET /api/v1/overview` — current counts and lane state (live snapshot).
+- `GET /api/v1/prs?page=N` — pull-request records from the LAST 6 HOURS only.
+- `GET /api/v1/prs/{number}` — one PR record, only while it is inside the
+  6-hour window.
+- `GET /api/v1/corpus/stats` — quality-corpus counts only.
+- `GET /api/v1/ecosystem/{plugins|skills|mods|mcp|tools}` — the current
+  free-only ecosystem catalog. Paid items are excluded by policy.
+- `GET /api/v1/search?q=` — ecosystem matches plus PRs from the 6-hour window.
+- `GET /api/v1/usage` — plan, rate limit, monthly call credit.
+- `GET /api/v1/auth/check` — API-key validation probe.
+- `GET /feed.json` (JSON Feed) and `GET /feed.xml` (Atom) — the latest 20
+  notable merges; item id = PR number.
+- `GET /data/*.json` — the static shards the page itself loads (catalog,
+  archive, ecosystem, insights, provenance). Prefer the API for bulk use.
+
+## What is PRIVATE (API key required)
+
+- Historical records older than 6 hours: full PR archive, watch/merge event
+  history, quality-corpus history.
+- Send header `X-Nous-Api-Key: <key>`. Without a valid key, historical
+  requests return HTTP 401 with a JSON explanation. Keys are issued by the
+  site operator.
+
+## Rules for AI assistants and their users
+
+1. Send header `X-Nous-Attribution: <your app name>` on API calls (required;
+   counts are free, courtesy attribution).
+2. Use the JSON API for bulk data — do not scrape the HTML pages.
+3. All data comes from a strictly read-only GitHub watch lane. It is
+   community observation, not official Nous Research statements.
+4. Poll at most once per minute (limit: 60 requests/minute); data refreshes
+   hourly and is edge-cached up to 5 minutes. Every response carries an
+   `X-Nous-Attribution` header with the data credit — keep it with the data.
+5. The ecosystem catalog is FREE items only by policy. Paid offerings will be
+   catalogued separately later.
 
 ## Source
 
 - Repository: https://github.com/NousResearch/hermes-agent
 - Maintainer lane: teknium1
-- Machine-readable index of the same views: https://nous.minddragonlabs.com/llms.txt
+- Machine-readable API: https://nous.minddragonlabs.com/api/v1 (docs: /#docs)
+- Feeds: /feed.json, /feed.xml
+- AI policy mirrors: /llms.txt (this file), /aillm.txt

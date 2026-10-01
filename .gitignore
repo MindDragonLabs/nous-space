@@ -8,3 +8,8 @@ state.json
 .refresh.lock
 .deploy-hash
 .env*.local
+nous-index.db
+.index-last-build
+link_check.json
+link_check.json.tmp
+*.json.tmp

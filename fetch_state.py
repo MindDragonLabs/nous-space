@@ -74,6 +74,40 @@ def open_prs() -> list[dict] | None:
     return list(seen.values())
 
 
+def stale_lane_prs() -> dict | None:
+    """Lane PRs open >30 days with no review yet, for the "awaiting first
+    review" view; the newest-30 open_prs() query never reaches them.
+
+    REST search (GraphQL search 502s on this repo for these qualifiers). Two
+    scopes, each capped at the 100 most recently updated, with true totals so
+    the view can state its own coverage.
+    """
+    cutoff = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=30)).strftime("%Y-%m-%d")
+    base = f"repo:{REPO} is:pr is:open base:{SOURCE_BRANCH} review:none created:<{cutoff}"
+    out = {"rows": [], "totals": {}}
+    for scope, qual in (("authored", f"author:{MAINTAINER}"),
+                        ("involving", f"involves:{MAINTAINER} -author:{MAINTAINER}")):
+        data = _gh_json(["api", "-X", "GET", "search/issues", "-f", f"q={base} {qual}",
+                         "-f", "per_page=100", "-f", "sort=updated", "-f", "order=desc"], timeout=40)
+        if not isinstance(data, dict):
+            return None
+        out["totals"][scope] = data.get("total_count", 0)
+        for item in data.get("items") or []:
+            if not isinstance(item, dict) or item.get("number") is None:
+                continue
+            out["rows"].append({
+                "number": item["number"],
+                "title": " ".join((item.get("title") or "").split()),
+                "author": (item.get("user") or {}).get("login", ""),
+                "created_at": item.get("created_at") or "",
+                "updated_at": item.get("updated_at") or "",
+                "review": "",
+                "draft": bool(item.get("draft")),
+                "url": item.get("html_url") or f"https://github.com/{REPO}/pull/{item['number']}",
+            })
+    return out
+
+
 def parse(ts: str) -> dt.datetime:
     return dt.datetime.fromisoformat(ts.replace("Z", "+00:00"))
 
@@ -161,6 +195,21 @@ def norm_pending(pr: dict, now: dt.datetime) -> dict:
         "draft": bool(pr.get("isDraft")),
         "score": score,
         "label": label_for(score, pr, ok, total),
+        "url": f"https://github.com/{REPO}/pull/{pr['number']}",
+    }
+
+
+def lane_row(pr: dict) -> dict:
+    """Compact open-lane row for the "awaiting first review" view. The client
+    computes ages from created_at, so the view never goes stale."""
+    return {
+        "number": pr["number"],
+        "title": " ".join((pr.get("title") or "").split()),
+        "author": (pr.get("author") or {}).get("login", ""),
+        "created_at": pr.get("createdAt") or "",
+        "updated_at": pr.get("updatedAt") or "",
+        "review": pr.get("reviewDecision") or "",
+        "draft": bool(pr.get("isDraft")),
         "url": f"https://github.com/{REPO}/pull/{pr['number']}",
     }
 
@@ -766,7 +815,7 @@ def prs_stats() -> dict:
     listed = _gh_json([
         "pr", "list", "-R", REPO, "--state", "open", "--limit", "50",
         "--json",
-        "number,title,author,updatedAt,isDraft,reviewDecision,additions,deletions,url,statusCheckRollup,labels",
+        "number,title,author,createdAt,updatedAt,isDraft,reviewDecision,additions,deletions,url,statusCheckRollup,labels",
     ], timeout=40)
     recent = []
     if isinstance(listed, list):
@@ -782,6 +831,7 @@ def prs_stats() -> dict:
                 "additions": item.get("additions") or 0,
                 "deletions": item.get("deletions") or 0,
                 "labels": labels,
+                "created_at": item.get("createdAt") or "",
                 "updated_at": item["updatedAt"],
                 "ago": ago,
                 "url": item.get("url") or f"https://github.com/{REPO}/pull/{item['number']}",
@@ -1018,7 +1068,7 @@ NOUS_HOME = pathlib.Path.home() / ".hermes" / "profiles" / "nous-pr-bot" / "scri
 NOUS_CORPUS = (pathlib.Path.home() / "Nous-Fleet" / "reviews" / "continuous"
                / "hermes-quality-program" / "corpus-trends.md")
 NOUS_MERGE_STATE = NOUS_HOME / "merge_state"
-ECO_FILE = ROOT / "merge_state" / "ecosystem" / "ecosystem.json"
+ECO_FILE = ROOT / "ecosystem.json"
 
 
 def ecosystem_catalog() -> dict:
@@ -1028,17 +1078,15 @@ def ecosystem_catalog() -> dict:
     stale file yields empty lists — the site renders an empty section, not
     a failed build.
     """
-    out = {"generated": "", "plugins": [], "skills": []}
+    out = {"generated": "", "plugins": [], "skills": [], "mods": [], "mcp": [], "tools": []}
     try:
         data = json.loads(ECO_FILE.read_text(encoding="utf-8"))
     except Exception:
         return out
-    plugins = data.get("plugins")
-    if isinstance(plugins, list):
-        out["plugins"] = [p for p in plugins if isinstance(p, dict)]
-    skills = data.get("skills")
-    if isinstance(skills, list):
-        out["skills"] = [s for s in skills if isinstance(s, dict)]
+    for cat in ("plugins", "skills", "mods", "mcp", "tools"):
+        rows = data.get(cat)
+        if isinstance(rows, list):
+            out[cat] = [p for p in rows if isinstance(p, dict)]
     out["generated"] = data.get("generated") or ""
     return out
 
@@ -1206,6 +1254,7 @@ def quality_program(lane_open: int | None = None) -> dict:
         "watch_tracked": len(tracked),
         "watch_definition": "open PRs from the whole maintainer team",
         "lane_open": lane_open,
+        "lane_stale": stale_lane,
         "lane_definition": f"PRs authored by or involving {MAINTAINER}",
     }
 
@@ -1251,6 +1300,7 @@ def main() -> int:
     pool = ThreadPoolExecutor(max_workers=4)
     jobs = {
         "open": pool.submit(_safe, "open", open_prs),
+        "stale_lane": pool.submit(_safe, "stale_lane", stale_lane_prs),
         "merged": pool.submit(_safe, "merged", lambda: gh([
             "pr", "list", "-R", REPO, "--state", "merged", "--limit", "40",
             "--base", SOURCE_BRANCH, "--search", "sort:updated-desc",
@@ -1283,7 +1333,10 @@ def main() -> int:
         print("open pr list failed, keeping previous pending", file=sys.stderr)
         pending = prev.get("pending") if isinstance(prev.get("pending"), list) else []
         pend_count = prev.get("open_in_maintainer_lane") or len(pending)
+        lane_open = prev.get("lane_open") if isinstance(prev.get("lane_open"), list) else []
     else:
+        lane_by_num = {p["number"]: lane_row(p) for p in raw_open}
+        lane_open = sorted(lane_by_num.values(), key=lambda r: r.get("created_at") or "")
         pend_all = [norm_pending(p, now) for p in raw_open]
         pending = sorted(pend_all, key=lambda p: (-p["score"], p["age_min"]))[:N_PENDING]
         pend_count = len(pend_all)
@@ -1339,6 +1392,9 @@ def main() -> int:
         return value
 
     fresh = got["fresh"] if isinstance(got["fresh"], list) else (prev.get("fresh") or [])
+    stale_lane = got.get("stale_lane")
+    if not isinstance(stale_lane, dict):
+        stale_lane = prev.get("lane_stale") if isinstance(prev.get("lane_stale"), dict) else {"rows": [], "totals": {}}
     releases = section("releases") or {}
     quality = quality_program(lane_open=pend_count)
     eco = ecosystem_catalog()
@@ -1352,6 +1408,8 @@ def main() -> int:
         "quality": quality,
         "catalog": eco,
         "pending": pending,
+        "lane_open": lane_open,
+        "lane_stale": stale_lane,
         "merged": merged,
         "backlog": section("backlog") or {},
         "releases": releases,
