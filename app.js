@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  var VIEWS = ["dashboard", "issues", "prs", "contributors", "search", "ecosystem", "triage", "docs", "info"];
+  var VIEWS = ["dashboard", "issues", "prs", "contributors", "forum", "search", "ecosystem", "arch", "triage", "docs", "info"];
   var RELOAD_MS = 5 * 60 * 1000;
   var DATA = {};
   var built = Object.create(null);
@@ -155,8 +155,10 @@
       issues: "Issues — Nous Space",
       prs: "Pull requests — Nous Space",
       contributors: "Contributors — Nous Space",
+      forum: "Forum — Nous Space",
       search: "Search the Hermes ecosystem — Nous Space",
       ecosystem: "Ecosystem explorer — Nous Space",
+      arch: "System architecture — Nous Space",
       triage: "Awaiting first review — Nous Space",
       docs: "API docs — Nous Space",
       info: "About this dashboard — Nous Space"
@@ -164,10 +166,12 @@
     var descriptions = {
       dashboard: "Live Hermes Agent dashboard: maintainer merge lane, open issues, pull request queues, contributors, and ecosystem search.",
       issues: "Search the most recently updated open issues in NousResearch/hermes-agent.",
-      prs: "Review queues for the most recently updated open Hermes Agent pull requests.",
+      prs: "Review queues for the most recently updated open Hermes Agent pull requests, plus the 6-hour PR archive.",
       contributors: "Hermes Agent contributors ranked by commits, with this week and recent reviews.",
+      forum: "Community forum: one general category for Hermes Agent pull requests and issues.",
       search: "One search across Hermes pull requests, issues, the free ecosystem catalog, and the quality corpus.",
       ecosystem: "Faceted explorer over the free Hermes ecosystem: plugins, skills, mods, MCP servers, and tools.",
+      arch: "How Hermes Agent is put together at a high level, with a diagram per main version release.",
       triage: "Maintainer-lane pull requests open more than 30 days with no review decision yet.",
       docs: "Nous Space API v1: endpoints, the 6-hour public window, API keys, attribution, and a curl builder.",
       info: "How the Nous Space strips are scoped, where every dataset comes from, and how fresh it is."
@@ -205,6 +209,8 @@
       else if (view === "prs") renderPrs(panel);
       else if (view === "contributors") renderContribs(panel);
       else if (view === "triage") renderTriage(panel);
+      else if (view === "forum") renderForum(panel);
+      else if (view === "arch") bindArchPicker(panel);
       else if (view === "docs") bindCurlBuilder();
       else if (view === "info") renderInfo(panel);
       else if (viewHooks[view]) viewHooks[view].render(panel);
@@ -348,17 +354,48 @@
     return n === 1 ? "1 comment" : n + " comments";
   }
 
+  function chipEl(text, cls) {
+    var s = document.createElement("span");
+    s.className = "hit-chip" + (cls ? " " + cls : "");
+    s.textContent = text;
+    return s;
+  }
+
+  function hitLine1(hit, doc, query, badgeText, badgeCls) {
+    var line1 = el("div", "hit-line1");
+    var num = el("span", "h-num");
+    num.textContent = "#" + doc.number;
+    line1.appendChild(num);
+    if (badgeText) line1.appendChild(chipEl(badgeText, badgeCls));
+    var title = el("span", "h-title");
+    title.innerHTML = highlight(doc.title || "", query);
+    line1.appendChild(title);
+    hit.link.appendChild(line1);
+    return line1;
+  }
+
+  function hitLine2(hit) {
+    var line2 = el("div", "hit-line2");
+    hit.link.appendChild(line2);
+    return line2;
+  }
+
   function issueHit(doc, query) {
     var hit = linkedHit(doc);
-    if (doc.number != null && doc.number !== "") addText(hit.link, "#" + doc.number);
-    var title = document.createElement("span");
-    title.innerHTML = highlight(doc.title || "", query);
-    hit.link.appendChild(title);
+    hit.article.classList.add("carded-hit");
+    hitLine1(hit, doc, query, "issue", "c-blue");
+    var line2 = hitLine2(hit);
     var labels = Array.isArray(doc.displayLabels) ? doc.displayLabels : [];
-    labels.forEach(function (name) { addText(hit.link, name); });
-    addText(hit.link, doc.author);
-    addText(hit.link, doc.ago);
-    addText(hit.link, commentText(doc.comments));
+    labels.slice(0, 5).forEach(function (name) {
+      line2.appendChild(chipEl(name, "c-purple"));
+    });
+    if (doc.assignee) line2.appendChild(chipEl("assigned: " + doc.assignee, ""));
+    else if (doc.unassigned) line2.appendChild(chipEl("unassigned", "c-amber"));
+    line2.appendChild(chipEl(commentText(doc.comments), "c-green"));
+    var meta = el("span", "h-meta");
+    meta.textContent = doc.author + " · " + (doc.ago || "");
+    if (doc.age_days != null) meta.title = "open " + doc.age_days + " days";
+    line2.appendChild(meta);
     return hit.article;
   }
 
@@ -370,27 +407,72 @@
     return doc.state || "open";
   }
 
+  function statusCls(doc) {
+    if (doc.queue === "approved") return "c-green";
+    if (doc.queue === "changes") return "c-red";
+    if (doc.queue === "draft" || doc.draft === true) return "c-purple";
+    if (doc.queue === "needs-review") return "c-amber";
+    return "c-blue";
+  }
+
   function prHit(doc, query) {
     var hit = linkedHit(doc);
-    if (doc.number != null && doc.number !== "") addText(hit.link, "#" + doc.number);
-    var title = document.createElement("span");
-    title.innerHTML = highlight(doc.title || "", query);
-    hit.link.appendChild(title);
-    addText(hit.link, statusWord(doc));
+    hit.article.classList.add("carded-hit");
+    hitLine1(hit, doc, query, statusWord(doc), statusCls(doc));
+    var line2 = hitLine2(hit);
     var ciOk = doc.ci_ok == null ? 0 : doc.ci_ok;
     var ciTotal = doc.ci_total == null ? 0 : doc.ci_total;
-    addText(hit.link, ciOk + "/" + ciTotal + (doc.ci ? " " + doc.ci : ""));
-    var diff = document.createElement("span");
-    var added = document.createElement("span");
-    added.className = "add";
-    added.textContent = "+" + (Number(doc.additions) || 0);
-    var removed = document.createElement("span");
-    removed.className = "del";
-    removed.textContent = "-" + (Number(doc.deletions) || 0);
-    diff.append(added, document.createTextNode(" "), removed);
-    hit.link.appendChild(diff);
-    addText(hit.link, doc.author);
-    addText(hit.link, doc.ago);
+    if (ciTotal) {
+      var ciCls = doc.ci === "passing" ? "c-green" : doc.ci === "failing" ? "c-red" : "c-amber";
+      line2.appendChild(chipEl("CI " + ciOk + "/" + ciTotal + (doc.ci ? " " + doc.ci : ""), ciCls));
+    }
+    var added = (Number(doc.additions) || 0);
+    var removed = (Number(doc.deletions) || 0);
+    if (added || removed) line2.appendChild(chipEl("+" + added + " −" + removed, ""));
+    (Array.isArray(doc.labels) ? doc.labels : []).slice(0, 4).forEach(function (name) {
+      line2.appendChild(chipEl(name, "c-purple"));
+    });
+    var meta = el("span", "h-meta");
+    meta.textContent = doc.author + " · " + (doc.ago || "");
+    line2.appendChild(meta);
+    return hit.article;
+  }
+
+  function contribHit(doc, rank, max) {
+    var hit = linkedHit(doc);
+    hit.article.classList.add("carded-hit");
+    var card = document.createElement("div");
+    card.className = "contrib-card";
+    var src = avatarUrl(doc.avatar_url);
+    if (src) {
+      var img = document.createElement("img");
+      img.alt = "";
+      img.src = src;
+      img.loading = "lazy";
+      card.appendChild(img);
+    }
+    var name = el("span", "cc-name");
+    name.textContent = doc.login || doc.title || "";
+    card.appendChild(name);
+    var rankEl = el("span", "cc-rank");
+    rankEl.textContent = "#" + rank + (doc.new === true ? " · new" : "");
+    card.appendChild(rankEl);
+    var count = el("span", "cc-count");
+    count.textContent = String(Number(doc.contributions) || 0) + " contributions";
+    card.appendChild(count);
+    var meter = el("div", "cc-meter contrib-meter");
+    var pct = Math.round(((Number(doc.contributions) || 0) / (max || 1)) * 100);
+    meter.style.setProperty("--w", pct + "%");
+    meter.appendChild(document.createElement("span"));
+    card.appendChild(meter);
+    var stats = el("div", "cc-stats");
+    var week = document.createElement("span");
+    week.innerHTML = "<b>" + (Number(doc.week_commits) || 0) + "</b> this week";
+    var reviews = document.createElement("span");
+    reviews.innerHTML = "<b>" + (Number(doc.reviews) || 0) + "</b> reviews";
+    stats.append(week, reviews);
+    card.appendChild(stats);
+    hit.link.appendChild(card);
     return hit.article;
   }
 
@@ -400,45 +482,31 @@
     return value.indexOf("?") === -1 ? value + "?s=64" : value + "&s=64";
   }
 
-  function contribHit(doc, rank, max) {
-    var hit = linkedHit(doc);
-    addText(hit.link, String(rank));
-    var src = avatarUrl(doc.avatar_url);
-    if (src) {
-      var img = document.createElement("img");
-      img.alt = "";
-      img.src = src;
-      hit.link.appendChild(img);
-    }
-    addText(hit.link, doc.login || doc.title || "");
-    var meter = el("span", "contrib-meter");
-    var pct = Math.round(((Number(doc.contributions) || 0) / max) * 100);
-    meter.style.setProperty("--w", pct + "%");
-    meter.appendChild(document.createElement("span"));
-    hit.link.appendChild(meter);
-    addText(hit.link, String(Number(doc.contributions) || 0));
-    addText(hit.link, (Number(doc.week_commits) || 0) + " this week");
-    addText(hit.link, (Number(doc.reviews) || 0) + " reviews");
-    if (doc.new === true) {
-      var badge = el("span", "contrib-new");
-      badge.textContent = "new";
-      hit.link.appendChild(badge);
-    }
-    return hit.article;
-  }
-
   function renderIssues(panel) {
     var items = asList(DATA.issues);
     var page = el("div", "tab-page");
     var heading = el("h2");
     heading.textContent = "Issues";
+    var openN = countOf(DATA.issues, "total_open");
+    var closedN = countOf(DATA.issues, "total_closed");
     var counts = el("p");
-    counts.textContent = formatCount(countOf(DATA.issues, "total_open")) + " open / " +
-      formatCount(countOf(DATA.issues, "total_closed")) + " closed";
-    var note = el("p", "tab-note");
+    counts.textContent = formatCount(openN) + " open / " + formatCount(closedN) + " closed";
+    var note = el("p");
+    note.className = "tab-note";
     note.textContent = catalogReady
       ? "searching the " + scannedCount(DATA.issues, items) + " most recently updated open issues · click a row for details"
       : "showing the top " + items.length + " from the page snapshot — loading the full list…";
+    var cards = el("div", "queue-cards");
+    [["open", openN, "open now"], ["closed", closedN, "closed"], ["listed", items.length, "in this view"]].forEach(function (spec) {
+      var card = document.createElement("div");
+      card.className = "queue-card";
+      var n = el("span", "qc-n");
+      n.textContent = formatCount(spec[1]);
+      var label = el("span", "qc-label");
+      label.textContent = spec[2];
+      card.append(n, label);
+      cards.appendChild(card);
+    });
     var input = document.createElement("input");
     input.id = "issue-q";
     input.type = "search";
@@ -468,6 +536,8 @@
       filters.appendChild(btn);
     });
     var sorts = el("div");
+    sorts.className = "chips";
+    sorts.style.margin = "8px 0";
     sorts.setAttribute("data-chip-group", "sort");
     sorts.setAttribute("role", "group");
     sorts.setAttribute("aria-label", "Sort issues");
@@ -476,10 +546,10 @@
       btn.setAttribute("data-sort", spec[1]);
       sorts.appendChild(btn);
     });
-    var list = el("div", "hit-list");
+    var list = el("div", "hit-list carded");
     list.id = "issue-hits";
     list.setAttribute("aria-live", "polite");
-    page.append(heading, counts, note, input, filters, sorts, list);
+    page.append(heading, counts, note, cards, input, filters, sorts, list);
     panel.appendChild(page);
     input.addEventListener("input", paintIssues);
     paintIssues();
@@ -513,10 +583,12 @@
     var page = el("div", "tab-page");
     var heading = el("h2");
     heading.textContent = "Pull requests";
+    var openN = countOf(DATA.pull_requests, "total_open");
+    var closedN = countOf(DATA.pull_requests, "total_closed");
     var counts = el("p");
-    counts.textContent = formatCount(countOf(DATA.pull_requests, "total_open")) + " open · " +
-      formatCount(countOf(DATA.pull_requests, "total_closed")) + " closed";
-    var note = el("p", "tab-note");
+    counts.textContent = formatCount(openN) + " open · " + formatCount(closedN) + " closed";
+    var note = el("p");
+    note.className = "tab-note";
     note.textContent = catalogReady
       ? "queues from the " + scannedCount(DATA.pull_requests, items) +
         " most recently updated open pull requests · click a row for details"
@@ -530,27 +602,71 @@
     items.forEach(function (pr) {
       if (queues[pr.queue] != null) queues[pr.queue] += 1;
     });
+    var cards = el("div", "queue-cards");
+    [
+      ["all", "All"], ["needs-review", "Needs review"], ["approved", "Approved"],
+      ["changes", "Changes"], ["draft", "Draft"]
+    ].forEach(function (spec, index) {
+      var card = document.createElement("a");
+      card.className = "queue-card" + (index === 0 ? " is-on" : "");
+      card.href = "#prs";
+      card.setAttribute("data-queue-card", spec[0]);
+      var n = el("span", "qc-n");
+      n.textContent = String(queues[spec[0]] != null ? queues[spec[0]] : 0);
+      var label = el("span", "qc-label");
+      label.textContent = spec[1];
+      card.append(n, label);
+      cards.appendChild(card);
+    });
     var filters = el("div");
     filters.setAttribute("data-chip-group", "queue");
     filters.setAttribute("role", "group");
     filters.setAttribute("aria-label", "Review queue");
     [
-      ["All", "all"],
-      ["Needs review", "needs-review"],
-      ["Approved", "approved"],
-      ["Changes", "changes"],
-      ["Draft", "draft"],
+      ["All", "all"], ["Needs review", "needs-review"], ["Approved", "approved"],
+      ["Changes", "changes"], ["Draft", "draft"],
     ].forEach(function (spec, index) {
       var btn = chip(spec[0] + " " + queues[spec[1]], index === 0);
       btn.setAttribute("data-queue", spec[1]);
       filters.appendChild(btn);
     });
-    var list = el("div", "hit-list");
+    var staleLink = el("p");
+    staleLink.className = "tab-note";
+    staleLink.innerHTML = 'Long-stalled review work: <a href="#triage">PRs awaiting a first review for 30+ days →</a>';
+    var list = el("div", "hit-list carded");
     list.id = "pr-hits";
-    page.append(heading, counts, note, input, filters, list);
-    panel.appendChild(page);
+    page.append(heading, counts, note, cards, input, filters, staleLink, list);
+    // the 6-hour PR archive lives on this page, under the queues
+    var archive = panel.querySelector("#prarchive");
+    if (archive) panel.insertBefore(page, archive);
+    else panel.appendChild(page);
     input.addEventListener("input", paintPrs);
+    cards.addEventListener("click", function (event) {
+      var card = event.target.closest("a[data-queue-card]");
+      if (!card) return;
+      event.preventDefault();
+      cards.querySelectorAll("a.queue-card").forEach(function (node) {
+        node.classList.toggle("is-on", node === card);
+      });
+      var want = card.getAttribute("data-queue-card");
+      filters.querySelectorAll("button.chip").forEach(function (btn) {
+        var on = btn.getAttribute("data-queue") === want;
+        btn.classList.toggle("is-on", on);
+        btn.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+      paintPrs();
+    });
+    filters.addEventListener("click", function (event) {
+      var btn = event.target.closest("button.chip");
+      if (!btn) return;
+      var want = btn.getAttribute("data-queue");
+      cards.querySelectorAll("a.queue-card").forEach(function (node) {
+        node.classList.toggle("is-on", node.getAttribute("data-queue-card") === want);
+      });
+      setTimeout(paintPrs, 0);
+    });
     paintPrs();
+    initArchive();
   }
 
   function paintPrs() {
@@ -575,12 +691,17 @@
     var page = el("div", "tab-page");
     var heading = el("h2");
     heading.textContent = "Contributors";
+    var note = el("p");
+    note.className = "tab-note";
+    note.textContent = "ranked by contributions · hover a card for the exact count";
     var input = document.createElement("input");
     input.id = "contrib-q";
     input.type = "search";
     input.placeholder = "Search contributors";
     input.setAttribute("aria-label", "Search contributors");
     var filters = el("div");
+    filters.className = "chips";
+    filters.style.margin = "8px 0";
     filters.setAttribute("data-chip-group", "filter");
     filters.setAttribute("role", "group");
     filters.setAttribute("aria-label", "Filter contributors");
@@ -589,9 +710,9 @@
     var newer = chip("New", false);
     newer.setAttribute("data-filter", "new");
     filters.append(all, newer);
-    var list = el("div", "hit-list");
+    var list = el("div", "hit-list contrib-grid");
     list.id = "contrib-hits";
-    page.append(heading, input, filters, list);
+    page.append(heading, note, input, filters, list);
     panel.appendChild(page);
     input.addEventListener("input", paintContribs);
     paintContribs();
@@ -600,26 +721,21 @@
   function paintContribs() {
     var list = document.getElementById("contrib-hits");
     var input = document.getElementById("contrib-q");
+    if (!list || !input) return;
     var api = window.NousSearch;
-    if (!list || !input || !api) return;
     var filterBtn = selected("contributors", "filter");
-    var onlyNew = filterBtn && filterBtn.getAttribute("data-filter") === "new";
-    var rows = people().filter(function (person) { return !onlyNew || person.new === true; });
-    var shown;
-    if (queryIsBlank(input.value)) {
-      shown = rows.slice().sort(function (a, b) {
-        return (Number(b.contributions) || 0) - (Number(a.contributions) || 0);
-      });
-    } else {
-      var docs = rows.map(contribDoc);
+    var filter = filterBtn ? filterBtn.getAttribute("data-filter") : "all";
+    var docs = people().map(contribDoc).filter(function (doc) {
+      return filter !== "new" || doc.new === true;
+    });
+    var shown = docs;
+    if (api && !queryIsBlank(input.value)) {
       shown = api.searchDocs(docs, input.value, docs.length).hits.map(function (hit) { return hit.doc; });
     }
-    var max = 0;
-    shown.forEach(function (row) {
-      var n = Number(row.contributions) || 0;
-      if (n > max) max = n;
-    });
-    if (!max) max = 1;
+    var max = shown.reduce(function (best, doc) {
+      var n = Number(doc.contributions) || 0;
+      return n > best ? n : best;
+    }, 1);
     list.replaceChildren.apply(list, shown.map(function (doc, index) {
       return contribHit(doc, index + 1, max);
     }));
@@ -634,60 +750,65 @@
     heading.textContent = "Info";
     page.appendChild(heading);
 
-    function para(text) {
-      var p = el("p");
-      p.textContent = text;
-      page.appendChild(p);
-      return p;
-    }
-    function linkPara(before, href, label, after) {
-      var p = el("p");
-      p.textContent = before;
-      var a = document.createElement("a");
-      a.href = href;
-      a.target = "_blank";
-      a.rel = "noopener";
-      a.textContent = label;
-      p.appendChild(a);
-      if (after) p.appendChild(document.createTextNode(after));
-      page.appendChild(p);
-      return p;
+    function card(title, paragraphs) {
+      var box = el("div", "info-card");
+      var h = el("h3");
+      h.textContent = title;
+      box.appendChild(h);
+      paragraphs.forEach(function (text) {
+        var p = el("p");
+        p.textContent = text;
+        box.appendChild(p);
+      });
+      return box;
     }
 
-    para("Nous Space is a read-only community observatory for the Hermes Agent repository. It tracks what the maintainer lane is shipping, what is merging, and how the broader Hermes ecosystem is growing.");
-    para("The green strip shows open pull requests the maintainer is involved in, ranked by merge likelihood. The blue strip shows pull requests merged to main by or authored by the maintainer.");
-    para("The factors behind the green order are listed under the strip (\u201cHow the green strip is ordered\u201d).");
-
-    var sub = el("h3");
-    sub.textContent = "Data";
-    page.appendChild(sub);
-    para("Everything here comes from public GitHub data collected by an automated, strictly read-only watch lane: a full pull-request backfill (over 96,000 PRs), an issues backfill in progress, a live maintainer watch, and a merge corpus that feeds the quality program. The watcher never comments, reviews, or reacts on GitHub.");
-    para("The free ecosystem catalog indexes skills, plugins, mods, and other community add-ons. Free and open tools only — paid offerings are catalogued later, separately.");
-
-    var sub2 = el("h3");
-    sub2.textContent = "Freshness";
-    page.appendChild(sub2);
-    para("This page ships a small build-time snapshot. On load it asks the live API (/api/v1/overview) for newer numbers. Every panel carries a stamp: \u201cAPI <time>\u201d when the live API refreshed it, \u201csnapshot <time>\u201d when it shows build-time data.");
+    var cards = el("div", "info-cards");
+    cards.appendChild(card("What this is", [
+      "Nous Space is a read-only community observatory for the Hermes Agent repository. It tracks what the maintainer lane is shipping, what is merging, and how the broader Hermes ecosystem is growing."
+    ]));
+    cards.appendChild(card("The strips", [
+      "The green strip shows open pull requests the maintainer is involved in, ranked by merge likelihood. The blue strip shows pull requests merged to main by or authored by the maintainer.",
+      "Click any block — or the author name under a merged block — to open that pull request\u2019s page here. The factors behind the green order are listed under the strip."
+    ]));
+    cards.appendChild(card("Data", [
+      "Everything here comes from public GitHub data collected by an automated, strictly read-only watch lane: a full pull-request backfill (over 96,000 PRs), an issues backfill in progress, a live maintainer watch, and a merge corpus that feeds the quality program. The watcher never comments, reviews, or reacts on GitHub.",
+      "The free ecosystem catalog indexes skills, plugins, mods, and other community add-ons. Free and open tools only."
+    ]));
+    cards.appendChild(card("Freshness", [
+      "This page ships a small build-time snapshot. On load it asks the live API (/api/v1/overview) for newer numbers. Every panel carries a stamp with an explicit date and timezone: \u201cAPI <when>\u201d when the live API refreshed it, \u201csnapshot <when>\u201d for build-time data. Hover any stamp for the exact UTC instant."
+    ]));
+    page.appendChild(cards);
 
     var repoUrl = DATA.repo_url || (DATA.repo ? "https://github.com/" + DATA.repo : "");
-    if (repoUrl) {
-      linkPara("Repository: ", repoUrl, DATA.repo || repoUrl);
-    }
-    linkPara("Machine-readable API: ", "https://nous.minddragonlabs.com/api", "api/v1", " — free, attribution required (X-Nous-Attribution). See the API docs view.");
-    var feeds = el("p");
-    feeds.appendChild(document.createTextNode("Notable merges feed: "));
-    [["/feed.json", "JSON Feed"], ["/feed.xml", "Atom"], ["#docs", "API docs"], ["#provenance", "Provenance & coverage"]].forEach(function (pair, idx) {
-      if (idx) feeds.appendChild(document.createTextNode(" · "));
+    var links = el("div", "info-links");
+    function addLink(href, label) {
       var a = document.createElement("a");
-      a.href = pair[0];
-      a.textContent = pair[1];
-      feeds.appendChild(a);
-    });
-    page.appendChild(feeds);
+      a.href = href;
+      if (/^https?:/.test(href)) {
+        a.target = "_blank";
+        a.rel = "noopener";
+      }
+      a.textContent = label;
+      links.appendChild(a);
+    }
+    if (repoUrl) addLink(repoUrl, "Repository");
+    addLink("#docs", "API docs");
+    addLink("https://nous.minddragonlabs.com/api", "API index");
+    addLink("#arch", "System architecture");
+    addLink("/feed.json", "JSON Feed");
+    addLink("/feed.xml", "Atom");
+    addLink("#provenance", "Provenance & coverage");
+    page.appendChild(links);
 
     var stamp = el("p");
     stamp.id = "freshness-detail";
-    stamp.textContent = DATA.generated ? "Snapshot built: " + String(DATA.generated) : "";
+    if (DATA.generated) {
+      var t = Date.parse(String(DATA.generated));
+      stamp.textContent = "Snapshot built " + (Number.isNaN(t) ? String(DATA.generated) : absLocal(t) + " (" + absUtc(t) + ")");
+    } else {
+      stamp.textContent = "";
+    }
     page.appendChild(stamp);
     panel.insertBefore(page, panel.firstChild);
   }
@@ -722,9 +843,9 @@
       node.textContent = "";
       return;
     }
-    var delta = Date.now() - t;
-    var min = delta <= 0 ? 0 : Math.floor(delta / 60000);
-    node.textContent = "updated " + min + "m ago";
+    node.textContent = "updated " + absLocal(t) + " · " + agoText(t);
+    node.title = "Snapshot built " + absUtc(t) + " · " + absLocal(t) +
+      " — hover the panel stamps for per-panel times.";
     paintAges();
   }
 
@@ -893,6 +1014,34 @@
     return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   }
 
+  // Absolute times always carry the date and the timezone name — never a
+  // bare clock ("10:53am" of which day? which zone?). Hover titles repeat
+  // the UTC instant so any two readers can compare exactly.
+  function tzName(d) {
+    try {
+      var parts = new Intl.DateTimeFormat(undefined, { timeZoneName: "short" }).formatToParts(d);
+      for (var i = 0; i < parts.length; i++) {
+        if (parts[i].type === "timeZoneName") return parts[i].value;
+      }
+    } catch (e) {}
+    return "";
+  }
+
+  function absLocal(ts) {
+    var d = new Date(ts);
+    if (Number.isNaN(d.getTime())) return "";
+    var date = d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
+    var time = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    var zone = tzName(d);
+    return date + ", " + time + (zone ? " " + zone : "");
+  }
+
+  function absUtc(ts) {
+    var d = new Date(ts);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toISOString().slice(0, 16).replace("T", " ") + " UTC";
+  }
+
   function paintStamps() {
     document.querySelectorAll(".fresh-stamp[data-built]").forEach(function (node) {
       var built = node.getAttribute("data-built");
@@ -901,27 +1050,28 @@
       node.classList.toggle("is-api", apiNewer);
       node.classList.toggle("is-stale", LIVE.state === "failed" && api);
       if (apiNewer) {
-        node.textContent = "API " + clock(LIVE.fetchedAt);
-        node.title = "Refreshed in your browser from /api/v1/overview (API data " + LIVE.apiTime + ")";
+        node.textContent = "API " + absLocal(LIVE.fetchedAt);
+        node.title = "Refreshed in your browser from /api/v1/overview at " + absUtc(LIVE.fetchedAt) +
+          " (API data " + absUtc(LIVE.apiTime) + ")";
       } else {
-        node.textContent = "snapshot " + clock(built);
-        node.title = "Build-time snapshot " + built +
+        node.textContent = "snapshot " + absLocal(built);
+        node.title = "Build-time snapshot " + absUtc(built) + " · " + absLocal(built) +
           (api && LIVE.state === "failed" ? " — live API unreachable, showing the snapshot" : "") +
-          (api && LIVE.state === "older" ? " — the live API (" + LIVE.apiTime + ") is older than this snapshot" : "");
+          (api && LIVE.state === "older" ? " — the live API (" + absUtc(LIVE.apiTime) + ") is older than this snapshot" : "");
       }
     });
     var pill = document.getElementById("live-state");
     if (!pill) return;
     pill.classList.toggle("is-api", LIVE.state === "api");
     pill.classList.toggle("is-snapshot", LIVE.state !== "api" && LIVE.state !== "pending");
-    if (LIVE.state === "api") pill.textContent = "live · API " + clock(LIVE.fetchedAt);
+    if (LIVE.state === "api") pill.textContent = "live · API " + absLocal(LIVE.fetchedAt);
     else if (LIVE.state === "pending") pill.textContent = "checking API…";
-    else pill.textContent = "snapshot " + clock(DATA.generated || "");
+    else pill.textContent = "snapshot " + absLocal(DATA.generated || "");
     pill.title = LIVE.state === "api"
-      ? "Numbers on API-backed panels were refreshed from /api/v1/overview at " + clock(LIVE.fetchedAt)
+      ? "Numbers on API-backed panels were refreshed from /api/v1/overview at " + absUtc(LIVE.fetchedAt)
       : LIVE.state === "older"
-        ? "The live API data (" + LIVE.apiTime + ") is older than this page's snapshot, so the snapshot is shown"
-        : "Showing the build-time snapshot (" + (DATA.generated || "") + ")";
+        ? "The live API data (" + absUtc(LIVE.apiTime) + ") is older than this page's snapshot, so the snapshot is shown"
+        : "Showing the build-time snapshot (" + absUtc(DATA.generated || "") + " · " + absLocal(DATA.generated || "") + ")";
   }
 
   function applyOverview(overview) {
@@ -1139,91 +1289,96 @@
 
   // ── 06 / ARCHIVE panel (data/archive.json, loaded when scrolled near) ─────
 
+  // ── PR archive: last 6 hours, sort options, lives on the PRs page ───────
+
+  var ARCH6 = null;
+  var ARCH6_LOADING = false;
+
   function initArchive() {
     var section = document.getElementById("prarchive");
-    var list = document.getElementById("prarch-list");
-    if (!section || !list) return;
-    var started = false;
-    function start() {
-      if (started) return;
-      started = true;
-      loadJSON("data/archive.json").then(function (arch) {
-        mountArchive(section, Array.isArray(arch && arch.prs) ? arch.prs : []);
-      }).catch(function () {
-        list.innerHTML = '<p class="eco-note">The archive could not load. The mirror is at <a href="/prs_archive.json">/prs_archive.json</a>.</p>';
+    if (!section || section.getAttribute("data-bound")) return;
+    section.setAttribute("data-bound", "1");
+    var search = document.getElementById("prarch-search");
+    if (search) {
+      var timer = null;
+      search.addEventListener("input", function () {
+        clearTimeout(timer);
+        timer = setTimeout(paintArchive, 150);
       });
     }
-    if ("IntersectionObserver" in window) {
-      var io = new IntersectionObserver(function (entries) {
-        if (entries.some(function (entry) { return entry.isIntersecting; })) {
-          io.disconnect();
-          start();
-        }
-      }, { rootMargin: "600px" });
-      io.observe(section);
-    } else {
-      start();
+    if (ARCH6) {
+      paintArchive();
+      return;
     }
+    if (ARCH6_LOADING) return;
+    ARCH6_LOADING = true;
+    loadJSON("data/archive6.json").then(function (payload) {
+      ARCH6_LOADING = false;
+      ARCH6 = Array.isArray(payload && payload.prs) ? payload.prs : [];
+      paintArchive();
+    }).catch(function () {
+      ARCH6_LOADING = false;
+      ARCH6 = [];
+      paintArchive();
+    });
   }
 
   function archiveDoc(row) {
     var repo = DATA.repo || "NousResearch/hermes-agent";
     return {
       kind: "pr", number: row.n, title: row.t || "", author: row.a || "",
-      state: row.s || "", date: row.m || "", merged_at: row.s === "merged" ? row.m || "" : "",
-      labels: [], url: "https://github.com/" + repo + "/pull/" + row.n
+      state: row.s || "", date: row.ts ? new Date(row.ts * 1000).toISOString() : "",
+      merged_at: row.s === "merged" && row.ts ? new Date(row.ts * 1000).toISOString() : "",
+      additions: row.add, deletions: row.del, comments: row.c,
+      labels: [], url: row.url || ("https://github.com/" + repo + "/pull/" + row.n)
     };
   }
 
-  function mountArchive(section, prs) {
-    var PER = Number(section.getAttribute("data-per")) || 100;
-    var page = 0;
-    var query = "";
+  function sortArchive(rows, mode) {
+    var copy = rows.slice();
+    copy.sort(function (a, b) {
+      if (mode === "oldest") return (a.ts || 0) - (b.ts || 0);
+      if (mode === "changed") return ((b.add || 0) + (b.del || 0)) - ((a.add || 0) + (a.del || 0)) || (b.ts || 0) - (a.ts || 0);
+      if (mode === "discussed") return (b.c || 0) - (a.c || 0) || (b.ts || 0) - (a.ts || 0);
+      return (b.ts || 0) - (a.ts || 0);
+    });
+    return copy;
+  }
+
+  function paintArchive() {
     var list = document.getElementById("prarch-list");
-    var pager = document.getElementById("prarch-pager");
+    if (!list) return;
+    if (!ARCH6) {
+      initArchive();
+      return;
+    }
     var search = document.getElementById("prarch-search");
-    function filtered() {
-      var q = query.toLowerCase().trim();
-      if (!q) return prs;
-      return prs.filter(function (r) {
+    var q = (search ? search.value : "").toLowerCase().trim();
+    var rows = ARCH6;
+    if (q) {
+      rows = rows.filter(function (r) {
         return ("#" + r.n + " " + r.t + " " + r.a).toLowerCase().indexOf(q) !== -1;
       });
     }
-    function render() {
-      var rows = filtered();
-      var pages = Math.max(1, Math.ceil(rows.length / PER));
-      if (page >= pages) page = 0;
-      var slice = rows.slice(page * PER, page * PER + PER);
-      list.innerHTML = slice.length ? slice.map(function (r) {
-        var doc = archiveDoc(r);
-        return '<div class="prs-row"><a class="prs-main" href="' + escapeHtml(doc.url) + '" target="_blank" rel="noopener" data-drawer="' +
-          registerDoc(doc) + '" aria-haspopup="dialog">' +
-          '<span class="prs-num">#' + Number(r.n) + '</span><span class="prs-title">' + escapeHtml(r.t) + "</span>" +
-          '<span class="prs-status ' + (r.s === "open" ? "prs-open" : "prs-approved") + '">' + escapeHtml(r.s) + "</span>" +
-          '<span class="prs-author">' + escapeHtml(r.a) + '</span><span class="prs-time">' + escapeHtml(r.m) + "</span></a></div>";
-      }).join("") : '<p class="eco-note">No matches.</p>';
-      var buttons = [];
-      for (var i = 0; i < pages && pages > 1; i++) {
-        buttons.push('<button type="button" class="eco-page' + (i === page ? " is-on" : "") + '" data-arch-page="' + i +
-          '" aria-label="Archive page ' + (i + 1) + '"' + (i === page ? ' aria-current="page"' : "") + ">" + (i + 1) + "</button>");
-      }
-      pager.innerHTML = buttons.join("");
-    }
-    pager.addEventListener("click", function (event) {
-      var btn = event.target.closest("button[data-arch-page]");
-      if (!btn) return;
-      page = Number(btn.getAttribute("data-arch-page")) || 0;
-      render();
-      if (section.scrollIntoView) section.scrollIntoView();
-    });
-    if (search) {
-      var timer = null;
-      search.addEventListener("input", function () {
-        clearTimeout(timer);
-        timer = setTimeout(function () { query = search.value; page = 0; render(); }, 150);
-      });
-    }
-    render();
+    var group = document.querySelector('[data-chip-group="arch-sort"]');
+    var sortBtn = group ? group.querySelector("button.chip.is-on") : null;
+    rows = sortArchive(rows, sortBtn ? sortBtn.getAttribute("data-arch-sort") : "newest");
+    var count = document.getElementById("prarch-count");
+    if (count) count.textContent = String(rows.length);
+    list.innerHTML = rows.length ? rows.map(function (r) {
+      var doc = archiveDoc(r);
+      var when = r.ts ? absLocal(r.ts * 1000) : "";
+      var diff = (r.add || r.del) ? '<span class="prs-diff"><span class="add">+' + (r.add || 0) +
+        '</span> <span class="del">-' + (r.del || 0) + "</span></span>" : "";
+      return '<div class="prs-row"><a class="prs-main" href="' + escapeHtml(doc.url) +
+        '" data-drawer="' + registerDoc(doc) + '" aria-haspopup="dialog">' +
+        '<span class="prs-num">#' + Number(r.n) + "</span>" +
+        '<span class="prs-title">' + escapeHtml(r.t) + "</span>" +
+        '<span class="prs-status ' + (r.s === "open" ? "prs-open" : "prs-approved") + '">' +
+        escapeHtml(r.s) + "</span>" +
+        '<span class="prs-author">' + escapeHtml(r.a) + "</span>" + diff +
+        '<span class="prs-time" title="' + escapeHtml(when) + '">' + escapeHtml(agoText(r.ts * 1000)) + "</span></a></div>";
+    }).join("") : '<p class="eco-note">No PRs in this window match. The 6-hour window is the free public tier — older records need an API key (see the API docs).</p>';
   }
 
   // ── awaiting first review (triage) ───────────────────────────────────────
@@ -1393,10 +1548,12 @@
     var key = document.getElementById("cb-key");
     var out = document.getElementById("cb-out");
     var copied = document.getElementById("cb-copied");
+    var summary = document.getElementById("cb-summary");
     var defaults = { number: "130141", q: "gateway", page: "1" };
     function paint() {
       var option = endpoint.options[endpoint.selectedIndex];
       var name = option ? option.getAttribute("data-param") : "";
+      if (summary) summary.textContent = option ? (option.getAttribute("data-summary") || "") : "";
       paramWrap.hidden = !name;
       if (name && paramWrap.getAttribute("data-for") !== name) {
         paramWrap.setAttribute("data-for", name);
@@ -1435,6 +1592,181 @@
     var sel = window.getSelection();
     sel.removeAllRanges();
     sel.addRange(range);
+  }
+
+  // ── forum: its own section, one "general" category for PRs and issues ───
+
+  function forumThreads() {
+    var seen = {};
+    var out = [];
+    function add(kind, doc) {
+      if (!doc || doc.number == null || doc.number === "") return;
+      var key = kind + ":" + doc.number;
+      if (seen[key]) return;
+      seen[key] = true;
+      out.push({
+        kind: kind,
+        number: doc.number,
+        title: doc.title || "",
+        author: doc.author || "",
+        state: doc.state || (kind === "issue" ? "open" : "open"),
+        ts: toTs(doc.updated_at != null ? doc.updated_at : (doc.created_at || doc.ts))
+      });
+    }
+    asList(DATA.pull_requests).forEach(function (doc) { add("pr", doc); });
+    asList(DATA.issues).forEach(function (doc) { add("issue", doc); });
+    (Array.isArray(ARCH6) ? ARCH6 : []).forEach(function (r) {
+      add("pr", { number: r.n, title: r.t, author: r.a, state: r.s, ts: r.ts });
+    });
+    out.sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
+    return out.slice(0, 120);
+  }
+
+  function paintForum() {
+    var list = document.getElementById("forum-threads");
+    if (!list) return;
+    var kindBtn = document.querySelector('[data-chip-group="forum-kind"] .chip.is-on');
+    var kind = kindBtn ? kindBtn.getAttribute("data-forum-kind") : "all";
+    var search = document.getElementById("forum-q");
+    var q = (search ? search.value : "").toLowerCase().trim();
+    var rows = forumThreads().filter(function (t) {
+      if (kind !== "all" && t.kind !== kind) return false;
+      if (!q) return true;
+      return ("#" + t.number + " " + t.title + " " + t.author).toLowerCase().indexOf(q) !== -1;
+    });
+    list.innerHTML = rows.length ? rows.map(function (t) {
+      return '<article class="forum-thread" data-kind="' + t.kind + '" data-number="' + t.number + '">' +
+        '<button type="button" class="forum-thread-head">' +
+        '<span class="ft-num">#' + Number(t.number) + "</span>" +
+        '<span class="ft-title">' + escapeHtml(t.title || "") + "</span>" +
+        '<span class="ft-meta">' + (t.kind === "issue" ? "issue" : "pull request") +
+        (t.author ? " · " + escapeHtml(t.author) : "") + (t.state ? " · " + escapeHtml(t.state) : "") +
+        "</span></button>" +
+        '<div class="forum-thread-body" hidden></div></article>';
+    }).join("") : '<p class="eco-note">No threads match.</p>';
+  }
+
+  function forumThreadToggle(article) {
+    var body = article.querySelector(".forum-thread-body");
+    if (!body) return;
+    if (!body.hidden && body.getAttribute("data-loaded")) {
+      body.hidden = true;
+      return;
+    }
+    body.hidden = false;
+    if (body.getAttribute("data-loaded")) return;
+    body.setAttribute("data-loaded", "1");
+    var kind = article.getAttribute("data-kind") === "issue" ? "issue" : "pr";
+    var number = article.getAttribute("data-number");
+    body.innerHTML = forumBox(kind, number);
+    loadForum(body, kind, number);
+  }
+
+  function renderForum(panel) {
+    var page = el("div", "tab-page");
+    var heading = el("h2");
+    heading.textContent = "Forum";
+    var note = el("p");
+    note.className = "tab-note";
+    note.textContent = "Community discussion on Hermes Agent pull requests and issues. " +
+      "For now everything lives in one general category. Click a thread to read and comment — " +
+      "Google sign-in required to post.";
+    var cats = el("div");
+    cats.className = "forum-cats";
+    var general = el("button");
+    general.type = "button";
+    general.className = "forum-cat is-on";
+    general.setAttribute("aria-pressed", "true");
+    general.textContent = "general";
+    var later = el("button");
+    later.type = "button";
+    later.className = "forum-cat";
+    later.disabled = true;
+    later.textContent = "more categories later";
+    cats.append(general, later);
+    var kinds = el("div");
+    kinds.className = "chips";
+    kinds.setAttribute("data-chip-group", "forum-kind");
+    kinds.setAttribute("role", "group");
+    kinds.setAttribute("aria-label", "Filter threads");
+    [["all", "All"], ["pr", "Pull requests"], ["issue", "Issues"]].forEach(function (spec, index) {
+      var btn = chip(spec[1], index === 0);
+      btn.setAttribute("data-forum-kind", spec[0]);
+      kinds.appendChild(btn);
+    });
+    var input = document.createElement("input");
+    input.id = "forum-q";
+    input.type = "search";
+    input.placeholder = "Search threads — number, title, author…";
+    input.setAttribute("aria-label", "Search forum threads");
+    input.className = "search-input";
+    var list = el("div");
+    list.id = "forum-threads";
+    list.className = "forum-page";
+    list.setAttribute("aria-live", "polite");
+    page.append(heading, note, cats, kinds, input, list);
+    panel.appendChild(page);
+    input.addEventListener("input", paintForum);
+    kinds.addEventListener("click", function (event) {
+      if (event.target.closest("button.chip")) setTimeout(paintForum, 0);
+    });
+    list.addEventListener("click", function (event) {
+      var head = event.target.closest(".forum-thread-head");
+      if (head) forumThreadToggle(head.closest(".forum-thread"));
+    });
+    paintForum();
+    forumDeepLink();
+    viewHooks.forum = { show: function () { forumDeepLink(); } };
+  }
+
+  // deep link from the PR page: #forum?kind=pr&number=123
+  function forumDeepLink() {
+    var params = hashParams();
+    var dk = params.get("kind");
+    var dn = params.get("number");
+    if (!dn) return;
+    var list = document.getElementById("forum-threads");
+    if (!list) return;
+    var target = list.querySelector('.forum-thread[data-kind="' + (dk === "issue" ? "issue" : "pr") +
+      '"][data-number="' + dn + '"]');
+    if (target) {
+      forumThreadToggle(target);
+      if (target.scrollIntoView) target.scrollIntoView({ block: "center" });
+    }
+  }
+
+  // ── system architecture: switch between per-release diagrams ────────────
+
+  function bindArchPicker(panel) {
+    var picker = document.getElementById("arch-picker");
+    if (!picker || picker.getAttribute("data-bound")) return;
+    picker.setAttribute("data-bound", "1");
+    picker.addEventListener("click", function (event) {
+      var btn = event.target.closest("button[data-arch]");
+      if (!btn) return;
+      picker.querySelectorAll("button.arch-version").forEach(function (node) {
+        var on = node === btn;
+        node.classList.toggle("is-on", on);
+        node.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+      var key = btn.getAttribute("data-arch");
+      document.querySelectorAll("[data-arch-svg]").forEach(function (svgWrap) {
+        var on = svgWrap.getAttribute("data-arch-svg") === key;
+        svgWrap.hidden = !on;
+        if (!on) return;
+        var src = svgWrap.getAttribute("data-arch-src");
+        if (src && svgWrap.getAttribute("data-loaded") !== "1" && !svgWrap.querySelector("svg")) {
+          fetch(src, { cache: "force-cache" }).then(function (r) {
+            return r.ok ? r.text() : "";
+          }).then(function (text) {
+            if (text && text.indexOf("<svg") !== -1) {
+              svgWrap.innerHTML = text;
+              svgWrap.setAttribute("data-loaded", "1");
+            }
+          }).catch(function () {});
+        }
+      });
+    });
   }
 
   window.NousApp = {
@@ -1482,10 +1814,31 @@
       var nav = event.target.closest("[data-view]");
       if (nav) {
         event.preventDefault();
-        showView(nav.getAttribute("data-view") || "dashboard", false);
+        var navView = nav.getAttribute("data-view") || "dashboard";
+        if (navView === "dashboard") {
+          resetView();
+          return;
+        }
+        showView(navView, false);
+        return;
+      }
+      if (event.target.closest("#brand-home")) {
+        event.preventDefault();
+        resetView();
+        return;
+      }
+      var storyLink = event.target.closest("a[data-story]");
+      if (storyLink && plainClick(event)) {
+        event.preventDefault();
+        openStory(storyDocFromEl(storyLink));
         return;
       }
       if (event.target.closest(".hn-title")) {
+        event.preventDefault();
+        openDiscussion(event.target.closest(".hn-row"));
+        return;
+      }
+      if (event.target.closest(".hn-num")) {
         event.preventDefault();
         openDiscussion(event.target.closest(".hn-row"));
         return;
@@ -1506,7 +1859,10 @@
       button.setAttribute("aria-pressed", "true");
       var view = viewFromHash();
       if (view === "issues") paintIssues();
-      else if (view === "prs") paintPrs();
+      else if (view === "prs") {
+        if (button.hasAttribute("data-arch-sort")) paintArchive();
+        else paintPrs();
+      }
       else if (view === "contributors") paintContribs();
     });
     document.addEventListener("keydown", trapDrawerFocus);
@@ -1542,6 +1898,17 @@
         '#hn-scroll .hn-row[data-kind="' + storyMatch[1] + '"][data-number="' + storyMatch[2] + '"]'
       );
       if (storyRow) openDiscussion(storyRow);
+      else openStory({
+        kind: storyMatch[1],
+        number: storyMatch[2],
+        title: "#" + storyMatch[2],
+        lane: storyMatch[1] === "issue" ? "issue" : "pr",
+        author: "",
+        url: "https://github.com/" + (DATA.repo || "NousResearch/hermes-agent") +
+          (storyMatch[1] === "issue" ? "/issues/" : "/pull/") + storyMatch[2],
+        ts: 0,
+        maintainer: false
+      });
     }
   }
 
@@ -1710,6 +2077,168 @@
     }
     if (scroll) scroll.hidden = false;
     if (head) head.hidden = false;
+    var tail = document.getElementById("dash-tail");
+    if (tail) tail.hidden = false;
+  }
+
+  // ── the PR page (story) ─────────────────────────────────────────────────
+  // Opened from a block, a block author, a feed row, or a #story/pr/N link.
+  // The heading is the PR title, the info block is a badge grid, and the
+  // sections below the feed hide while the page is open — no PR archive
+  // under the PR.
+
+  // The Nous Space brand and the 4-square dashboard button reset everything
+  // back to the default view: no open story, no drawer, no leftover hash.
+  function resetView() {
+    closeDrawer();
+    closeDiscussion();
+    showView("dashboard", false);
+    writeHash("dashboard");
+    if (window.scrollTo) window.scrollTo({ top: 0, behavior: "auto" });
+    var blockstrip = document.getElementById("blockstrip");
+    if (blockstrip && blockstrip.scrollIntoView) blockstrip.scrollIntoView({ block: "nearest" });
+  }
+
+  function storyDocFromRow(row) {
+    var titleNode = row.querySelector(".hn-title");
+    return {
+      kind: row.getAttribute("data-kind") === "issue" ? "issue" : "pr",
+      number: row.getAttribute("data-number"),
+      title: titleNode ? titleNode.textContent : "",
+      lane: row.getAttribute("data-lane") || row.getAttribute("data-kind") || "pr",
+      author: row.getAttribute("data-author") || "",
+      url: row.getAttribute("data-url") || "",
+      ts: Number(row.getAttribute("data-ts") || 0),
+      maintainer: !!(titleNode && titleNode.classList.contains("is-maintainer"))
+    };
+  }
+
+  function storyDocFromEl(node) {
+    var kind = node.getAttribute("data-story") === "issue" ? "issue" : "pr";
+    var number = node.getAttribute("data-number") || "";
+    var title = node.getAttribute("title") || "";
+    title = title.replace(/^#\d+\s*/, "");
+    return {
+      kind: kind,
+      number: number,
+      title: title,
+      lane: node.classList.contains("p-green") ? "pr" : "merged",
+      author: "",
+      url: node.getAttribute("data-gh") || "",
+      ts: 0,
+      maintainer: false
+    };
+  }
+
+  function fmtWhen(value) {
+    if (!value) return "";
+    var t = Date.parse(String(value));
+    return Number.isNaN(t) ? String(value) : absLocal(t);
+  }
+
+  function storyInfoGrid(item, doc) {
+    var who = ((item.user || {}).login) || doc.author || "";
+    var mergedAt = item.merged_at || (item.pull_request && item.pull_request.merged_at) || "";
+    var state = String(item.state || "").toLowerCase();
+    if (mergedAt || doc.lane === "merged") state = "merged";
+    if (item.draft) state = "draft";
+    var badgeCls = state === "merged" ? "b-merged" : state === "closed" ? "b-closed" : "b-open";
+    var labels = Array.isArray(item.labels) ? item.labels.map(function (l) {
+      return typeof l === "string" ? l : (l && l.name) || "";
+    }).filter(Boolean) : [];
+    var pairs = [
+      ["number", "#" + (item.number || doc.number || "")],
+      ["kind", doc.kind === "issue" ? "issue" : "pull request"],
+      ["author", who],
+      ["state", '<span class="disc-badge ' + badgeCls + '">' + escapeHtml(state || "open") + "</span>"],
+      ["opened", fmtWhen(item.created_at)],
+      ["updated", fmtWhen(item.updated_at)]
+    ];
+    if (state === "merged") pairs.push(["merged", fmtWhen(mergedAt) || "—"]);
+    if (item.comments != null) pairs.push(["comments", String(item.comments)]);
+    if (labels.length) pairs.push(["labels", escapeHtml(labels.slice(0, 6).join(", "))]);
+    return '<dl class="disc-info">' + pairs.map(function (pair) {
+      return '<div class="disc-kv"><dt>' + escapeHtml(pair[0]) + "</dt><dd>" +
+        (pair[0] === "state" ? pair[1] : escapeHtml(pair[1])) + "</dd></div>";
+    }).join("") + "</dl>";
+  }
+
+  function storyActions(item, doc, kind, number) {
+    var gh = item.html_url || doc.url || "#";
+    return '<div class="disc-actions">' +
+      '<a class="primary" href="' + escapeHtml(gh) + '" target="_blank" rel="noopener">Open on GitHub ↗</a>' +
+      '<a href="#forum?kind=' + encodeURIComponent(kind) + "&number=" + encodeURIComponent(number) +
+      '" data-forum-thread="' + encodeURIComponent(kind + ":" + number) + '">Discuss in the forum →</a>' +
+      "</div>";
+  }
+
+  function openStory(doc, opener) {
+    if (!doc || !doc.number) return;
+    var news = document.getElementById("news");
+    var disc = document.getElementById("hn-discussion");
+    var scroll = document.getElementById("hn-scroll");
+    var head = document.querySelector("#news .hn-head");
+    if (!news || !disc) return;
+    if (viewFromHash() !== "dashboard") showView("dashboard", false);
+    var token = ++discToken;
+    var kind = doc.kind === "issue" ? "issue" : "pr";
+    var number = doc.number;
+    history.replaceState(null, "", location.pathname + location.search + "#story/" + kind + "/" + number);
+    if (scroll) scroll.hidden = true;
+    if (head) head.hidden = true;
+    var tail = document.getElementById("dash-tail");
+    if (tail) tail.hidden = true;
+    disc.hidden = false;
+    disc.innerHTML = '<div class="disc"><button type="button" class="disc-back">← back to the feed</button>' +
+      '<p class="disc-kicker">' + (kind === "issue" ? "issue" : "pull request") + "</p>" +
+      '<h2 class="disc-title' + (doc.maintainer ? " is-maintainer" : "") + '">' + escapeHtml(doc.title || ("#" + number)) + "</h2>" +
+      '<p class="disc-num">loading #' + escapeHtml(number) + "…</p></div>";
+    disc.scrollIntoView && disc.scrollIntoView({ block: "nearest" });
+    fetch("/api/github?kind=" + encodeURIComponent(kind) + "&number=" + encodeURIComponent(number), { cache: "no-store" })
+      .then(function (response) {
+        if (!response.ok) throw new Error(String(response.status));
+        return response.json();
+      })
+      .then(function (payload) {
+        if (token !== discToken) return;
+        var item = (payload && payload.item) || {};
+        var comments = Array.isArray(payload && payload.comments) ? payload.comments : [];
+        var who = ((item.user || {}).login) || doc.author || "";
+        var maintainer = doc.maintainer || who === (DATA.maintainer || "");
+        var commentHtml = comments.map(function (comment) {
+          var login = ((comment.user || {}).login) || "";
+          var mark = login && login === (DATA.maintainer || "") ? " is-maintainer" : "";
+          return '<article class="disc-comment"><p class="disc-by"><span class="' + mark.trim() + '">' +
+            escapeHtml(login) + "</span> " + escapeHtml(fmtWhen(comment.created_at)) + '</p><div class="disc-text">' +
+            renderBody(comment.body || "", comment.body_html) + "</div></article>";
+        }).join("");
+        if (!commentHtml) commentHtml = '<p class="hn-meta">No comments yet.</p>';
+        if (payload && payload.truncated) commentHtml += '<p class="hn-meta">Showing the latest comments. Older ones are on GitHub.</p>';
+        disc.innerHTML = '<div class="disc"><button type="button" class="disc-back">← back to the feed</button>' +
+          '<p class="disc-kicker">' + (kind === "issue" ? "issue" : "pull request") + "</p>" +
+          '<h2 class="disc-title' + (maintainer ? " is-maintainer" : "") + '">' +
+          escapeHtml(item.title || doc.title || ("#" + number)) + "</h2>" +
+          storyInfoGrid(item, doc) +
+          storyActions(item, doc, kind, number) +
+          '<div class="disc-body">' + renderBody(item.body || "", item.body_html) + "</div>" +
+          "<h3>discussion</h3>" + commentHtml + "</div>";
+      }).catch(function () {
+        if (token !== discToken) return;
+        disc.innerHTML = '<div class="disc"><button type="button" class="disc-back">← back to the feed</button>' +
+          '<p class="disc-kicker">' + (kind === "issue" ? "issue" : "pull request") + "</p>" +
+          '<h2 class="disc-title' + (doc.maintainer ? " is-maintainer" : "") + '">' +
+          escapeHtml(doc.title || ("#" + number)) + "</h2>" +
+          storyInfoGrid({}, doc) +
+          '<p class="hn-meta">GitHub details are unavailable right now — the page above is the local snapshot.</p>' +
+          '<div class="disc-actions"><a class="primary" href="' + escapeHtml(doc.url || "#") +
+          '" target="_blank" rel="noopener">Open on GitHub ↗</a></div>' +
+          "</div>";
+      });
+  }
+
+  function openDiscussion(row) {
+    if (!row) return;
+    openStory(storyDocFromRow(row));
   }
 
   function forumBox(kind, number) {
@@ -1853,66 +2382,6 @@
       }).catch(function () {
         note.textContent = "Could not post.";
       });
-    });
-  }
-
-  function openDiscussion(row) {
-    if (!row) return;
-    var news = document.getElementById("news");
-    var disc = document.getElementById("hn-discussion");
-    var scroll = document.getElementById("hn-scroll");
-    var head = document.querySelector("#news .hn-head");
-    if (!news || !disc) return;
-    var token = ++discToken;
-    var kind = row.getAttribute("data-kind") === "issue" ? "issue" : "pr";
-    var number = row.getAttribute("data-number");
-    history.replaceState(null, "", location.pathname + location.search + "#story/" + kind + "/" + number);
-    var repo = news.getAttribute("data-repo") || "NousResearch/hermes-agent";
-    var title = row.querySelector(".hn-title");
-    var maintainer = title && title.classList.contains("is-maintainer");
-    if (scroll) scroll.hidden = true;
-    if (head) head.hidden = true;
-    disc.hidden = false;
-    disc.innerHTML = '<div class="disc"><button type="button" class="disc-back">← list</button><p class="disc-num">loading #' +
-      escapeHtml(number) + "</p></div>";
-    fetch("/api/github?kind=" + encodeURIComponent(kind) + "&number=" + encodeURIComponent(number), { cache: "no-store" })
-      .then(function (response) {
-        if (!response.ok) throw new Error(String(response.status));
-        return response.json();
-      })
-      .then(function (payload) {
-      if (token !== discToken) return;
-      var item = (payload && payload.item) || {};
-      var comments = Array.isArray(payload && payload.comments) ? payload.comments : [];
-      var who = ((item.user || {}).login) || "";
-      var blue = maintainer || who === (DATA.maintainer || "") ? " is-maintainer" : "";
-      var commentHtml = comments.map(function (comment) {
-        var login = ((comment.user || {}).login) || "";
-        var mark = login && login === (DATA.maintainer || "") ? " is-maintainer" : "";
-        return '<article class="disc-comment"><p class="disc-by"><span class="' + mark.trim() + '">' +
-          escapeHtml(login) + "</span> " + escapeHtml(comment.created_at || "") + "</p><div class=\"disc-text\">" +
-          renderBody(comment.body || "", comment.body_html) + "</div></article>";
-      }).join("");
-      if (!commentHtml) commentHtml = '<p class="hn-meta">No comments yet.</p>';
-      if (payload && payload.truncated) commentHtml += '<p class="hn-meta">Showing the latest comments. Older ones are on GitHub.</p>';
-      disc.innerHTML = '<div class="disc"><button type="button" class="disc-back">← list</button>' +
-        '<h2 class="disc-title' + blue + '">' + escapeHtml(item.title || (title ? title.textContent : "")) + "</h2>" +
-        '<p class="disc-num">#' + escapeHtml(String(item.number || number)) + " · " + escapeHtml(who) + "</p>" +
-        '<div class="disc-body">' + renderBody(item.body || "", item.body_html) + "</div>" +
-        "<h3>discussion</h3>" + commentHtml +
-        '<p class="hn-meta"><a href="' + escapeHtml(item.html_url || row.getAttribute("data-url") || "#") +
-        '" target="_blank" rel="noopener">Open on GitHub</a></p>' +
-        forumBox(kind, number) + "</div>";
-      loadForum(disc, kind, number);
-    }).catch(function () {
-      if (token !== discToken) return;
-      disc.innerHTML = '<div class="disc"><button type="button" class="disc-back">← list</button>' +
-        '<h2 class="disc-title' + (maintainer ? " is-maintainer" : "") + '">' +
-        escapeHtml(title ? title.textContent : "") + "</h2>" +
-        '<p class="disc-num">#' + escapeHtml(number) + "</p>" +
-        '<p class="hn-meta">GitHub details are unavailable right now.</p>' +
-        forumBox(kind, number) + "</div>";
-      loadForum(disc, kind, number);
     });
   }
 

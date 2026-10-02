@@ -139,7 +139,38 @@ module.exports = async function handler(req, res) {
   try {
     if (req.method === "GET") {
       const thread = threadKey(req.query.kind, req.query.number);
-      if (!thread) return send(res, 400, { error: "bad thread" });
+      if (!thread) {
+        // Thread index for the forum page: every thread lives in the single
+        // "general" category for now, both issues and pull requests.
+        const blobs = [];
+        let cursor;
+        for (let page = 0; page < 20; page += 1) {
+          const found = await list({ prefix: "forum/v1/", limit: 100, cursor: cursor });
+          blobs.push.apply(blobs, found.blobs || []);
+          if (!found.hasMore || !found.cursor) break;
+          cursor = found.cursor;
+        }
+        const byThread = {};
+        for (const blob of blobs) {
+          const match = /^forum\/v1\/(pr|issue)\/(\d+)\//.exec(String(blob.pathname || ""));
+          if (!match) continue;
+          const key = match[1] + ":" + match[2];
+          const row = byThread[key] || (byThread[key] = {
+            category: "general",
+            kind: match[1],
+            number: Number(match[2]),
+            comments: 0,
+            last: "",
+          });
+          row.comments += 1;
+          const modified = String(blob.uploadedAt || "");
+          if (modified > row.last) row.last = modified;
+        }
+        const threads = Object.keys(byThread)
+          .map((key) => byThread[key])
+          .sort((a, b) => String(b.last).localeCompare(String(a.last)));
+        return send(res, 200, { category: "general", threads: threads });
+      }
       const now = Date.now();
       const token = sign({ k: thread.kind, n: thread.number, i: now, e: now + TOKEN_TTL_MS });
       const comments = await commentsFor(thread.kind, thread.number);

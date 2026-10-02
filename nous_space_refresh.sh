@@ -24,6 +24,7 @@ LOG="$HOME/.hermes/logs/nous-space-refresh.log"
 LOCK="$ROOT/.refresh.lock"
 STAMP="$ROOT/.local-render-stamp"
 HASHFILE="$ROOT/.local-render-hash"
+KVSTAMP="$ROOT/.kv-push-stamp"
 MIN_INTERVAL=1200   # seconds between allowed re-renders (20 min)
 
 mkdir -p "$(dirname "$LOG")"
@@ -41,6 +42,7 @@ take_lock() {
   fi
   oldpid=$(cat "$LOCK/pid" 2>/dev/null || true)
   oldstart=$(cat "$LOCK/start" 2>/dev/null || echo 0)
+
   now=$(date +%s)
   alive=0
   if [ -n "$oldpid" ] && kill -0 "$oldpid" 2>/dev/null; then
@@ -63,6 +65,18 @@ date +%s > "$LOCK/start"
 cleanup() { rm -rf "$LOCK" 2>/dev/null || true; }
 trap cleanup EXIT
 
+# --- nous-index nightly rebuild (added 2026-09-28) ---
+IDX_STAMP="$HOME/nous-space/.index-last-build"
+if [ -f build_index.py ]; then
+  now=$(date +%s); last=$(stat -f %m "$IDX_STAMP" 2>/dev/null || echo 0)
+  if [ $((now - last)) -ge 86400 ]; then
+    /opt/homebrew/bin/python3 build_index.py >> "$HOME/.hermes/logs/nous-space-refresh.log" 2>&1 \
+      && touch "$IDX_STAMP" \
+      && echo "$(date -u +%FT%TZ) nous-index rebuilt" >> "$HOME/.hermes/logs/nous-space-refresh.log"
+  fi
+fi
+
+
 {
   echo "$(date -u +%FT%TZ) start (local-only)"
 
@@ -72,6 +86,21 @@ trap cleanup EXIT
   if [ "$status" -ne 0 ]; then
     echo "$(date -u +%FT%TZ) fetch/render failed exit=$status"
     exit "$status"
+  fi
+
+  # Hourly KV data push (API stays fresh without a site deploy).
+  # Own stamp gate: 3600s. Data-only — never uploads the worker script.
+  kv_now=$(date +%s)
+  kv_last=$(cat "$KVSTAMP" 2>/dev/null || echo 0)
+  if [ $((kv_now - kv_last)) -ge 3600 ]; then
+    kv_status=0
+    perl -e 'alarm shift; exec @ARGV' 180 /opt/homebrew/bin/python3 "$HOME/nous-api/push_kv.py" || kv_status=$?
+    if [ "$kv_status" -eq 0 ]; then
+      date +%s > "$KVSTAMP"
+      echo "$(date -u +%FT%TZ) KV pushed (hourly)"
+    else
+      echo "$(date -u +%FT%TZ) KV push failed exit=$kv_status"
+    fi
   fi
 
   now=$(date +%s)

@@ -42,6 +42,8 @@ CONTRIBUTORS_START = "<!-- CONTRIBUTORS:START -->"
 CONTRIBUTORS_END = "<!-- CONTRIBUTORS:END -->"
 PRARCHIVE_START = "<!-- PRARCHIVE:START -->"
 PRARCHIVE_END = "<!-- PRARCHIVE:END -->"
+ARCH_START = "<!-- ARCH:START -->"
+ARCH_END = "<!-- ARCH:END -->"
 ECOSYSTEM_START = "<!-- ECOSYSTEM:START -->"
 ECOSYSTEM_END = "<!-- ECOSYSTEM:END -->"
 QUALITY_START = "<!-- QUALITY:START -->"
@@ -104,7 +106,7 @@ def cube(item: dict, kind: str) -> str:
             else f'merged {esc(item["ago"])}')
     return f"""      <div class="wrap">
         {number_pill(n, kind)}
-        <a class="cube {kind}" href="{item['url']}" target="_blank" rel="noopener" title="#{n} {esc(item['title'])}">
+        <a class="cube {kind}" href="#story/pr/{n}" data-story="pr" data-number="{n}" data-gh="{esc(item['url'])}" title="#{n} {esc(item['title'])}">
           <div class="face">
             <div class="d"><span class="add">+{item['additions']}</span> <span class="del">-{item['deletions']}</span></div>{tag_html}
             <div class="t">{esc(clip(desc))}</div>
@@ -115,11 +117,12 @@ def cube(item: dict, kind: str) -> str:
 
 
 def merged_cell(item: dict) -> str:
-    """Merged block + name box under the cube."""
+    """Merged block + name box under the cube. Both open the PR page on
+    this site (story view), not GitHub."""
     mine = "mine" if item.get("mine") else ""
     return f"""      <div class="wrap">
         {number_pill(item['number'], 'p-blue')}
-        <a class="cube p-blue" href="{item['url']}" target="_blank" rel="noopener" title="#{item['number']} {esc(item['title'])}">
+        <a class="cube p-blue" href="#story/pr/{item['number']}" data-story="pr" data-number="{item['number']}" data-gh="{esc(item['url'])}" title="#{item['number']} {esc(item['title'])}">
           <div class="face">
             <div class="d"><span class="add">+{item['additions']}</span> <span class="del">-{item['deletions']}</span></div>
             <div class="g">{esc(split_title(item['title'])[0])}</div>
@@ -127,7 +130,7 @@ def merged_cell(item: dict) -> str:
             <div class="w">merged {esc(item['ago'])}</div>
           </div>
         </a>
-        <div class="miner"><a class="{mine}" href="https://github.com/{esc(item['author'])}" target="_blank" rel="noopener" title="author: {esc(item['author'])}">{esc(item['author'])}</a></div>
+        <div class="miner"><a class="{mine}" href="#story/pr/{item['number']}" data-story="pr" data-number="{item['number']}" title="PR #{item['number']} by {esc(item['author'])}">{esc(item['author'])}</a></div>
       </div>"""
 
 
@@ -345,14 +348,52 @@ def merge_rate_panel(state: dict) -> str:
             <span class="velo-n">({v['count']})</span>
           </div>"""
 
+    chart = _merges_bar_chart(mr.get("day_counts") or {})
+
     return f"""    <div class="dash-card third">
       <h3><i class="hgi hgi-stroke hgi-activity-01" aria-hidden="true"></i> PR Velocity {fresh_stamp(state, "velocity")}</h3>
+      {chart}
 {rows}
       <div class="section-label">merge speed by area</div>
       <div class="velo-list">
 {velo_rows}
       </div>
     </div>"""
+
+
+def _merges_bar_chart(day_counts) -> str:
+    """Bar chart of PRs merged per day — last 14 days with data."""
+    if not isinstance(day_counts, dict) or not day_counts:
+        return ""
+    days = sorted((str(k)[:10], int(v)) for k, v in day_counts.items()
+                  if isinstance(v, (int, float)))[-14:]
+    if not days:
+        return ""
+    max_c = max(v for _d, v in days) or 1
+    w, h = 300, 110
+    pad_l, pad_b, pad_t = 26, 18, 12
+    gw = w - pad_l - 6
+    gh = h - pad_b - pad_t
+    n = len(days)
+    bw = gw / n * 0.62
+    bars = ""
+    for i, (day, count) in enumerate(days):
+        x = pad_l + gw * i / n + (gw / n - bw) / 2
+        bh = gh * count / max_c
+        y = pad_t + gh - bh
+        tip = f"{_day_label(day)}: {count} PRs merged"
+        bars += (f'<a href="{esc(_search_href(lane="prs", state="merged", **{"from": day}))}" aria-label="{esc(tip)}">'
+                 f'<title>{esc(tip)}</title>'
+                 f'<rect class="vb-hit" x="{x - 2:.1f}" y="{pad_t}" width="{bw + 4:.1f}" height="{gh:.1f}"/>'
+                 f'<rect class="vb" x="{x:.1f}" y="{y:.1f}" width="{bw:.1f}" height="{max(bh, 1):.1f}" rx="1.5"/></a>')
+        if n <= 10 or i % 2 == 0:
+            bars += (f'<text class="chart-label" x="{x + bw / 2:.1f}" y="{h - 5}" text-anchor="middle">'
+                     f'{esc(day[5:].lstrip("0"))}</text>')
+    axis = (f'<text class="chart-label" x="0" y="{pad_t + 8}">{max_c}</text>'
+            f'<text class="chart-label" x="0" y="{pad_t + gh}">0</text>')
+    return (f'<svg class="spark velo-bars" viewBox="0 0 {w} {h}" role="group" '
+            f'aria-label="PRs merged per day, last {n} days: '
+            f'{esc(", ".join(f"{d}={v}" for d, v in days))}">{axis}{bars}</svg>')
 
 
 def releases_panel(state: dict) -> str:
@@ -383,19 +424,39 @@ def releases_panel(state: dict) -> str:
         </div>""" if cadence else ""
 
     # ── 30-day calendar grid ──
-    cal_html = _release_calendar(calendar)
+    cal_html = _release_calendar(calendar, rels)
+
+    # ── recent releases: hover the date for the full version string ──
+    rel_rows = ""
+    for rel in rels[:6]:
+        if not isinstance(rel, dict):
+            continue
+        ver = rel.get("version") or rel.get("tag") or ""
+        rel_rows += (f'        <div class="stat-row">'
+                     f'<span class="stat-label" title="{esc(ver)}">{esc(rel.get("date") or "")}</span>'
+                     f'<span class="stat-val"><a href="https://github.com/NousResearch/hermes-agent/releases/tag/{esc(rel.get("tag") or "")}" '
+                     f'target="_blank" rel="noopener" title="{esc(ver)}">{esc(rel.get("tag") or ver)}</a></span>'
+                     f'<span class="stat-dim">{esc(ver.split("(")[0].replace("Hermes Agent", "").strip())}</span></div>\n')
 
     return f"""    <div class="dash-card right">
       <h3><i class="hgi hgi-stroke hgi-rocket-01" aria-hidden="true"></i> Release Velocity {fresh_stamp(state, "releases")}</h3>
       {latest_html}
       {cadence_html}
-      <div class="section-label">releases — last 30 days</div>
+      <div class="section-label">releases — last 30 days (hover a date for the version)</div>
       {cal_html}
+      <div class="section-label">recent releases</div>
+      {rel_rows}
     </div>"""
 
 
-def _release_calendar(calendar: list[dict]) -> str:
-    """Render a GitHub-style contribution calendar for releases."""
+def _release_calendar(calendar: list[dict], releases: list | None = None) -> str:
+    """Render a GitHub-style contribution calendar for releases. Hovering a
+    date shows the version number(s) released that day."""
+    by_date: dict[str, list[str]] = {}
+    for rel in (releases or []):
+        if isinstance(rel, dict):
+            by_date.setdefault(str(rel.get("date") or "")[:10], []).append(
+                str(rel.get("tag") or rel.get("version") or ""))
     max_count = max((c["count"] for c in calendar), default=0)
     cells = ""
     for c in calendar:
@@ -405,7 +466,9 @@ def _release_calendar(calendar: list[dict]) -> str:
             cls = f"rel-cal rel-lv{intensity}"
         else:
             cls = "rel-cal rel-lv0"
-        title = f'{c["date"]}: {c["count"]} release(s)'
+        versions = by_date.get(str(c["date"])[:10], [])
+        ver_text = " · ".join(versions) if versions else "no tagged release"
+        title = f'{c["date"]}: {c["count"]} release(s) — {ver_text}'
         cells += f'<span class="{cls}" title="{title}">{day}</span>'
     return f'<div class="rel-calendar">{cells}</div>'
 
@@ -485,11 +548,14 @@ def news_stories(state: dict) -> list[dict]:
             item.get("author"), ts, item.get("ago") or "", "merged")
 
     stories = sorted(found.values(), key=lambda row: row["ts"], reverse=True)
+    # The home feed is "Recent commits to main": merged PRs ARE the commits
+    # that landed on main. Opened PRs and issues live on their own pages.
+    stories = [row for row in stories if row.get("lane") == "merged"]
     return stories[:2500]
 
 
 def newsletter_html(state: dict) -> str:
-    """Hacker News list on the home page. Older threads stay on their own pages."""
+    """Home feed: the most recent commits to main (merged PRs), newest first."""
     repo = state.get("repo") or "NousResearch/hermes-agent"
     stories = news_stories(state)
     if not stories:
@@ -497,8 +563,8 @@ def newsletter_html(state: dict) -> str:
     # Only the first rows ship in HTML (fast first paint); app.js fills the
     # rest from /news.json right after load.
     rows = "\n".join(_hn_row(rank, story) for rank, story in enumerate(stories[:NEWS_HTML_ROWS], 1))
-    return f'''  <section class="hn" id="news" data-repo="{esc(repo)}" data-total="{len(stories)}" aria-label="New pull requests">
-    <div class="hn-head"><h2>New</h2><span>opened or merged in the last 48 hours {fresh_stamp(state, "news")}</span></div>
+    return f'''  <section class="hn" id="news" data-repo="{esc(repo)}" data-total="{len(stories)}" aria-label="Recent commits to main">
+    <div class="hn-head"><h2>Recent commits to main</h2><span>the latest commits merged to main · last 48 hours {fresh_stamp(state, "news")}</span></div>
     <div class="hn-scroll" id="hn-scroll">
 {rows}
     </div>
@@ -635,10 +701,10 @@ def quality_panel(state: dict) -> str:
     repo = state.get("repo") or "NousResearch/hermes-agent"
 
     def stat(label, value, dim="") -> str:
-        return (f'          <div class="stat-row">\n'
-                f'            <span class="stat-label">{esc(str(label))}</span>\n'
-                f'            <span class="stat-val">{esc(str(value))}</span>\n'
-                f'            <span class="stat-dim">{esc(str(dim))}</span>\n'
+        return (f'          <div class="q-card">\n'
+                f'            <span class="q-label">{esc(str(label))}</span>\n'
+                f'            <span class="q-val">{esc(str(value))}</span>\n'
+                f'            <span class="q-dim">{esc(str(dim))}</span>\n'
                 f'          </div>')
 
     # test-discipline split: regression / red-on-main / none / integration
@@ -668,12 +734,11 @@ def quality_panel(state: dict) -> str:
         pr = d.get("pr") or ""
         verdict = d.get("verdict") or ""
         score = d.get("score") or ""
-        draft_rows += (f'          <div class="stat-row">\n'
-                       f'            <a class="stat-val" '
-                       f'href="https://github.com/{esc(repo)}/pull/{esc(str(pr))}" '
-                       f'target="_blank" rel="noopener">#{esc(str(pr))}</a>\n'
-                       f'            <span class="stat-label">{esc(verdict)}</span>\n'
-                       f'            <span class="stat-dim">{esc(score) or "unscored"}</span>\n'
+        draft_rows += (f'          <div class="q-card">\n'
+                       f'            <span class="q-label">draft</span>\n'
+                       f'            <span class="q-val"><a href="https://github.com/{esc(repo)}/pull/{esc(str(pr))}" '
+                       f'target="_blank" rel="noopener">#{esc(str(pr))}</a></span>\n'
+                       f'            <span class="q-dim">{esc(verdict)} · {esc(score) or "unscored"}</span>\n'
                        f'          </div>\n')
 
     fu_rows = ""
@@ -683,12 +748,11 @@ def quality_panel(state: dict) -> str:
         pr = f.get("pr") or ""
         gap = f.get("gap") or ""
         since = f.get("since") or ""
-        fu_rows += (f'          <div class="stat-row">\n'
-                    f'            <a class="stat-val" '
-                    f'href="https://github.com/{esc(repo)}/pull/{esc(str(pr))}" '
-                    f'target="_blank" rel="noopener">#{esc(str(pr))}</a>\n'
-                    f'            <span class="stat-dim">{esc(gap)}</span>\n'
-                    f'            <span class="stat-label">{esc(since)}</span>\n'
+        fu_rows += (f'          <div class="q-card">\n'
+                    f'            <span class="q-label">follow-up</span>\n'
+                    f'            <span class="q-val"><a href="https://github.com/{esc(repo)}/pull/{esc(str(pr))}" '
+                    f'target="_blank" rel="noopener">#{esc(str(pr))}</a></span>\n'
+                    f'            <span class="q-dim">{esc(gap)} · since {esc(since)}</span>\n'
                     f'          </div>\n')
 
     last_line = ""
@@ -702,29 +766,39 @@ def quality_panel(state: dict) -> str:
 
     return f'''    <section class="ledger-section full-width" id="quality" aria-label="Maintainer program">
       <div class="ledger-heading">
-        <div><span class="ledger-kicker">04 / QUALITY</span>
+        <div><span class="ledger-kicker">03 / QUALITY</span>
         <h2><i class="hgi hgi-stroke hgi-verified" aria-hidden="true"></i> Maintainer Program</h2></div>
         <span class="card-count"><span data-api="quality.tracked_open">{q.get("tracked_open", 0)}</span> tracked · <span data-api="quality.removed_total">{q.get("removed_total", 0)}</span> resolved · corpus <span data-api="quality.corpus.live_total">{corpus.get("live_total", 0)}</span> {fresh_stamp(state, "quality", api=True)}</span>
       </div>
 
-      <div class="section-label">lane scope — two definitions, never mixed</div>
+      <div class="q-sub">lane scope — two definitions, never mixed</div>
+      <div class="q-grid">
 {stat("watch", counts.get("watch_tracked", q.get("tracked_open", 0)), track_note)}
 {stat("lane", counts.get("lane_open") or state.get("open_in_maintainer_lane") or 0, lane_note)}
+      </div>
 
-      <div class="section-label">program totals</div>
+      <div class="q-sub">program totals</div>
+      <div class="q-grid">
 {stat("resolved in ledger", q.get("removed_total", 0), "merged or closed since start")}
 {stat("corpus live", corpus.get("live_total", 0), f"curated {corpus.get('curated_total', 0)} · last batch +{corpus.get('batch', 0)}")}
 {stat("top bug class", corpus.get("top_bug_class") or "n/a", f"test discipline {corpus.get('regression_pct') or 'n/a'} regression")}
 {stat("reviews posted", q.get("posted_reviews", 0), "gate: score >= 8/10 with two-revision proof")}
 {last_line}
+      </div>
 
-      <div class="section-label">test discipline — latest batch {esc(ratio_raw) or "n/a"}</div>
-{bars}
-      <div class="section-label">review drafts — SWE-2 lab</div>
+      <div class="q-sub">test discipline — latest batch {esc(ratio_raw) or "n/a"}</div>
+      <div class="q-bars">
+{bars}      </div>
+
+      <div class="q-sub">review drafts — SWE-2 lab</div>
+      <div class="q-grid">
 {draft_rows or stat("drafts", q.get("drafts_count", 0), "none on disk")}
+      </div>
 
-      <div class="section-label">open follow-ups</div>
+      <div class="q-sub">open follow-ups</div>
+      <div class="q-grid">
 {fu_rows or stat("follow-ups", rq.get("followups", 0), "none")}
+      </div>
     </section>'''
 
 
@@ -733,9 +807,19 @@ ECO_CATEGORIES = ("plugins", "skills", "mods", "mcp", "tools")
 
 def fresh_stamp(state: dict, panel: str, api: bool = False) -> str:
     """Small per-panel freshness stamp. app.js rewrites it to local time and,
-    for API-backed panels, to the live API time when the fetch succeeds."""
+    for API-backed panels, to the live API time when the fetch succeeds.
+
+    The label always carries an explicit date and timezone — never a bare
+    clock time (10:53 of WHICH day? which zone?) — and app.js hover titles
+    repeat the full UTC instant."""
     built = str(state.get("generated") or "")
-    label = f"snapshot {built[11:16]}Z" if len(built) >= 16 else "snapshot"
+    label = "snapshot"
+    if len(built) >= 16:
+        try:
+            when = dt.datetime.fromisoformat(built.replace("Z", "+00:00"))
+            label = f"snapshot {when.strftime('%b')} {when.day}, {when.strftime('%H:%M')} UTC"
+        except ValueError:
+            label = f"snapshot {built[:10]}"
     api_attr = ' data-api-panel="1"' if api else ""
     return (f'<span class="fresh-stamp" data-fresh="{esc(panel)}" data-built="{esc(built)}"{api_attr} '
             f'title="Build-time snapshot {esc(built)}">{esc(label)}</span>')
@@ -756,7 +840,7 @@ def ecosystem_panel(state: dict) -> str:
         for c in ECO_CATEGORIES)
     return f'''    <section class="ledger-section full-width" id="ecosystem-panel" aria-labelledby="eco-h">
       <div class="ledger-heading">
-        <div><span class="ledger-kicker">05 / ECOSYSTEM</span>
+        <div><span class="ledger-kicker">01 / ECOSYSTEM</span>
         <h2 id="eco-h"><i class="hgi hgi-stroke hgi-grid" aria-hidden="true"></i> Ecosystem explorer</h2></div>
         <span class="card-count">{total:,} free items · catalog {generated[:10]} {fresh_stamp(state, "ecosystem", api=True)}</span>
       </div>
@@ -768,26 +852,72 @@ def ecosystem_panel(state: dict) -> str:
 
 
 def prarchive_panel(state: dict) -> str:
-    """06 / ARCHIVE — last 1,000 PRs, 100 per page, loaded from data/archive.json."""
-    arch = _read_archive()
-    total = arch.get("total") or 0
-    per = arch.get("per_page") or 100
-    generated = esc(str(arch.get("generated") or "")[:10])
-    return f'''    <section class="ledger-section full-width" id="prarchive" aria-labelledby="prarch-h" data-per="{int(per)}">
+    """PR archive on the Pull requests page: the last 6 hours of PRs (the
+    same window the API serves free), with sort options. Older records
+    need an API key."""
+    rows = archive6_rows(state)
+    generated = esc(str(state.get("generated") or "")[:16].replace("T", " "))
+    return f'''    <section class="ledger-section full-width" id="prarchive" aria-labelledby="prarch-h">
       <div class="ledger-heading">
-        <div><span class="ledger-kicker">06 / ARCHIVE</span>
-        <h2 id="prarch-h"><i class="hgi hgi-stroke hgi-history" aria-hidden="true"></i> PR Archive</h2></div>
-        <span class="card-count">{total:,} PRs · {per}/page · data {generated} {fresh_stamp(state, "archive")}</span>
+        <div><span class="ledger-kicker">ARCHIVE</span>
+        <h2 id="prarch-h"><i class="hgi hgi-stroke hgi-history" aria-hidden="true"></i> PR Archive — last 6 hours</h2></div>
+        <span class="card-count"><span id="prarch-count">{len(rows)}</span> PRs in the window · snapshot {generated} {fresh_stamp(state, "archive")}</span>
       </div>
-      <div class="eco-controls">
-        <label class="sr-only" for="prarch-search">Search archived PRs</label>
+      <div class="arch-controls">
+        <label class="sr-only" for="prarch-search">Search PRs in the window</label>
         <input id="prarch-search" class="search-input" type="search"
-               placeholder="Search archived PRs — number, title, author…">
+               placeholder="Search PRs — number, title, author…" style="flex:1 1 220px">
+        <div class="chips" data-chip-group="arch-sort" role="group" aria-label="Sort the archive">
+          <button type="button" class="chip is-on" data-arch-sort="newest" aria-pressed="true">Newest</button>
+          <button type="button" class="chip" data-arch-sort="oldest" aria-pressed="false">Oldest</button>
+          <button type="button" class="chip" data-arch-sort="changed" aria-pressed="false">Most changed</button>
+          <button type="button" class="chip" data-arch-sort="discussed" aria-pressed="false">Most discussed</button>
+        </div>
+        <span class="arch-when">window: the 6 hours before the snapshot (UTC)</span>
       </div>
-      <div id="prarch-list" class="prs-list" aria-live="polite"><p class="eco-note">Loading the archive…</p></div>
-      <div class="eco-pager" id="prarch-pager" role="group" aria-label="Archive pages"></div>
-      <p class="eco-note">Most recent {total:,} archived PRs. Click a row for details. Older records: the API with a key — see <a href="#docs">API docs</a>. Mirror: <a href="/prs_archive.json">/prs_archive.json</a></p>
+      <div id="prarch-list" class="prs-list" aria-live="polite" style="padding:12px 20px"><p class="eco-note">Loading the window…</p></div>
+      <p class="eco-note" style="padding:0 20px 14px">Only PRs from the last 6 hours are public without a key. Older records:
+        the API with a key — see <a href="#docs">API docs</a>. Mirror: <a href="/data/archive6.json">/data/archive6.json</a>.</p>
     </section>'''
+
+
+ARCHIVE6_WINDOW_HOURS = 6
+
+
+def archive6_rows(state: dict) -> list[dict]:
+    """PRs opened or merged inside the 6-hour public window before the
+    snapshot. Full timestamps, so the view can sort honestly."""
+    now_ts = _story_ts(state.get("generated") or "")
+    if not now_ts:
+        return []
+    cutoff = now_ts - ARCHIVE6_WINDOW_HOURS * 3600
+    found: dict[int, dict] = {}
+
+    def put(number, title, author, status, ts, add=0, dele=0, comments=0, url="") -> None:
+        if not number or ts < cutoff or ts > now_ts + 60:
+            return
+        row = {"n": int(number), "t": title or "", "a": author or "", "s": status,
+               "ts": int(ts), "add": int(add or 0), "del": int(dele or 0),
+               "c": int(comments or 0), "url": url or ""}
+        prev = found.get(row["n"])
+        if prev is None or row["ts"] >= prev["ts"]:
+            if prev and prev["s"] == "merged" and row["s"] != "merged":
+                row["s"] = "merged"
+                row["ts"] = prev["ts"]
+            found[row["n"]] = row
+
+    for item in _as_list(state.get("fresh")):
+        if (item.get("kind") or "pr") != "pr":
+            continue
+        put(item.get("number"), item.get("title"), item.get("author"), "open",
+            _story_ts(item.get("created_at") or ""), 0, 0,
+            item.get("comments") or 0, item.get("url") or "")
+    for item in _as_list(state.get("merged")):
+        put(item.get("number"), item.get("title"), item.get("author"), "merged",
+            _story_ts(item.get("merged_at") or ""), item.get("additions"),
+            item.get("deletions"), 0, item.get("url") or "")
+
+    return sorted(found.values(), key=lambda row: row["ts"], reverse=True)
 
 
 def _read_archive() -> dict:
@@ -1049,7 +1179,7 @@ def cohort_svg(ins: dict) -> str:
 def trends_panel(state: dict, ins: dict) -> str:
     return f'''    <section class="ledger-section full-width" id="trends" aria-labelledby="trends-h">
       <div class="ledger-heading">
-        <div><span class="ledger-kicker">07 / TRENDS</span>
+        <div><span class="ledger-kicker">02 / TRENDS</span>
         <h2 id="trends-h"><i class="hgi hgi-stroke hgi-chart-line-data-01" aria-hidden="true"></i> Velocity &amp; retention</h2></div>
         <span class="card-count">{fresh_stamp(state, "trends")}</span>
       </div>
@@ -1101,12 +1231,25 @@ API_ENDPOINTS = [
 ]
 
 
-def docs_html() -> str:
+def docs_html(state: dict | None = None) -> str:
     rows = []
     options = []
     for path, param, summary, public, keyed in API_ENDPOINTS:
         rows.append(f'''        <tr><th scope="row"><code>GET {esc(path)}</code></th><td>{esc(summary)}</td><td>{esc(public)}</td><td>{esc(keyed)}</td></tr>''')
-        options.append(f'<option value="{esc(path)}" data-param="{esc(param)}">{esc(path)}</option>')
+        options.append(f'<option value="{esc(path)}" data-param="{esc(param)}" data-summary="{esc(summary)}">{esc(path)}</option>')
+    state = state or {}
+    ex_open = (_as_dict(state.get("backlog")).get("total_open") or 0)
+    ex_tracked = (_as_dict(state.get("quality")).get("tracked_open") or 0)
+    ex_removed = (_as_dict(state.get("quality")).get("removed_total") or 0)
+    ex_gen = esc(str(state.get("generated") or ""))
+    example_response = (
+        '{\n'
+        '  "generated": "' + ex_gen + '",\n'
+        '  "backlog": { "total_open": ' + str(ex_open) + ' },\n'
+        '  "quality": { "tracked_open": ' + str(ex_tracked) + ', "removed_total": ' + str(ex_removed) + ' },\n'
+        '  "tier": "public",\n'
+        '  "public_window_hours": 6\n'
+        '}')
     return f'''  <div class="doc-page" id="api-docs">
     <h2 id="docs-h">API docs</h2>
     <p>Base URL: <code>{API_BASE}</code>. JSON over HTTPS, GET only. The index lives at <a href="https://nous.minddragonlabs.com/api"><code>/api</code></a>.</p>
@@ -1129,14 +1272,160 @@ def docs_html() -> str:
     <h3 id="curl-h">curl builder</h3>
     <form class="curl-builder" id="curl-builder" aria-labelledby="curl-h">
       <label>Endpoint <select id="cb-endpoint">{"".join(options)}</select></label>
+      <p class="hn-meta" id="cb-summary" role="note"></p>
       <label id="cb-param-wrap" hidden><span id="cb-param-label">Parameter</span> <input id="cb-param" type="text" autocomplete="off"></label>
       <label>Attribution <input id="cb-attr" type="text" value="my-app" autocomplete="off"></label>
       <label class="cb-check"><input id="cb-key" type="checkbox"> include API key (reads <code>$NOUS_API_KEY</code>)</label>
       <pre class="curl-out" id="cb-out" tabindex="0" aria-live="polite">curl -sS -H 'X-Nous-Attribution: my-app' '{API_BASE}/overview'</pre>
-      <button type="button" class="chip" id="cb-copy">Copy</button> <span class="hn-meta" id="cb-copied" role="status"></span>
+      <div class="cb-actions">
+        <button type="button" class="chip" id="cb-copy">Copy</button>
+        <span class="hn-meta" id="cb-copied" role="status"></span>
+      </div>
     </form>
+    <h3 id="example-h">worked example — <code>GET /overview</code></h3>
+    <div class="example-grid">
+      <div class="example-box">
+        <h4>Request</h4>
+        <pre>curl -sS \\
+  -H 'X-Nous-Attribution: my-app' \\
+  '{API_BASE}/overview'</pre>
+      </div>
+      <div class="example-box">
+        <h4>Response (abridged)</h4>
+        <pre>{example_response}</pre>
+      </div>
+    </div>
+    <p class="eco-note">The example is generated from the same snapshot this site ships, so the numbers match what you see on the dashboard. Add <code>-H 'X-Nous-Api-Key: &lt;key&gt;'</code> for historical records.</p>
+    <div class="inquire-row">
+      <a class="inquire-btn" href="mailto:hello@xenovira.com?subject=Nous%20Space%20API%20access%20inquiry&body=What%20I%27m%20building%3A%0A%0AVolume%20I%20expect%3A%0A%0AWhat%20I%20need%20beyond%20the%20public%20tier%3A%0A">
+        <i class="hgi hgi-stroke hgi-mail-01" aria-hidden="true"></i> Inquire about API access
+      </a>
+      <span class="inquire-note">Need a key, higher limits, or custom access? Email <a href="mailto:hello@xenovira.com">hello@xenovira.com</a> and tell us what you are building.</span>
+    </div>
     <p class="eco-note">Errors return JSON: unknown paths give <code>404 {{"error":"not_found"}}</code>. Policy: <a href="/llms.txt">/llms.txt</a> · <a href="/aillm.txt">/aillm.txt</a>.</p>
   </div>'''
+
+
+# ── system architecture: one high-level diagram per main version release ───
+# Generated at build time so every release tagged in state.json gets its own
+# snapshot automatically ("at each main version release make another diagram").
+
+ARCH_LAYERS = [
+    ("SURFACES", "how people and platforms reach the agent", [
+        ("Desktop app", "Electron · panes"),
+        ("CLI", "one-shot + REPL"),
+        ("TUI", "terminal UI"),
+        ("Gateway", "bots & relays"),
+        ("Editors", "ACP / SDK"),
+    ]),
+    ("AGENT CORE", "the reasoning loop", [
+        ("Model routing", "providers & tiers"),
+        ("Context", "compression · LCM"),
+        ("Approvals", "danger guards"),
+        ("Subagents", "delegate · kanban"),
+    ]),
+    ("CAPABILITIES", "what the agent can do", [
+        ("Tools", "terminal · files · browser"),
+        ("Skills", "procedural packs"),
+        ("Plugins", "isolated host"),
+        ("MCP", "connectors"),
+        ("Cron", "scheduled work"),
+    ]),
+    ("PROVIDERS", "model backends", [
+        ("Nous Portal", ""),
+        ("OpenRouter", ""),
+        ("Anthropic", ""),
+        ("OpenAI", ""),
+        ("Bedrock", ""),
+        ("llama.cpp", "local"),
+    ]),
+    ("STATE & MEMORY", "what persists", [
+        ("state.db", "sessions · FTS"),
+        ("Memory", "OpenViking · gbrain"),
+        ("Vault", "credentials"),
+        ("Fleet", "BridgeSessions"),
+    ]),
+]
+
+
+def arch_svg(release: dict | None) -> str:
+    """One high-level architecture diagram, labeled for a release."""
+    ver = (release or {}).get("version") or "Hermes Agent (main)"
+    tag = (release or {}).get("tag") or "main"
+    date = (release or {}).get("date") or ""
+    w = 980
+    band_h = 84
+    gap = 14
+    top = 54
+    h = top + len(ARCH_LAYERS) * (band_h + gap) + 16
+    parts = [f'<svg viewBox="0 0 {w} {h}" role="img" aria-label="Hermes Agent high-level architecture at {esc(ver)}">',
+             f'<text class="a-title" x="0" y="18">Hermes Agent — how the system is put together</text>',
+             f'<text class="a-tag" x="{w}" y="18" text-anchor="end">{esc(tag)} · {esc(date)}</text>',
+             f'<text class="a-sub" x="{w}" y="34" text-anchor="end">{esc(ver)}</text>']
+    accents = ["accent-surface", "accent-core", "accent-eco", "accent-core", "accent-data"]
+    y = top
+    for i, (name, sub, boxes) in enumerate(ARCH_LAYERS):
+        parts.append(f'<g class="{accents[i % len(accents)]}">'
+                     f'<rect class="a-layer" x="0" y="{y}" width="{w}" height="{band_h}" rx="8"/></g>')
+        parts.append(f'<text class="a-tag" x="14" y="{y + 18}">{esc(name)}</text>')
+        parts.append(f'<text class="a-sub" x="14" y="{y + 34}">{esc(sub)}</text>')
+        bx = 14
+        bw_total = w - 28
+        per = bw_total / len(boxes)
+        for j, (box, note) in enumerate(boxes):
+            x = bx + j * per
+            bw = per - 10
+            parts.append(f'<rect x="{x:.1f}" y="{y + 44}" width="{bw:.1f}" height="28" rx="5" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.14)"/>')
+            label = box if not note else f"{box}"
+            parts.append(f'<text class="a-title" x="{x + bw / 2:.1f}" y="{y + 62}" text-anchor="middle" style="font-size:11px">{esc(label)}</text>')
+            if note:
+                parts.append(f'<text class="a-sub" x="{x + bw / 2:.1f}" y="{y + 90}" text-anchor="middle" style="font-size:8.5px">{esc(note)}</text>')
+        if i < len(ARCH_LAYERS) - 1:
+            parts.append(f'<path class="a-arrow" d="M {w / 2} {y + band_h} L {w / 2} {y + band_h + gap - 2}" stroke-dasharray="3 3"/>')
+            parts.append(f'<path class="a-arrow" d="M {w / 2 - 4} {y + band_h + gap - 7} L {w / 2} {y + band_h + gap - 2} L {w / 2 + 4} {y + band_h + gap - 7}"/>')
+        y += band_h + gap
+    parts.append("</svg>")
+    return "".join(parts)
+
+
+def arch_html(state: dict) -> str:
+    """The System architecture page: a diagram per main version release.
+
+    Only the current diagram ships inline (fast first paint); the per-release
+    snapshots live in data/arch-<i>.svg and load when picked."""
+    releases = [r for r in _as_list(_as_dict(state.get("releases")).get("releases")) if isinstance(r, dict)]
+    entries = [None] + releases  # None = current main snapshot
+    buttons = []
+    diagrams = []
+    for i, rel in enumerate(entries):
+        tag = (rel or {}).get("tag") or "main"
+        label = "current (main)" if rel is None else esc(tag)
+        ver = esc(str((rel or {}).get("version") or "current main"))
+        on = " is-on" if i == 0 else ""
+        pressed = "true" if i == 0 else "false"
+        buttons.append(f'<button type="button" class="arch-version{on}" data-arch="{i}" aria-pressed="{pressed}" title="{ver}">{label}</button>')
+        hidden = "" if i == 0 else " hidden"
+        body = arch_svg(rel) if i == 0 else f'<p class="eco-note">Pick “{label}” to load its diagram.</p>'
+        diagrams.append(f'<div class="arch-svg" data-arch-svg="{i}" data-arch-src="data/arch-{i}.svg"{hidden}>{body}</div>')
+    latest = releases[0] if releases else {}
+    return f'''  <section class="doc-page arch-wrap" id="arch-page" aria-labelledby="arch-h">
+    <h2 id="arch-h">System architecture</h2>
+    <p>How Hermes Agent is put together at a high level: surfaces reach the agent core, the core
+    drives capabilities through tools, skills, plugins and MCP connectors, model providers answer
+    the calls, and state and memory persist everything. A fresh diagram is generated for every
+    main version release, so the gallery below grows with each release.</p>
+    <div class="arch-picker" id="arch-picker" role="tablist" aria-label="Architecture by release">
+      {"".join(buttons)}
+    </div>
+    <div class="arch-frame" id="arch-frame">
+      {"".join(diagrams)}
+    </div>
+    <div class="arch-meta">
+      <span>latest release: <b>{esc(str(latest.get("version") or "n/a"))}</b></span>
+      <span>diagrams generated at build time from the release list</span>
+      <span>high level on purpose — per-component detail lives in the <a href="{esc(str(state.get("repo") or "NousResearch/hermes-agent")) and "https://github.com/" + esc(str(state.get("repo") or "NousResearch/hermes-agent"))}">repository docs</a></span>
+    </div>
+  </section>'''
 
 
 # ── provenance (build-time; can not go stale) ───────────────────────────────
@@ -1436,6 +1725,13 @@ def appdata_html(state: dict, version: str = "") -> str:
 
 
 def render_panels(state: dict) -> str:
+    """The below-strip deck skeleton. This body is rewritten on EVERY build,
+    so the section order lives here — not in hand edits to index.html.
+
+    Order: the three summary cards, the feed (recent commits to main), then
+    the stats deck (ecosystem, trends, quality) inside #dash-tail so the
+    PR page can hide everything under it. The PR archive lives on the PRs
+    page (view-prs), not in this deck."""
     return f'''  <div class="dash-row">
 {backlog_panel(state)}
 {releases_panel(state)}
@@ -1446,20 +1742,20 @@ def render_panels(state: dict) -> str:
   <!-- TICKER:END -->
   <!-- NEWSLETTER:START -->
   <!-- NEWSLETTER:END -->
+  <div id="dash-tail">
   <!-- ISSUES:START -->
   <!-- ISSUES:END -->
   <!-- PRS:START -->
   <!-- PRS:END -->
   <!-- CONTRIBUTORS:START -->
   <!-- CONTRIBUTORS:END -->
-  <!-- PRARCHIVE:START -->
-  <!-- PRARCHIVE:END -->
   <!-- ECOSYSTEM:START -->
   <!-- ECOSYSTEM:END -->
   <!-- TRENDS:START -->
   <!-- TRENDS:END -->
   <!-- QUALITY:START -->
   <!-- QUALITY:END -->
+  </div>
   </div>'''
 
 
@@ -1546,6 +1842,12 @@ def build_data(state: dict, changed: list[str]) -> dict:
         "data/insights.json": _dump(insights),
         "data/catalog.json": _dump(catalog_payload(state)).replace("<", "\\u003c"),
         "data/archive.json": _dump(arch),
+        "data/archive6.json": _dump({
+            "generated": state.get("generated") or "",
+            "window_hours": ARCHIVE6_WINDOW_HOURS,
+            "note": "PRs opened or merged in the 6-hour public window before the snapshot.",
+            "prs": archive6_rows(state),
+        }),
     }
     for cat in ECO_CATEGORIES:
         shards[f"data/eco-{cat}.json"] = _dump(eco_shard(state, cat, links))
@@ -1621,6 +1923,7 @@ def main() -> int:
                        (PRS_START, PRS_END),
                        (CONTRIBUTORS_START, CONTRIBUTORS_END),
                        (PRARCHIVE_START, PRARCHIVE_END),
+                       (ARCH_START, ARCH_END),
                        (ECOSYSTEM_START, ECOSYSTEM_END),
                        (TRENDS_START, TRENDS_END),
                        (QUALITY_START, QUALITY_END)):
@@ -1649,7 +1952,8 @@ def main() -> int:
     page = _fill(page, ECOSYSTEM_START, ECOSYSTEM_END, ecosystem_panel(state))
     page = _fill(page, PRARCHIVE_START, PRARCHIVE_END, prarchive_panel(state))
     page = _fill(page, TRENDS_START, TRENDS_END, trends_panel(state, built["insights"]))
-    page = _fill(page, DOCS_START, DOCS_END, docs_html())
+    page = _fill(page, DOCS_START, DOCS_END, docs_html(state))
+    page = _fill(page, ARCH_START, ARCH_END, arch_html(state))
     page = _fill(page, PROV_START, PROV_END, provenance_html(built["prov"]))
     page = _fill(page, APPDATA_START, APPDATA_END, appdata_html(state, built["version"]))
 
@@ -1670,6 +1974,12 @@ def main() -> int:
 
     if page != original:
         write_if_changed(INDEX, page, changed)
+
+    # per-release architecture diagrams — data/arch-<i>.svg, loaded on
+    # demand by the picker so index.html stays light
+    _rel_list = [r for r in _as_list(_as_dict(state.get("releases")).get("releases")) if isinstance(r, dict)]
+    for _i, _rel in enumerate([None] + _rel_list):
+        write_if_changed(ROOT / "data" / f"arch-{_i}.svg", arch_svg(_rel), changed)
 
     gate = _perf_gate()
     gate.report(ROOT)

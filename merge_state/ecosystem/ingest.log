@@ -1,0 +1,10 @@
+2026-10-01T12:52:00Z existing catalog: 488 entries
+2026-10-01T12:52:03Z query q=topic:hermes-agent&per_page=100 -> 100
+2026-10-01T12:52:10Z query q=topic:hermes-skill&per_page=100 -> 100
+2026-10-01T12:52:16Z query q=topic:hermes-plugin&per_page=100 -> 100
+2026-10-01T12:52:22Z query q=%22hermes+agent%22+skill+in:name,description&per_page=100 -> 100
+2026-10-01T12:52:29Z query q=%22hermes-agent%22+plugin+in:name,description&per_page=100 -> 100
+2026-10-01T12:52:36Z query q=%22hermes+agent%22+mcp+in:name,description&per_page=100 -> 100
+2026-10-01T12:52:43Z query q=hermes+mod+agent+in:name,description&per_page=100 -> 100
+2026-10-01T12:52:48Z query q=awesome-hermes&per_page=50 -> 39
+2026-10-01T12:52:51Z done total=625 {'plugins': 515, 'skills': 375, 'mods': 55, 'mcp': 134, 'tools': 34} rejected_paid=56

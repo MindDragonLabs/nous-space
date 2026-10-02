@@ -13,3 +13,4 @@ nous-index.db
 link_check.json
 link_check.json.tmp
 *.json.tmp
+__pycache__/

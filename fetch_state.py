@@ -1167,7 +1167,7 @@ def _corpus_live() -> dict:
     return out
 
 
-def quality_program(lane_open: int | None = None) -> dict:
+def quality_program(lane_open: int | None = None, stale_lane: dict | None = None) -> dict:
     """Maintainer-program state merged into the dashboard.
 
     Sources are local files owned by the nous-pr-bot profile: the watch
@@ -1254,7 +1254,7 @@ def quality_program(lane_open: int | None = None) -> dict:
         "watch_tracked": len(tracked),
         "watch_definition": "open PRs from the whole maintainer team",
         "lane_open": lane_open,
-        "lane_stale": stale_lane,
+        "lane_stale": len((stale_lane or {}).get("rows") or []),
         "lane_definition": f"PRs authored by or involving {MAINTAINER}",
     }
 
@@ -1396,7 +1396,7 @@ def main() -> int:
     if not isinstance(stale_lane, dict):
         stale_lane = prev.get("lane_stale") if isinstance(prev.get("lane_stale"), dict) else {"rows": [], "totals": {}}
     releases = section("releases") or {}
-    quality = quality_program(lane_open=pend_count)
+    quality = quality_program(lane_open=pend_count, stale_lane=stale_lane)
     eco = ecosystem_catalog()
     state = {
         "generated": now.strftime("%Y-%m-%dT%H:%M:%SZ"),

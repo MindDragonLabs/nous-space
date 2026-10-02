@@ -4,166 +4,166 @@
   <title>Nous Space — notable merges</title>
   <link rel="self" href="https://nous.minddragonlabs.com/feed.xml"/>
   <link rel="alternate" href="https://nous.minddragonlabs.com/"/>
-  <updated>2026-10-01T04:15:09Z</updated>
+  <updated>2026-10-02T12:10:07Z</updated>
   <author><name>Nous Space</name></author>
   <entry>
-    <id>urn:nous-space:pr:126891</id>
-    <title>#126891 Shared-metrics opt-in is offered on every surface, and a 'no' sticks</title>
-    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/126891"/>
-    <updated>2026-10-01T04:15:09Z</updated>
+    <id>urn:nous-space:pr:131272</id>
+    <title>#131272 Supermemory installs from the plugin catalog — existing setups migrate automatically</title>
+    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/131272"/>
+    <updated>2026-10-02T12:10:07Z</updated>
     <author><name>teknium1</name></author>
-    <summary>Shared-metrics opt-in is offered on every surface, and a 'no' sticks</summary>
+    <summary>Supermemory installs from the plugin catalog — existing setups migrate automatically</summary>
   </entry>
   <entry>
-    <id>urn:nous-space:pr:128343</id>
-    <title>#128343 Free space-bunny-alpha now shows in the Nous and OpenRouter /model pickers</title>
-    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/128343"/>
-    <updated>2026-09-29T19:55:47Z</updated>
+    <id>urn:nous-space:pr:131301</id>
+    <title>#131301 Honcho memory installs from Plastic Labs' catalog plugin; core no longer bundles it</title>
+    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/131301"/>
+    <updated>2026-10-02T11:39:29Z</updated>
     <author><name>teknium1</name></author>
-    <summary>Free space-bunny-alpha now shows in the Nous and OpenRouter /model pickers (salvage #122087)</summary>
+    <summary>Honcho memory installs from Plastic Labs' catalog plugin; core no longer bundles it</summary>
   </entry>
   <entry>
-    <id>urn:nous-space:pr:127265</id>
-    <title>#127265 Python lints lane green again: portable bash shebang in the remote-lifecycle test fixture</title>
-    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/127265"/>
-    <updated>2026-09-29T07:58:40Z</updated>
+    <id>urn:nous-space:pr:131430</id>
+    <title>#131430 fix(tests): failure-writer ownership probe stops flaking at 19/20 (no real tirith download mid-probe)</title>
+    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/131430"/>
+    <updated>2026-10-02T11:14:46Z</updated>
     <author><name>teknium1</name></author>
-    <summary>Python lints lane green again: portable bash shebang in the remote-lifecycle test fixture</summary>
+    <summary>fix(tests): failure-writer ownership probe stops flaking at 19/20 (no real tirith download mid-probe)</summary>
   </entry>
   <entry>
-    <id>urn:nous-space:pr:126296</id>
-    <title>#126296 feat(i18n): pluggable, layered language packs across Core, TUI and Desktop; every user-facing string through t(); full 16-locale parity</title>
-    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/126296"/>
-    <updated>2026-09-28T21:16:19Z</updated>
+    <id>urn:nous-space:pr:131269</id>
+    <title>#131269 fix(memory): never lose memory silently when a provider moves out of core</title>
+    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/131269"/>
+    <updated>2026-10-02T11:09:59Z</updated>
     <author><name>teknium1</name></author>
-    <summary>feat(i18n): pluggable, layered language packs across Core, TUI and Desktop; every user-facing string through t(); full 16-locale parity</summary>
+    <summary>fix(memory): never lose memory silently when a provider moves out of core</summary>
   </entry>
   <entry>
-    <id>urn:nous-space:pr:126163</id>
-    <title>#126163 Gateway status, update, dashboard and served-profile guard stop lying about multiplex/standalone state</title>
-    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/126163"/>
-    <updated>2026-09-28T20:30:59Z</updated>
+    <id>urn:nous-space:pr:131266</id>
+    <title>#131266 Memory providers migrate on Desktop, the gateway and scripted updates — no terminal needed for their Python deps</title>
+    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/131266"/>
+    <updated>2026-10-02T10:40:18Z</updated>
     <author><name>teknium1</name></author>
-    <summary>Gateway status, update, dashboard and served-profile guard stop lying about multiplex/standalone state (#120991 #125390 #123088 #123869 #121352 #120871 #124553, salvage #120997 #125397 #123106 #121574 #122169 #124669)</summary>
+    <summary>Memory providers migrate on Desktop, the gateway and scripted updates — no terminal needed for their Python deps</summary>
   </entry>
   <entry>
-    <id>urn:nous-space:pr:125074</id>
-    <title>#125074 feat(telemetry): opt-in shared metrics show why things fail, what users keep and turn off, and what setup and model use cost, with Desktop consent</title>
-    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/125074"/>
-    <updated>2026-09-28T19:43:05Z</updated>
+    <id>urn:nous-space:pr:131393</id>
+    <title>#131393 retaindb, byterover and holographic are no longer listed as Nous-maintained catalog plugins</title>
+    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/131393"/>
+    <updated>2026-10-02T10:28:41Z</updated>
     <author><name>teknium1</name></author>
-    <summary>feat(telemetry): opt-in shared metrics show why things fail, what users keep and turn off, and what setup and model use cost, with Desktop consent</summary>
+    <summary>retaindb, byterover and holographic are no longer listed as Nous-maintained catalog plugins</summary>
   </entry>
   <entry>
-    <id>urn:nous-space:pr:126741</id>
-    <title>#126741 feat(vercel): fresh sandboxes use a managed image (universal:latest); runtime presets deprecated, migration 49</title>
-    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/126741"/>
-    <updated>2026-09-28T19:33:04Z</updated>
+    <id>urn:nous-space:pr:130996</id>
+    <title>#130996 fix(desktop): scope preview tabs to the session that opened them</title>
+    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/130996"/>
+    <updated>2026-10-02T09:53:03Z</updated>
     <author><name>teknium1</name></author>
-    <summary>feat(vercel): fresh sandboxes use a managed image (universal:latest); runtime presets deprecated, migration 49</summary>
+    <summary>fix(desktop): scope preview tabs to the session that opened them (re-land #128552)</summary>
   </entry>
   <entry>
-    <id>urn:nous-space:pr:126740</id>
-    <title>#126740 fix(modal): persistent sandbox snapshots no longer expire after 30 days (modal 1.5.5, ttl=None)</title>
-    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/126740"/>
-    <updated>2026-09-28T19:31:04Z</updated>
+    <id>urn:nous-space:pr:131346</id>
+    <title>#131346 fix(tests): kanban wake drain helpers no longer busy-spin forever on Python 3.12+</title>
+    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/131346"/>
+    <updated>2026-10-02T09:42:16Z</updated>
     <author><name>teknium1</name></author>
-    <summary>fix(modal): persistent sandbox snapshots no longer expire after 30 days (modal 1.5.5, ttl=None)</summary>
+    <summary>fix(tests): kanban wake drain helpers no longer busy-spin forever on Python 3.12+</summary>
   </entry>
   <entry>
-    <id>urn:nous-space:pr:126812</id>
-    <title>#126812 test(local-runtime): racing-callers fake publishes a modern state record (main red since 65ff3ad353)</title>
-    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/126812"/>
-    <updated>2026-09-28T19:28:41Z</updated>
+    <id>urn:nous-space:pr:131256</id>
+    <title>#131256 Cloned profiles keep their catalog-installed plugins and memory provider</title>
+    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/131256"/>
+    <updated>2026-10-02T08:29:42Z</updated>
     <author><name>teknium1</name></author>
-    <summary>test(local-runtime): racing-callers fake publishes a modern state record (main red since 65ff3ad353)</summary>
+    <summary>Cloned profiles keep their catalog-installed plugins and memory provider</summary>
   </entry>
   <entry>
-    <id>urn:nous-space:pr:126145</id>
-    <title>#126145 Served profiles no longer inherit the launch profile's logs, log ownership, slash gating, TTS credentials or skipped .env</title>
-    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/126145"/>
-    <updated>2026-09-28T19:23:27Z</updated>
+    <id>urn:nous-space:pr:131265</id>
+    <title>#131265 retaindb, byterover and holographic memory providers join the plugin catalog (Nous-maintained)</title>
+    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/131265"/>
+    <updated>2026-10-02T08:29:23Z</updated>
     <author><name>teknium1</name></author>
-    <summary>Served profiles no longer inherit the launch profile's logs, log ownership, slash gating, TTS credentials or skipped .env (#125974 #120151 #121705 #120481 #125530)</summary>
+    <summary>retaindb, byterover and holographic memory providers join the plugin catalog (Nous-maintained)</summary>
   </entry>
   <entry>
-    <id>urn:nous-space:pr:126148</id>
-    <title>#126148 Dashboard actions, sign-ins and the switcher act on the profile you pick; --profile default is the default gateway</title>
-    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/126148"/>
-    <updated>2026-09-28T19:18:59Z</updated>
-    <author><name>teknium1</name></author>
-    <summary>Dashboard actions, sign-ins and the switcher act on the profile you pick; --profile default is the default gateway (#120688 #123616 #123980 #124283 #125025 #96712 #100817)</summary>
+    <id>urn:nous-space:pr:129093</id>
+    <title>#129093 catalog(hindsight): pin the released v1.2.1</title>
+    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/129093"/>
+    <updated>2026-10-02T07:01:09Z</updated>
+    <author><name>nicoloboschi</name></author>
+    <summary>catalog(hindsight): pin the released v1.2.1</summary>
   </entry>
   <entry>
-    <id>urn:nous-space:pr:126164</id>
-    <title>#126164 Old pre-decomposition import paths are gone: plugin compat layer removed on schedule</title>
-    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/126164"/>
-    <updated>2026-09-28T17:21:42Z</updated>
+    <id>urn:nous-space:pr:131249</id>
+    <title>#131249 Local MCP/plugin tool batches in one tool_call now run instead of being rejected</title>
+    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/131249"/>
+    <updated>2026-10-02T06:50:32Z</updated>
     <author><name>teknium1</name></author>
-    <summary>Old pre-decomposition import paths are gone: plugin compat layer removed on schedule</summary>
+    <summary>Local MCP/plugin tool batches in one tool_call now run instead of being rejected (#119891, #121616, salvage #131006)</summary>
   </entry>
   <entry>
-    <id>urn:nous-space:pr:126226</id>
-    <title>#126226 Browser works again on older installs, execute_code stops hiding failed writes, profiles share one cached prompt prefix</title>
-    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/126226"/>
-    <updated>2026-09-28T17:11:34Z</updated>
+    <id>urn:nous-space:pr:131246</id>
+    <title>#131246 test: seed the version cache per test process instead of running git 7 times</title>
+    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/131246"/>
+    <updated>2026-10-02T06:49:37Z</updated>
     <author><name>teknium1</name></author>
-    <summary>Browser works again on older installs, execute_code stops hiding failed writes, profiles share one cached prompt prefix</summary>
+    <summary>test: seed the version cache per test process instead of running git 7 times</summary>
   </entry>
   <entry>
-    <id>urn:nous-space:pr:126172</id>
-    <title>#126172 fix(pm): package-manager installs keep features, deps and diagnostics across updates</title>
-    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/126172"/>
-    <updated>2026-09-28T13:42:01Z</updated>
+    <id>urn:nous-space:pr:131236</id>
+    <title>#131236 ci: run the Python suite and the macOS lane as two slices each</title>
+    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/131236"/>
+    <updated>2026-10-02T06:49:21Z</updated>
     <author><name>teknium1</name></author>
-    <summary>fix(pm): package-manager installs keep features, deps and diagnostics across updates (salvage #124060, #124246, #124446, #124656)</summary>
+    <summary>ci: run the Python suite and the macOS lane as two slices each</summary>
   </entry>
   <entry>
-    <id>urn:nous-space:pr:126182</id>
-    <title>#126182 Desktop composer, tabs and Bot Chat state survive resumes, profile/connection switches and toolset edits</title>
-    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/126182"/>
-    <updated>2026-09-28T13:06:18Z</updated>
+    <id>urn:nous-space:pr:131253</id>
+    <title>#131253 ci(label-rerun): never rerun a CI run whose PR head has moved</title>
+    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/131253"/>
+    <updated>2026-10-02T06:49:02Z</updated>
     <author><name>teknium1</name></author>
-    <summary>Desktop composer, tabs and Bot Chat state survive resumes, profile/connection switches and toolset edits (#125336 #125678 #123805 #122190 #124211 #120106 #125394)</summary>
+    <summary>ci(label-rerun): never rerun a CI run whose PR head has moved</summary>
   </entry>
   <entry>
-    <id>urn:nous-space:pr:126133</id>
-    <title>#126133 Live gateway identity files survive matcher mismatches; bootstrap-launched record names its entry point; held lock without gateway.pid no longer aborts Windows update</title>
-    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/126133"/>
-    <updated>2026-09-28T12:58:02Z</updated>
-    <author><name>teknium1</name></author>
-    <summary>Live gateway identity files survive matcher mismatches; bootstrap-launched record names its entry point; held lock without gateway.pid no longer aborts Windows update (#125610, #124029, #123151, #123430, salvage #125679)</summary>
+    <id>urn:nous-space:pr:128408</id>
+    <title>#128408 fix(plugins): memory provider setup lists the dependencies PM would install</title>
+    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/128408"/>
+    <updated>2026-10-02T06:27:09Z</updated>
+    <author><name>ethernet8023</name></author>
+    <summary>fix(plugins): memory provider setup lists the dependencies PM would install</summary>
   </entry>
   <entry>
-    <id>urn:nous-space:pr:126165</id>
-    <title>#126165 Off-turn work (curator, deferred reviews, catalog SWR, plugin API routes, ledger replay) runs under the requesting profile; import model_tools no longer creates state.db</title>
-    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/126165"/>
-    <updated>2026-09-28T12:37:56Z</updated>
+    <id>urn:nous-space:pr:131229</id>
+    <title>#131229 Desktop SDK: plugins decorate model menu rows; themes style chat switches via data-session-switching</title>
+    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/131229"/>
+    <updated>2026-10-02T06:09:44Z</updated>
     <author><name>teknium1</name></author>
-    <summary>Off-turn work (curator, deferred reviews, catalog SWR, plugin API routes, ledger replay) runs under the requesting profile; import model_tools no longer creates state.db (#125032 #108537 #120310 #123372 #103778 #123265)</summary>
+    <summary>Desktop SDK: plugins decorate model menu rows; themes style chat switches via data-session-switching</summary>
   </entry>
   <entry>
-    <id>urn:nous-space:pr:126166</id>
-    <title>#126166 hermes update tells the truth about git state: no false divergence, no update under a rebase, no 'complete' with a parked patch, works from a PM venv</title>
-    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/126166"/>
-    <updated>2026-09-28T12:33:26Z</updated>
-    <author><name>teknium1</name></author>
-    <summary>hermes update tells the truth about git state: no false divergence, no update under a rebase, no 'complete' with a parked patch, works from a PM venv</summary>
+    <id>urn:nous-space:pr:126142</id>
+    <title>#126142 feat(plugin-catalog): add go-whatsapp</title>
+    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/126142"/>
+    <updated>2026-10-02T05:53:11Z</updated>
+    <author><name>anpicasso</name></author>
+    <summary>feat(plugin-catalog): add go-whatsapp</summary>
   </entry>
   <entry>
-    <id>urn:nous-space:pr:126156</id>
-    <title>#126156 cron under multiplex: liveness, manual-run delivery, managed routes, degraded-send retention and worker secrets follow the job's owning profile</title>
-    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/126156"/>
-    <updated>2026-09-28T12:28:06Z</updated>
+    <id>urn:nous-space:pr:131221</id>
+    <title>#131221 fix(gateway): /fast and /fast ultrafast follow the session's /model route</title>
+    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/131221"/>
+    <updated>2026-10-02T05:47:04Z</updated>
     <author><name>teknium1</name></author>
-    <summary>cron under multiplex: liveness, manual-run delivery, managed routes, degraded-send retention and worker secrets follow the job's owning profile (#121881 #99579 #99631 #124248 #120330 #125363 #121212 #121929)</summary>
+    <summary>fix(gateway): /fast and /fast ultrafast follow the session's /model route (#118761, salvage #65028)</summary>
   </entry>
   <entry>
-    <id>urn:nous-space:pr:126160</id>
-    <title>#126160 Multiplex secondary profiles keep their A2A gate, Buzz config, plugin injector, MCP headers, describe and tools.list scoped to the served profile</title>
-    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/126160"/>
-    <updated>2026-09-28T12:24:27Z</updated>
-    <author><name>teknium1</name></author>
-    <summary>Multiplex secondary profiles keep their A2A gate, Buzz config, plugin injector, MCP headers, describe and tools.list scoped to the served profile (#122126 #125985 #125102 #119092 #120726 #117977)</summary>
+    <id>urn:nous-space:pr:129218</id>
+    <title>#129218 feat(plugin-catalog): add 0bull community plugin</title>
+    <link rel="alternate" href="https://github.com/NousResearch/hermes-agent/pull/129218"/>
+    <updated>2026-10-02T05:41:15Z</updated>
+    <author><name>0bull</name></author>
+    <summary>feat(plugin-catalog): add 0bull community plugin</summary>
   </entry>
 </feed>

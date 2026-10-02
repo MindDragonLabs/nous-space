@@ -7,11 +7,11 @@
  "language": "en",
  "items": [
   {
-   "id": "126891",
-   "url": "https://github.com/NousResearch/hermes-agent/pull/126891",
-   "title": "#126891 Shared-metrics opt-in is offered on every surface, and a 'no' sticks",
-   "content_text": "Shared-metrics opt-in is offered on every surface, and a 'no' sticks",
-   "date_published": "2026-10-01T04:15:09Z",
+   "id": "131272",
+   "url": "https://github.com/NousResearch/hermes-agent/pull/131272",
+   "title": "#131272 Supermemory installs from the plugin catalog — existing setups migrate automatically",
+   "content_text": "Supermemory installs from the plugin catalog — existing setups migrate automatically",
+   "date_published": "2026-10-02T12:10:07Z",
    "authors": [
     {
      "name": "teknium1",
@@ -20,11 +20,11 @@
    ]
   },
   {
-   "id": "128343",
-   "url": "https://github.com/NousResearch/hermes-agent/pull/128343",
-   "title": "#128343 Free space-bunny-alpha now shows in the Nous and OpenRouter /model pickers",
-   "content_text": "Free space-bunny-alpha now shows in the Nous and OpenRouter /model pickers (salvage #122087)",
-   "date_published": "2026-09-29T19:55:47Z",
+   "id": "131301",
+   "url": "https://github.com/NousResearch/hermes-agent/pull/131301",
+   "title": "#131301 Honcho memory installs from Plastic Labs' catalog plugin; core no longer bundles it",
+   "content_text": "Honcho memory installs from Plastic Labs' catalog plugin; core no longer bundles it",
+   "date_published": "2026-10-02T11:39:29Z",
    "authors": [
     {
      "name": "teknium1",
@@ -33,11 +33,11 @@
    ]
   },
   {
-   "id": "127265",
-   "url": "https://github.com/NousResearch/hermes-agent/pull/127265",
-   "title": "#127265 Python lints lane green again: portable bash shebang in the remote-lifecycle test fixture",
-   "content_text": "Python lints lane green again: portable bash shebang in the remote-lifecycle test fixture",
-   "date_published": "2026-09-29T07:58:40Z",
+   "id": "131430",
+   "url": "https://github.com/NousResearch/hermes-agent/pull/131430",
+   "title": "#131430 fix(tests): failure-writer ownership probe stops flaking at 19/20 (no real tirith download mid-probe)",
+   "content_text": "fix(tests): failure-writer ownership probe stops flaking at 19/20 (no real tirith download mid-probe)",
+   "date_published": "2026-10-02T11:14:46Z",
    "authors": [
     {
      "name": "teknium1",
@@ -46,11 +46,11 @@
    ]
   },
   {
-   "id": "126296",
-   "url": "https://github.com/NousResearch/hermes-agent/pull/126296",
-   "title": "#126296 feat(i18n): pluggable, layered language packs across Core, TUI and Desktop; every user-facing string through t(); full 16-locale parity",
-   "content_text": "feat(i18n): pluggable, layered language packs across Core, TUI and Desktop; every user-facing string through t(); full 16-locale parity",
-   "date_published": "2026-09-28T21:16:19Z",
+   "id": "131269",
+   "url": "https://github.com/NousResearch/hermes-agent/pull/131269",
+   "title": "#131269 fix(memory): never lose memory silently when a provider moves out of core",
+   "content_text": "fix(memory): never lose memory silently when a provider moves out of core",
+   "date_published": "2026-10-02T11:09:59Z",
    "authors": [
     {
      "name": "teknium1",
@@ -59,11 +59,11 @@
    ]
   },
   {
-   "id": "126163",
-   "url": "https://github.com/NousResearch/hermes-agent/pull/126163",
-   "title": "#126163 Gateway status, update, dashboard and served-profile guard stop lying about multiplex/standalone state",
-   "content_text": "Gateway status, update, dashboard and served-profile guard stop lying about multiplex/standalone state (#120991 #125390 #123088 #123869 #121352 #120871 #124553, salvage #120997 #125397 #123106 #121574 #122169 #124669)",
-   "date_published": "2026-09-28T20:30:59Z",
+   "id": "131266",
+   "url": "https://github.com/NousResearch/hermes-agent/pull/131266",
+   "title": "#131266 Memory providers migrate on Desktop, the gateway and scripted updates — no terminal needed for their Python deps",
+   "content_text": "Memory providers migrate on Desktop, the gateway and scripted updates — no terminal needed for their Python deps",
+   "date_published": "2026-10-02T10:40:18Z",
    "authors": [
     {
      "name": "teknium1",
@@ -72,11 +72,11 @@
    ]
   },
   {
-   "id": "125074",
-   "url": "https://github.com/NousResearch/hermes-agent/pull/125074",
-   "title": "#125074 feat(telemetry): opt-in shared metrics show why things fail, what users keep and turn off, and what setup and model use cost, with Desktop consent",
-   "content_text": "feat(telemetry): opt-in shared metrics show why things fail, what users keep and turn off, and what setup and model use cost, with Desktop consent",
-   "date_published": "2026-09-28T19:43:05Z",
+   "id": "131393",
+   "url": "https://github.com/NousResearch/hermes-agent/pull/131393",
+   "title": "#131393 retaindb, byterover and holographic are no longer listed as Nous-maintained catalog plugins",
+   "content_text": "retaindb, byterover and holographic are no longer listed as Nous-maintained catalog plugins",
+   "date_published": "2026-10-02T10:28:41Z",
    "authors": [
     {
      "name": "teknium1",
@@ -85,11 +85,11 @@
    ]
   },
   {
-   "id": "126741",
-   "url": "https://github.com/NousResearch/hermes-agent/pull/126741",
-   "title": "#126741 feat(vercel): fresh sandboxes use a managed image (universal:latest); runtime presets deprecated, migration 49",
-   "content_text": "feat(vercel): fresh sandboxes use a managed image (universal:latest); runtime presets deprecated, migration 49",
-   "date_published": "2026-09-28T19:33:04Z",
+   "id": "130996",
+   "url": "https://github.com/NousResearch/hermes-agent/pull/130996",
+   "title": "#130996 fix(desktop): scope preview tabs to the session that opened them",
+   "content_text": "fix(desktop): scope preview tabs to the session that opened them (re-land #128552)",
+   "date_published": "2026-10-02T09:53:03Z",
    "authors": [
     {
      "name": "teknium1",
@@ -98,11 +98,11 @@
    ]
   },
   {
-   "id": "126740",
-   "url": "https://github.com/NousResearch/hermes-agent/pull/126740",
-   "title": "#126740 fix(modal): persistent sandbox snapshots no longer expire after 30 days (modal 1.5.5, ttl=None)",
-   "content_text": "fix(modal): persistent sandbox snapshots no longer expire after 30 days (modal 1.5.5, ttl=None)",
-   "date_published": "2026-09-28T19:31:04Z",
+   "id": "131346",
+   "url": "https://github.com/NousResearch/hermes-agent/pull/131346",
+   "title": "#131346 fix(tests): kanban wake drain helpers no longer busy-spin forever on Python 3.12+",
+   "content_text": "fix(tests): kanban wake drain helpers no longer busy-spin forever on Python 3.12+",
+   "date_published": "2026-10-02T09:42:16Z",
    "authors": [
     {
      "name": "teknium1",
@@ -111,11 +111,11 @@
    ]
   },
   {
-   "id": "126812",
-   "url": "https://github.com/NousResearch/hermes-agent/pull/126812",
-   "title": "#126812 test(local-runtime): racing-callers fake publishes a modern state record (main red since 65ff3ad353)",
-   "content_text": "test(local-runtime): racing-callers fake publishes a modern state record (main red since 65ff3ad353)",
-   "date_published": "2026-09-28T19:28:41Z",
+   "id": "131256",
+   "url": "https://github.com/NousResearch/hermes-agent/pull/131256",
+   "title": "#131256 Cloned profiles keep their catalog-installed plugins and memory provider",
+   "content_text": "Cloned profiles keep their catalog-installed plugins and memory provider",
+   "date_published": "2026-10-02T08:29:42Z",
    "authors": [
     {
      "name": "teknium1",
@@ -124,11 +124,11 @@
    ]
   },
   {
-   "id": "126145",
-   "url": "https://github.com/NousResearch/hermes-agent/pull/126145",
-   "title": "#126145 Served profiles no longer inherit the launch profile's logs, log ownership, slash gating, TTS credentials or skipped .env",
-   "content_text": "Served profiles no longer inherit the launch profile's logs, log ownership, slash gating, TTS credentials or skipped .env (#125974 #120151 #121705 #120481 #125530)",
-   "date_published": "2026-09-28T19:23:27Z",
+   "id": "131265",
+   "url": "https://github.com/NousResearch/hermes-agent/pull/131265",
+   "title": "#131265 retaindb, byterover and holographic memory providers join the plugin catalog (Nous-maintained)",
+   "content_text": "retaindb, byterover and holographic memory providers join the plugin catalog (Nous-maintained)",
+   "date_published": "2026-10-02T08:29:23Z",
    "authors": [
     {
      "name": "teknium1",
@@ -137,11 +137,24 @@
    ]
   },
   {
-   "id": "126148",
-   "url": "https://github.com/NousResearch/hermes-agent/pull/126148",
-   "title": "#126148 Dashboard actions, sign-ins and the switcher act on the profile you pick; --profile default is the default gateway",
-   "content_text": "Dashboard actions, sign-ins and the switcher act on the profile you pick; --profile default is the default gateway (#120688 #123616 #123980 #124283 #125025 #96712 #100817)",
-   "date_published": "2026-09-28T19:18:59Z",
+   "id": "129093",
+   "url": "https://github.com/NousResearch/hermes-agent/pull/129093",
+   "title": "#129093 catalog(hindsight): pin the released v1.2.1",
+   "content_text": "catalog(hindsight): pin the released v1.2.1",
+   "date_published": "2026-10-02T07:01:09Z",
+   "authors": [
+    {
+     "name": "nicoloboschi",
+     "url": "https://github.com/nicoloboschi"
+    }
+   ]
+  },
+  {
+   "id": "131249",
+   "url": "https://github.com/NousResearch/hermes-agent/pull/131249",
+   "title": "#131249 Local MCP/plugin tool batches in one tool_call now run instead of being rejected",
+   "content_text": "Local MCP/plugin tool batches in one tool_call now run instead of being rejected (#119891, #121616, salvage #131006)",
+   "date_published": "2026-10-02T06:50:32Z",
    "authors": [
     {
      "name": "teknium1",
@@ -150,11 +163,11 @@
    ]
   },
   {
-   "id": "126164",
-   "url": "https://github.com/NousResearch/hermes-agent/pull/126164",
-   "title": "#126164 Old pre-decomposition import paths are gone: plugin compat layer removed on schedule",
-   "content_text": "Old pre-decomposition import paths are gone: plugin compat layer removed on schedule",
-   "date_published": "2026-09-28T17:21:42Z",
+   "id": "131246",
+   "url": "https://github.com/NousResearch/hermes-agent/pull/131246",
+   "title": "#131246 test: seed the version cache per test process instead of running git 7 times",
+   "content_text": "test: seed the version cache per test process instead of running git 7 times",
+   "date_published": "2026-10-02T06:49:37Z",
    "authors": [
     {
      "name": "teknium1",
@@ -163,11 +176,11 @@
    ]
   },
   {
-   "id": "126226",
-   "url": "https://github.com/NousResearch/hermes-agent/pull/126226",
-   "title": "#126226 Browser works again on older installs, execute_code stops hiding failed writes, profiles share one cached prompt prefix",
-   "content_text": "Browser works again on older installs, execute_code stops hiding failed writes, profiles share one cached prompt prefix",
-   "date_published": "2026-09-28T17:11:34Z",
+   "id": "131236",
+   "url": "https://github.com/NousResearch/hermes-agent/pull/131236",
+   "title": "#131236 ci: run the Python suite and the macOS lane as two slices each",
+   "content_text": "ci: run the Python suite and the macOS lane as two slices each",
+   "date_published": "2026-10-02T06:49:21Z",
    "authors": [
     {
      "name": "teknium1",
@@ -176,11 +189,11 @@
    ]
   },
   {
-   "id": "126172",
-   "url": "https://github.com/NousResearch/hermes-agent/pull/126172",
-   "title": "#126172 fix(pm): package-manager installs keep features, deps and diagnostics across updates",
-   "content_text": "fix(pm): package-manager installs keep features, deps and diagnostics across updates (salvage #124060, #124246, #124446, #124656)",
-   "date_published": "2026-09-28T13:42:01Z",
+   "id": "131253",
+   "url": "https://github.com/NousResearch/hermes-agent/pull/131253",
+   "title": "#131253 ci(label-rerun): never rerun a CI run whose PR head has moved",
+   "content_text": "ci(label-rerun): never rerun a CI run whose PR head has moved",
+   "date_published": "2026-10-02T06:49:02Z",
    "authors": [
     {
      "name": "teknium1",
@@ -189,11 +202,24 @@
    ]
   },
   {
-   "id": "126182",
-   "url": "https://github.com/NousResearch/hermes-agent/pull/126182",
-   "title": "#126182 Desktop composer, tabs and Bot Chat state survive resumes, profile/connection switches and toolset edits",
-   "content_text": "Desktop composer, tabs and Bot Chat state survive resumes, profile/connection switches and toolset edits (#125336 #125678 #123805 #122190 #124211 #120106 #125394)",
-   "date_published": "2026-09-28T13:06:18Z",
+   "id": "128408",
+   "url": "https://github.com/NousResearch/hermes-agent/pull/128408",
+   "title": "#128408 fix(plugins): memory provider setup lists the dependencies PM would install",
+   "content_text": "fix(plugins): memory provider setup lists the dependencies PM would install",
+   "date_published": "2026-10-02T06:27:09Z",
+   "authors": [
+    {
+     "name": "ethernet8023",
+     "url": "https://github.com/ethernet8023"
+    }
+   ]
+  },
+  {
+   "id": "131229",
+   "url": "https://github.com/NousResearch/hermes-agent/pull/131229",
+   "title": "#131229 Desktop SDK: plugins decorate model menu rows; themes style chat switches via data-session-switching",
+   "content_text": "Desktop SDK: plugins decorate model menu rows; themes style chat switches via data-session-switching",
+   "date_published": "2026-10-02T06:09:44Z",
    "authors": [
     {
      "name": "teknium1",
@@ -202,11 +228,24 @@
    ]
   },
   {
-   "id": "126133",
-   "url": "https://github.com/NousResearch/hermes-agent/pull/126133",
-   "title": "#126133 Live gateway identity files survive matcher mismatches; bootstrap-launched record names its entry point; held lock without gateway.pid no longer aborts Windows update",
-   "content_text": "Live gateway identity files survive matcher mismatches; bootstrap-launched record names its entry point; held lock without gateway.pid no longer aborts Windows update (#125610, #124029, #123151, #123430, salvage #125679)",
-   "date_published": "2026-09-28T12:58:02Z",
+   "id": "126142",
+   "url": "https://github.com/NousResearch/hermes-agent/pull/126142",
+   "title": "#126142 feat(plugin-catalog): add go-whatsapp",
+   "content_text": "feat(plugin-catalog): add go-whatsapp",
+   "date_published": "2026-10-02T05:53:11Z",
+   "authors": [
+    {
+     "name": "anpicasso",
+     "url": "https://github.com/anpicasso"
+    }
+   ]
+  },
+  {
+   "id": "131221",
+   "url": "https://github.com/NousResearch/hermes-agent/pull/131221",
+   "title": "#131221 fix(gateway): /fast and /fast ultrafast follow the session's /model route",
+   "content_text": "fix(gateway): /fast and /fast ultrafast follow the session's /model route (#118761, salvage #65028)",
+   "date_published": "2026-10-02T05:47:04Z",
    "authors": [
     {
      "name": "teknium1",
@@ -215,54 +254,15 @@
    ]
   },
   {
-   "id": "126165",
-   "url": "https://github.com/NousResearch/hermes-agent/pull/126165",
-   "title": "#126165 Off-turn work (curator, deferred reviews, catalog SWR, plugin API routes, ledger replay) runs under the requesting profile; import model_tools no longer creates state.db",
-   "content_text": "Off-turn work (curator, deferred reviews, catalog SWR, plugin API routes, ledger replay) runs under the requesting profile; import model_tools no longer creates state.db (#125032 #108537 #120310 #123372 #103778 #123265)",
-   "date_published": "2026-09-28T12:37:56Z",
+   "id": "129218",
+   "url": "https://github.com/NousResearch/hermes-agent/pull/129218",
+   "title": "#129218 feat(plugin-catalog): add 0bull community plugin",
+   "content_text": "feat(plugin-catalog): add 0bull community plugin",
+   "date_published": "2026-10-02T05:41:15Z",
    "authors": [
     {
-     "name": "teknium1",
-     "url": "https://github.com/teknium1"
-    }
-   ]
-  },
-  {
-   "id": "126166",
-   "url": "https://github.com/NousResearch/hermes-agent/pull/126166",
-   "title": "#126166 hermes update tells the truth about git state: no false divergence, no update under a rebase, no 'complete' with a parked patch, works from a PM venv",
-   "content_text": "hermes update tells the truth about git state: no false divergence, no update under a rebase, no 'complete' with a parked patch, works from a PM venv",
-   "date_published": "2026-09-28T12:33:26Z",
-   "authors": [
-    {
-     "name": "teknium1",
-     "url": "https://github.com/teknium1"
-    }
-   ]
-  },
-  {
-   "id": "126156",
-   "url": "https://github.com/NousResearch/hermes-agent/pull/126156",
-   "title": "#126156 cron under multiplex: liveness, manual-run delivery, managed routes, degraded-send retention and worker secrets follow the job's owning profile",
-   "content_text": "cron under multiplex: liveness, manual-run delivery, managed routes, degraded-send retention and worker secrets follow the job's owning profile (#121881 #99579 #99631 #124248 #120330 #125363 #121212 #121929)",
-   "date_published": "2026-09-28T12:28:06Z",
-   "authors": [
-    {
-     "name": "teknium1",
-     "url": "https://github.com/teknium1"
-    }
-   ]
-  },
-  {
-   "id": "126160",
-   "url": "https://github.com/NousResearch/hermes-agent/pull/126160",
-   "title": "#126160 Multiplex secondary profiles keep their A2A gate, Buzz config, plugin injector, MCP headers, describe and tools.list scoped to the served profile",
-   "content_text": "Multiplex secondary profiles keep their A2A gate, Buzz config, plugin injector, MCP headers, describe and tools.list scoped to the served profile (#122126 #125985 #125102 #119092 #120726 #117977)",
-   "date_published": "2026-09-28T12:24:27Z",
-   "authors": [
-    {
-     "name": "teknium1",
-     "url": "https://github.com/teknium1"
+     "name": "0bull",
+     "url": "https://github.com/0bull"
     }
    ]
   }
